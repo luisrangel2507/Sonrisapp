@@ -123,7 +123,7 @@ export default function PacienteDetallePage() {
               <LayoutGrid size={13} /> Odontograma
             </Link>
             <Link
-              href={`/dashboard/lealtad?paciente=${paciente.id}`}
+              href={`/dashboard/lealtad/${paciente.id}`}
               className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
             >
               <CreditCard size={13} /> Lealtad

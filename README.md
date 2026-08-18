@@ -5,8 +5,9 @@ Panel clínico y de lealtad para consultorios dentales. Next.js 14 (App Router) 
 ## Módulos
 
 - **Panel** (`/dashboard`) — resumen de citas, leads y simulador del bot de WhatsApp.
+- **Pacientes** (`/dashboard/pacientes`) — lista con búsqueda y alta; `/dashboard/pacientes/[id]` es el expediente clínico (datos, antecedentes/alergias/medicamentos, historial general).
 - **Odontograma clínico** (`/dashboard/odontograma`) — mapa interactivo de los 32 dientes en notación FDI/Universal, con historial de tratamientos por diente.
-- **Tarjeta de lealtad** (`/dashboard/lealtad`) — puntos, progreso hacia la recompensa y aviso de cumpleaños.
+- **Lealtad** (`/dashboard/lealtad`) — lista de todos los pacientes con su status de puntos/progreso; `/dashboard/lealtad/[id]` es la tarjeta individual con aviso de cumpleaños.
 
 ## Desarrollo local
 
