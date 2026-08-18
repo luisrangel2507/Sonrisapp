@@ -16,10 +16,12 @@ export async function POST(req: NextRequest) {
   const usuario = body?.usuario;
   const contrasena = body?.contrasena;
 
+  // El usuario no es sensible a mayúsculas/espacios (evita fallos por
+  // autocapitalización del teclado en celular); la contraseña sí.
   const ok =
     typeof usuario === "string" &&
     typeof contrasena === "string" &&
-    compararSeguro(usuario, usuarioValido) &&
+    compararSeguro(usuario.trim().toLowerCase(), usuarioValido.trim().toLowerCase()) &&
     compararSeguro(contrasena, passValido);
 
   if (!ok) {

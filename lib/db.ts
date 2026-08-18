@@ -9,6 +9,10 @@ function createPool() {
   return new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.PGSSL === "false" ? false : { rejectUnauthorized: false },
+    // Por defecto pg espera indefinidamente si la base no responde —
+    // mejor fallar rápido y claro que dejar la petición colgada.
+    connectionTimeoutMillis: 10_000,
+    statement_timeout: 15_000,
   });
 }
 
