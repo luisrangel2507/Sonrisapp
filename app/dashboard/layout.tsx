@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1EA]">
+    <div className="min-h-dvh bg-[#F5F1EA]">
       <div className="mx-auto max-w-md pb-10">
         <div className="flex items-center justify-between px-5 pb-4 pt-6">
           <h1 className="text-[26px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>

@@ -44,7 +44,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-5 py-10"
+      className="flex min-h-dvh items-center justify-center px-5 py-10"
       style={{ background: "radial-gradient(circle at 50% 15%, #241a30 0%, #150f1f 45%, #0a0714 100%)" }}
     >
       <div
