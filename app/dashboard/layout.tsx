@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Activity, LayoutGrid, CreditCard } from "lucide-react";
+import { Menu, Activity, LayoutGrid, CreditCard, Users } from "lucide-react";
 
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
+  { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
   { href: "/dashboard/odontograma", label: "Odontograma", icon: LayoutGrid },
   { href: "/dashboard/lealtad", label: "Lealtad", icon: CreditCard },
 ];
@@ -34,14 +35,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        <div className="flex gap-2 px-5 pb-4">
+        <div className="flex gap-2 overflow-x-auto px-5 pb-4">
           {TABS.map((t) => {
-            const activo = pathname === t.href;
+            const activo = t.href === "/dashboard" ? pathname === t.href : pathname?.startsWith(t.href);
             return (
               <Link
                 key={t.href}
                 href={t.href}
-                className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium ${
                   activo
                     ? esClinico
                       ? "border-[#7C5CE0] bg-[#7C5CE0] text-white"

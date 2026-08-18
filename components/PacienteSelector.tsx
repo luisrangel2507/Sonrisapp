@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import type { Paciente } from "@/lib/types";
 
+// Mantiene la selección de paciente sincronizada con ?paciente=<id> en la
+// URL, así el expediente puede enlazar directo a "Ver odontograma"/"Ver
+// tarjeta" de un paciente específico.
 export function usePacientes() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [pacientes, setPacientes] = useState<Paciente[] | null>(null);
-  const [pacienteId, setPacienteId] = useState<number | null>(null);
+  const [pacienteId, setPacienteIdState] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
+
+  const setPacienteId = useCallback(
+    (id: number) => {
+      setPacienteIdState(id);
+      const params = new URLSearchParams(window.location.search);
+      params.set("paciente", String(id));
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname]
+  );
 
   async function recargar() {
     setCargando(true);
@@ -14,12 +30,18 @@ export function usePacientes() {
     const data = await res.json();
     const lista: Paciente[] = data.pacientes ?? [];
     setPacientes(lista);
-    setPacienteId((actual) => actual ?? lista[0]?.id ?? null);
+    setPacienteIdState((actual) => {
+      if (actual && lista.some((p) => p.id === actual)) return actual;
+      const desdeUrl = Number(new URLSearchParams(window.location.search).get("paciente"));
+      if (lista.some((p) => p.id === desdeUrl)) return desdeUrl;
+      return lista[0]?.id ?? null;
+    });
     setCargando(false);
   }
 
   useEffect(() => {
     recargar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function crearPacienteDePrueba() {

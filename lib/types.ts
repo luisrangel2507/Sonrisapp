@@ -10,4 +10,14 @@ export interface Paciente {
   fecha_nacimiento: string | null;
   visitas_totales: number;
   creado_en: string;
+  alergias: string | null;
+  medicamentos: string | null;
+  antecedentes_medicos: string | null;
+}
+
+export interface PacienteNota {
+  id: number;
+  fecha: string;
+  tipo: string;
+  nota: string | null;
 }

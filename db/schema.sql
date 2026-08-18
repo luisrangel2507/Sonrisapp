@@ -15,7 +15,11 @@ CREATE TABLE IF NOT EXISTS pacientes (
   fecha_nacimiento DATE,
   visitas_totales INTEGER NOT NULL DEFAULT 0,
   ultima_felicitacion_anio INTEGER,
-  ultimo_aviso_meta_en TIMESTAMPTZ
+  ultimo_aviso_meta_en TIMESTAMPTZ,
+  -- Historial clínico general
+  alergias TEXT,
+  medicamentos TEXT,
+  antecedentes_medicos TEXT
 );
 
 CREATE TABLE IF NOT EXISTS citas (
@@ -46,6 +50,18 @@ CREATE TABLE IF NOT EXISTS diente_historial (
   creado_por INTEGER -- id del doctor
 );
 
+-- Historial clínico general del paciente (consultas, diagnósticos, notas)
+-- — separado del historial por diente en diente_historial.
+CREATE TABLE IF NOT EXISTS paciente_notas (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  tipo VARCHAR(80) NOT NULL, -- 'Consulta', 'Diagnóstico', 'Nota general'...
+  nota TEXT,
+  creado_por INTEGER -- id del doctor
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);
+CREATE INDEX IF NOT EXISTS idx_paciente_notas_paciente ON paciente_notas(paciente_id);

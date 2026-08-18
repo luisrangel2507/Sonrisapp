@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 
 export async function GET(
   _req: NextRequest,
@@ -11,10 +12,49 @@ export async function GET(
   }
 
   const { rows } = await query(
-    `SELECT id, nombre, telefono, email, folio, puntos, meta_premio, premio_actual,
-            fecha_nacimiento, visitas_totales, creado_en
-     FROM pacientes WHERE id = $1`,
+    `SELECT ${PACIENTE_COLUMNAS} FROM pacientes WHERE id = $1`,
     [id]
+  );
+
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
+  }
+
+  return NextResponse.json({ paciente: rows[0] });
+}
+
+const CAMPOS_EDITABLES = [
+  "nombre",
+  "telefono",
+  "email",
+  "fecha_nacimiento",
+  "alergias",
+  "medicamentos",
+  "antecedentes_medicos",
+] as const;
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const id = Number(params.id);
+  if (!Number.isInteger(id)) {
+    return NextResponse.json({ error: "id inválido" }, { status: 400 });
+  }
+
+  const body = await req.json();
+  const actualizaciones = CAMPOS_EDITABLES.filter((campo) => campo in (body ?? {}));
+
+  if (actualizaciones.length === 0) {
+    return NextResponse.json({ error: "nada que actualizar" }, { status: 400 });
+  }
+
+  const asignaciones = actualizaciones.map((campo, i) => `${campo} = $${i + 2}`).join(", ");
+  const valores = actualizaciones.map((campo) => body[campo] ?? null);
+
+  const { rows } = await query(
+    `UPDATE pacientes SET ${asignaciones} WHERE id = $1 RETURNING ${PACIENTE_COLUMNAS}`,
+    [id, ...valores]
   );
 
   if (rows.length === 0) {

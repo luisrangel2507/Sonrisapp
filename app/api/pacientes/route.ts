@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { generarFolio } from "@/lib/folio";
+import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 
-export async function GET() {
-  const { rows } = await query(
-    `SELECT id, nombre, telefono, email, folio, puntos, meta_premio, premio_actual,
-            fecha_nacimiento, visitas_totales, creado_en
-     FROM pacientes ORDER BY id DESC`
-  );
+export async function GET(req: NextRequest) {
+  const q = req.nextUrl.searchParams.get("q")?.trim();
+
+  const { rows } = q
+    ? await query(
+        `SELECT ${PACIENTE_COLUMNAS} FROM pacientes
+         WHERE nombre ILIKE $1 OR folio ILIKE $1 OR telefono ILIKE $1
+         ORDER BY id DESC`,
+        [`%${q}%`]
+      )
+    : await query(`SELECT ${PACIENTE_COLUMNAS} FROM pacientes ORDER BY id DESC`);
+
   return NextResponse.json({ pacientes: rows });
 }
 
@@ -24,8 +31,7 @@ export async function POST(req: NextRequest) {
   const { rows } = await query(
     `INSERT INTO pacientes (nombre, telefono, email, fecha_nacimiento, folio)
      VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, nombre, telefono, email, folio, puntos, meta_premio, premio_actual,
-               fecha_nacimiento, visitas_totales, creado_en`,
+     RETURNING ${PACIENTE_COLUMNAS}`,
     [nombre, telefono ?? null, email ?? null, fecha_nacimiento ?? null, folio]
   );
 
