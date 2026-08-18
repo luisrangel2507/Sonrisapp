@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, LayoutGrid, CreditCard, Plus, Save } from "lucide-react";
+import { ChevronLeft, CreditCard, Plus, Save } from "lucide-react";
 import type { Paciente, PacienteNota } from "@/lib/types";
+import { Odontograma } from "@/components/Odontograma";
 
 function formatearFecha(fecha: string) {
   return new Date(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
@@ -115,20 +116,12 @@ export default function PacienteDetallePage() {
             </h2>
             <div className="text-xs text-[#a49c8a]">{paciente.folio}</div>
           </div>
-          <div className="flex gap-2">
-            <Link
-              href={`/dashboard/odontograma?paciente=${paciente.id}`}
-              className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-            >
-              <LayoutGrid size={13} /> Odontograma
-            </Link>
-            <Link
-              href={`/dashboard/lealtad/${paciente.id}`}
-              className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-            >
-              <CreditCard size={13} /> Lealtad
-            </Link>
-          </div>
+          <Link
+            href={`/dashboard/lealtad/${paciente.id}`}
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+          >
+            <CreditCard size={13} /> Lealtad
+          </Link>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-2">
@@ -279,6 +272,8 @@ export default function PacienteDetallePage() {
           </button>
         )}
       </div>
+
+      <Odontograma paciente={paciente} />
     </div>
   );
 }
