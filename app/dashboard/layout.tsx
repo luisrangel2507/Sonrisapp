@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, Activity, Users, CreditCard, Calendar } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut, Activity, Users, CreditCard, Calendar } from "lucide-react";
 
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
@@ -13,6 +13,13 @@ const TABS = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function cerrarSesion() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F1EA]">
@@ -22,8 +29,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="font-bold text-[#2b2118]">Sonris</span>
             <span className="font-bold italic text-[#C96F3B]">App</span>
           </h1>
-          <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white">
-            <Menu size={17} className="text-[#2b2118]" />
+          <button
+            onClick={cerrarSesion}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white"
+          >
+            <LogOut size={17} className="text-[#2b2118]" />
           </button>
         </div>
 
