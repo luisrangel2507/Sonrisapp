@@ -1,16 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, MessageCircle, Activity, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Calendar, MessageCircle, TrendingUp, Wallet } from "lucide-react";
 import { Hero } from "@/components/Hero";
 import { Pill } from "@/components/Pill";
 import { StatCard } from "@/components/StatCard";
 import { BotChat } from "@/components/BotChat";
-import { CITAS_HOY, LEADS_INICIALES } from "@/lib/panel-data";
+import { formatearDinero } from "@/lib/dinero";
+import type { Cita, ResumenDashboard } from "@/lib/types";
+
+function formatearHora(fechaHora: string) {
+  return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
+}
 
 export default function PanelPage() {
-  const [leads] = useState(LEADS_INICIALES);
+  const router = useRouter();
   const [showChat, setShowChat] = useState(false);
+  const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
+  const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
+
+  useEffect(() => {
+    fetch("/api/dashboard/resumen")
+      .then((res) => res.json())
+      .then((data) => setResumen(data.resumen ?? null));
+
+    fetch("/api/citas")
+      .then((res) => res.json())
+      .then((data) => {
+        const hoy = new Date().toDateString();
+        const citas: Cita[] = data.citas ?? [];
+        setCitasHoy(
+          citas
+            .filter((c) => c.estado !== "cancelada" && new Date(c.fecha_hora).toDateString() === hoy)
+            .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
+        );
+      });
+  }, []);
 
   return (
     <>
@@ -23,7 +50,7 @@ export default function PanelPage() {
         </div>
         <div className="shrink-0 text-right">
           <div className="text-[11px] uppercase tracking-wide text-[#a49c8a]">Citas hoy</div>
-          <div className="text-2xl font-bold text-[#3F6B33]">{CITAS_HOY.length}</div>
+          <div className="text-2xl font-bold text-[#3F6B33]">{resumen?.citas_hoy ?? "…"}</div>
         </div>
       </div>
 
@@ -32,84 +59,67 @@ export default function PanelPage() {
       </div>
 
       <div className="mt-4 flex gap-3 px-4">
-        <Pill tone="green" onClick={() => setShowChat(true)}>
-          Nuevo lead
-        </Pill>
-        <Pill tone="rose" onClick={() => setShowChat(true)}>
+        <Pill tone="green" onClick={() => router.push("/dashboard/citas")}>
           Agendar cita
+        </Pill>
+        <Pill tone="rose" onClick={() => router.push("/dashboard/pacientes")}>
+          Nuevo paciente
         </Pill>
       </div>
 
       <div className="mx-4 mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Citas de hoy</div>
-        {CITAS_HOY.length === 0 ? (
+        {citasHoy.length === 0 ? (
           <p className="mt-2 text-sm text-[#8a8272]">Sin citas registradas por ahora.</p>
         ) : (
           <div className="mt-3 space-y-3">
-            {CITAS_HOY.map((c, i) => (
-              <div key={i} className="flex items-center justify-between">
+            {citasHoy.map((c) => (
+              <div key={c.id} className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-[#2b2118]">{c.paciente}</div>
+                  <div className="text-sm font-medium text-[#2b2118]">{c.paciente_nombre}</div>
                   <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
                 </div>
-                <div className="text-sm font-semibold text-[#2b2118]">{c.hora}</div>
+                <div className="text-sm font-semibold text-[#2b2118]">{formatearHora(c.fecha_hora)}</div>
               </div>
             ))}
           </div>
         )}
+        <Link href="/dashboard/citas" className="mt-3 block text-[12px] font-semibold text-[#C96F3B]">
+          Ver toda la agenda →
+        </Link>
       </div>
 
       <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
         <StatCard
-          icon={Users}
-          iconBg="bg-[#E8F0E3] text-[#3F6B33]"
-          label="Leads activos"
-          value={leads.filter((l) => l.estado !== "convertido").length}
-          sub="Score promedio 60"
-        />
-        <StatCard
           icon={Calendar}
           iconBg="bg-[#F7E5E0] text-[#B0503A]"
           label="Citas esta semana"
-          value="6"
-          sub="4 confirmadas"
+          value={resumen ? resumen.citas_semana : "…"}
+          sub={resumen ? `${resumen.citas_semana_confirmadas} confirmadas` : undefined}
         />
         <StatCard
-          icon={Activity}
-          iconBg="bg-[#EFE3F0] text-[#7A4D8A]"
-          label="Convertidos (mes)"
-          value="9"
-          sub="+3 vs mes pasado"
-          subColor="text-[#3F6B33]"
+          icon={TrendingUp}
+          iconBg="bg-[#E8F0E3] text-[#3F6B33]"
+          label="Ingresos del mes"
+          value={resumen ? formatearDinero(resumen.ingresos_mes) : "…"}
         />
         <StatCard
-          icon={MessageCircle}
+          icon={Wallet}
           iconBg="bg-[#FCEFD2] text-[#B08419]"
-          label="Seguimientos"
-          value="1"
-          sub="Ana T. — vencido"
+          label="Por cobrar"
+          value={resumen ? formatearDinero(resumen.por_cobrar) : "…"}
+          sub={resumen && resumen.por_cobrar > 0 ? "pendiente de pago" : undefined}
           subColor="text-[#B0503A]"
         />
-      </div>
-
-      <div className="mx-4 mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Pipeline de leads</div>
-        <div className="space-y-3">
-          {leads.map((l) => (
-            <div key={l.id} className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium text-[#2b2118]">{l.nombre}</div>
-                <div className="text-xs text-[#a49c8a]">{l.interes}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-14 overflow-hidden rounded-full bg-[#EFE9DC]">
-                  <div className="h-full rounded-full bg-[#C96F3B]" style={{ width: `${l.score}%` }} />
-                </div>
-                <span className="text-xs text-[#a49c8a]">{l.score}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Link href="/dashboard/citas">
+          <StatCard
+            icon={MessageCircle}
+            iconBg="bg-[#EFE3F0] text-[#7A4D8A]"
+            label="Agenda"
+            value="Ver todo"
+            sub="citas, pagos y cancelaciones"
+          />
+        </Link>
       </div>
 
       <div className="mx-4 mt-6">

@@ -4,26 +4,32 @@ import { enviarWhatsApp, mensajeMetaAlcanzada } from "@/lib/whatsapp";
 
 const PUNTOS_POR_VISITA = 50;
 
+const CITAS_SELECT = `
+  SELECT c.id, c.paciente_id, p.nombre AS paciente_nombre, c.tratamiento,
+         c.fecha_hora, c.estado, c.monto::float8 AS monto,
+         COALESCE(pg.pagado, 0)::float8 AS pagado
+  FROM citas c
+  JOIN pacientes p ON p.id = c.paciente_id
+  LEFT JOIN (
+    SELECT cita_id, SUM(monto) AS pagado FROM pagos GROUP BY cita_id
+  ) pg ON pg.cita_id = c.id
+`;
+
 export async function GET(req: NextRequest) {
   const pacienteId = req.nextUrl.searchParams.get("paciente_id");
-  const params: unknown[] = [];
-  let where = "";
-  if (pacienteId) {
-    where = "WHERE paciente_id = $1";
-    params.push(Number(pacienteId));
-  }
 
-  const { rows } = await query(
-    `SELECT id, paciente_id, tratamiento, fecha_hora, estado
-     FROM citas ${where} ORDER BY fecha_hora DESC`,
-    params
-  );
+  const { rows } = pacienteId
+    ? await query(`${CITAS_SELECT} WHERE c.paciente_id = $1 ORDER BY c.fecha_hora DESC`, [
+        Number(pacienteId),
+      ])
+    : await query(`${CITAS_SELECT} ORDER BY c.fecha_hora DESC`);
+
   return NextResponse.json({ citas: rows });
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { paciente_id, tratamiento, fecha_hora } = body ?? {};
+  const { paciente_id, tratamiento, fecha_hora, monto } = body ?? {};
 
   if (!paciente_id || !tratamiento || !fecha_hora) {
     return NextResponse.json(
@@ -32,25 +38,28 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { rows } = await query(
-    `INSERT INTO citas (paciente_id, tratamiento, fecha_hora, estado)
-     VALUES ($1, $2, $3, 'agendada')
-     RETURNING id, paciente_id, tratamiento, fecha_hora, estado`,
-    [paciente_id, tratamiento, fecha_hora]
+  const { rows } = await query<{ id: number }>(
+    `INSERT INTO citas (paciente_id, tratamiento, fecha_hora, estado, monto)
+     VALUES ($1, $2, $3, 'agendada', $4)
+     RETURNING id`,
+    [paciente_id, tratamiento, fecha_hora, monto ?? null]
   );
 
-  return NextResponse.json({ cita: rows[0] }, { status: 201 });
+  const { rows: citaRows } = await query(`${CITAS_SELECT} WHERE c.id = $1`, [rows[0].id]);
+
+  return NextResponse.json({ cita: citaRows[0] }, { status: 201 });
 }
 
-// Marca una cita como completada: suma +50 pts al paciente, incrementa
-// visitas_totales y, si cruza la meta configurada, avisa por WhatsApp.
+// PATCH { id, estado: 'completada' | 'cancelada' }
+// Al completar: suma +50 pts al paciente, incrementa visitas_totales y,
+// si cruza la meta configurada, avisa por WhatsApp.
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const { id, estado } = body ?? {};
 
-  if (!id || estado !== "completada") {
+  if (!id || (estado !== "completada" && estado !== "cancelada")) {
     return NextResponse.json(
-      { error: "id y estado='completada' son requeridos" },
+      { error: "id y estado ('completada' o 'cancelada') son requeridos" },
       { status: 400 }
     );
   }
@@ -63,8 +72,15 @@ export async function PATCH(req: NextRequest) {
   if (!cita) {
     return NextResponse.json({ error: "cita no encontrada" }, { status: 404 });
   }
-  if (cita.estado === "completada") {
-    return NextResponse.json({ cita });
+  if (cita.estado === estado) {
+    const { rows } = await query(`${CITAS_SELECT} WHERE c.id = $1`, [id]);
+    return NextResponse.json({ cita: rows[0] });
+  }
+
+  if (estado === "cancelada") {
+    await query(`UPDATE citas SET estado = 'cancelada' WHERE id = $1`, [id]);
+    const { rows } = await query(`${CITAS_SELECT} WHERE c.id = $1`, [id]);
+    return NextResponse.json({ cita: rows[0] });
   }
 
   await query(`UPDATE citas SET estado = 'completada' WHERE id = $1`, [id]);
@@ -97,5 +113,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ cita: { ...cita, estado: "completada" }, paciente });
+  const { rows: citaActualizada } = await query(`${CITAS_SELECT} WHERE c.id = $1`, [id]);
+
+  return NextResponse.json({ cita: citaActualizada[0], paciente });
 }
