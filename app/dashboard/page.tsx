@@ -20,7 +20,8 @@ export default function PanelPage() {
   const [showChat, setShowChat] = useState(false);
   const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
   const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [errorResumen, setErrorResumen] = useState<string | null>(null);
+  const [errorCitas, setErrorCitas] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/resumen")
@@ -29,7 +30,7 @@ export default function PanelPage() {
         return res.json();
       })
       .then((data) => setResumen(data.resumen ?? null))
-      .catch((err) => setError(`No se pudo cargar el resumen: ${err.message}`));
+      .catch((err) => setErrorResumen(`No se pudo cargar el resumen: ${err.message}`));
 
     fetch("/api/citas")
       .then(async (res) => {
@@ -45,7 +46,7 @@ export default function PanelPage() {
             .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
         );
       })
-      .catch((err) => setError(`No se pudieron cargar las citas: ${err.message}`));
+      .catch((err) => setErrorCitas(`No se pudieron cargar las citas: ${err.message}`));
   }, []);
 
   return (
@@ -63,9 +64,18 @@ export default function PanelPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mx-4 mt-4 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
-          {error}
+      {(errorResumen || errorCitas) && (
+        <div className="mx-4 mt-4 space-y-2">
+          {errorResumen && (
+            <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+              {errorResumen}
+            </div>
+          )}
+          {errorCitas && (
+            <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+              {errorCitas}
+            </div>
+          )}
         </div>
       )}
 
