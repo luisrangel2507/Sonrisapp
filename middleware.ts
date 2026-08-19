@@ -10,6 +10,7 @@ export const config = {
     "/api/dashboard/:path*",
     "/api/bot/:path*",
     "/api/precios-servicios/:path*",
+    "/api/perfil/:path*",
   ],
 };
 

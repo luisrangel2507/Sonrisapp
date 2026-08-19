@@ -132,6 +132,15 @@ CREATE TABLE IF NOT EXISTS precios_servicios (
   precio NUMERIC(10,2)
 );
 
+-- Foto de perfil de la doctora — una sola fila (id = 1), consultorio
+-- de un solo dentista. Se guarda como data URL base64 ya comprimida
+-- desde el cliente.
+CREATE TABLE IF NOT EXISTS perfil_dentista (
+  id SMALLINT PRIMARY KEY DEFAULT 1,
+  foto TEXT,
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);

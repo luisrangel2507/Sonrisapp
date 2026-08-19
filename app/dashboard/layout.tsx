@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { UserCog, Activity, Users, CreditCard, Calendar } from "lucide-react";
 
 const TABS = [
@@ -13,6 +14,14 @@ const TABS = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [foto, setFoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/perfil")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setFoto(data?.foto ?? null))
+      .catch(() => {});
+  }, [pathname]);
 
   function esActivo(href: string) {
     return href === "/dashboard" ? pathname === href : pathname?.startsWith(href);
@@ -47,7 +56,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             esActivo("/dashboard/perfil") ? "bg-[#2b2118] text-white" : "text-[#8a8272] hover:bg-[#EFE9DC]/70"
           }`}
         >
-          <UserCog size={16} /> Perfil
+          {foto ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={foto} alt="" className="h-4 w-4 rounded-full object-cover" />
+          ) : (
+            <UserCog size={16} />
+          )}
+          Perfil
         </Link>
       </aside>
 
@@ -63,9 +78,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/dashboard/perfil"
               aria-label="Perfil"
               title="Perfil"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white"
+              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#EFE9DC] bg-white"
             >
-              <UserCog size={17} className="text-[#2b2118]" />
+              {foto ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={foto} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <UserCog size={17} className="text-[#2b2118]" />
+              )}
             </Link>
           </div>
 

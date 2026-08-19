@@ -1,17 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut } from "lucide-react";
+import { Save, LogOut, Camera, UserCog } from "lucide-react";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
+
+const FOTO_MAX_DIM = 480;
+const FOTO_CALIDAD = 0.85;
+
+function comprimirImagen(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const escala = Math.min(1, FOTO_MAX_DIM / Math.max(img.width, img.height));
+      const w = Math.round(img.width * escala);
+      const h = Math.round(img.height * escala);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("No se pudo procesar la imagen."));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", FOTO_CALIDAD));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo leer la imagen."));
+    };
+    img.src = url;
+  });
+}
 
 export default function PerfilPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [precios, setPrecios] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const [cerrandoSesion, setCerrandoSesion] = useState(false);
+
+  const [foto, setFoto] = useState<string | null>(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [errorFoto, setErrorFoto] = useState("");
 
   async function cerrarSesion() {
     if (cerrandoSesion) return;
@@ -32,6 +68,10 @@ export default function PerfilPage() {
         setPrecios(mapa);
         setCargando(false);
       });
+
+    fetch("/api/perfil")
+      .then((res) => res.json())
+      .then((data) => setFoto(data.foto ?? null));
   }, []);
 
   async function guardar() {
@@ -47,10 +87,69 @@ export default function PerfilPage() {
     setTimeout(() => setGuardado(false), 2000);
   }
 
+  async function elegirFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || subiendoFoto) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrorFoto("Elige un archivo de imagen.");
+      return;
+    }
+
+    setErrorFoto("");
+    setSubiendoFoto(true);
+    const anterior = foto;
+    try {
+      const dataUrl = await comprimirImagen(file);
+      setFoto(dataUrl);
+      const res = await fetch("/api/perfil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ foto: dataUrl }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "error al guardar");
+    } catch (err) {
+      setFoto(anterior);
+      setErrorFoto(err instanceof Error ? err.message : "No se pudo subir la foto.");
+    } finally {
+      setSubiendoFoto(false);
+    }
+  }
+
   return (
     <div className="mx-4 mt-2 space-y-4 pb-10">
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={elegirFoto}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={subiendoFoto}
+          className="group relative mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-[#EFE9DC] bg-[#F5F1EA] disabled:opacity-70"
+          aria-label="Cambiar foto de perfil"
+        >
+          {foto ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={foto} alt="Foto de perfil" className="h-full w-full object-cover" />
+          ) : (
+            <UserCog size={34} className="text-[#a49c8a]" />
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <Camera size={20} className="text-white" />
+          </span>
+          <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#2b2118]">
+            <Camera size={12} className="text-white" />
+          </span>
+        </button>
+        {subiendoFoto && <p className="mt-2 text-[11px] text-[#a49c8a]">Subiendo foto…</p>}
+        {errorFoto && <p className="mt-2 text-[11px] text-[#B0503A]">{errorFoto}</p>}
+
+        <div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
           Perfil del dentista
         </div>
         <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
