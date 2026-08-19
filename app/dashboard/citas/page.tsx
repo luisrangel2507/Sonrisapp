@@ -360,18 +360,18 @@ function CitaTimelineItem({
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto">
           {cita.estado === "agendada" && (
             <>
               <button
                 onClick={() => onCambiarEstado("completada")}
-                className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
               >
                 <Check size={12} /> Completada
               </button>
               <button
                 onClick={() => onCambiarEstado("cancelada")}
-                className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
               >
                 <X size={12} /> Cancelar
               </button>
@@ -380,14 +380,14 @@ function CitaTimelineItem({
           {cita.estado !== "cancelada" && restante !== null && restante > 0 && (
             <button
               onClick={() => (pagando ? onCerrarPago() : onAbrirPago())}
-              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
             >
               <DollarSign size={12} /> Registrar pago
             </button>
           )}
           <button
             onClick={() => (editando ? onCerrarEdicion() : onAbrirEdicion())}
-            className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
           >
             <Pencil size={12} /> Editar
           </button>
@@ -395,7 +395,7 @@ function CitaTimelineItem({
             <button
               onClick={onDeshacerPago}
               disabled={deshaciendoPago}
-              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
             >
               <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
             </button>
