@@ -55,6 +55,16 @@ export interface ResumenDashboard {
   por_cobrar: number;
 }
 
+export interface InventarioItem {
+  id: number;
+  nombre: string;
+  cantidad: number;
+  unidad: string | null;
+  cantidad_minima: number | null;
+  notas: string | null;
+  actualizado_en: string;
+}
+
 export interface HistoriaClinica {
   fecha: string;
   sexo: "F" | "M" | null;

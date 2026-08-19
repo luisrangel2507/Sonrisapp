@@ -210,13 +210,15 @@ export function CamposHistoriaClinica({
         <Campo label="¿Familiares con alguna enfermedad sistémica?">
           <SiNo valor={form.fam_enfermedad_sistemica} onChange={(v) => set("fam_enfermedad_sistemica", v)} />
         </Campo>
-        <Campo label="¿Cuál o cuáles?">
-          <input
-            value={form.fam_enfermedad_cual ?? ""}
-            onChange={(e) => set("fam_enfermedad_cual", e.target.value || null)}
-            className={inputClase}
-          />
-        </Campo>
+        {form.fam_enfermedad_sistemica === true && (
+          <Campo label="¿Cuál o cuáles?">
+            <input
+              value={form.fam_enfermedad_cual ?? ""}
+              onChange={(e) => set("fam_enfermedad_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
       </Seccion>
 
       <Seccion titulo="Antecedentes personales">
@@ -237,33 +239,39 @@ export function CamposHistoriaClinica({
         <Campo label="¿Alérgico a algún medicamento?">
           <SiNo valor={form.alergico_medicamento} onChange={(v) => set("alergico_medicamento", v)} />
         </Campo>
-        <Campo label="¿Cuál?">
-          <input
-            value={form.alergico_medicamento_cual ?? ""}
-            onChange={(e) => set("alergico_medicamento_cual", e.target.value || null)}
-            className={inputClase}
-          />
-        </Campo>
+        {form.alergico_medicamento === true && (
+          <Campo label="¿Cuál?">
+            <input
+              value={form.alergico_medicamento_cual ?? ""}
+              onChange={(e) => set("alergico_medicamento_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
         <Campo label="¿Alérgico a algún anestésico?">
           <SiNo valor={form.alergico_anestesico} onChange={(v) => set("alergico_anestesico", v)} />
         </Campo>
-        <Campo label="¿Cuál?">
-          <input
-            value={form.alergico_anestesico_cual ?? ""}
-            onChange={(e) => set("alergico_anestesico_cual", e.target.value || null)}
-            className={inputClase}
-          />
-        </Campo>
+        {form.alergico_anestesico === true && (
+          <Campo label="¿Cuál?">
+            <input
+              value={form.alergico_anestesico_cual ?? ""}
+              onChange={(e) => set("alergico_anestesico_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
         <Campo label="¿Ha sido intervenido quirúrgicamente?">
           <SiNo valor={form.cirugia_previa} onChange={(v) => set("cirugia_previa", v)} />
         </Campo>
-        <Campo label="¿De qué?">
-          <input
-            value={form.cirugia_previa_cual ?? ""}
-            onChange={(e) => set("cirugia_previa_cual", e.target.value || null)}
-            className={inputClase}
-          />
-        </Campo>
+        {form.cirugia_previa === true && (
+          <Campo label="¿De qué?">
+            <input
+              value={form.cirugia_previa_cual ?? ""}
+              onChange={(e) => set("cirugia_previa_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
         <Campo label="¿Presenta problemas de sangrado o cicatrización?">
           <SiNo valor={form.problemas_sangrado} onChange={(v) => set("problemas_sangrado", v)} />
         </Campo>
@@ -285,13 +293,15 @@ export function CamposHistoriaClinica({
         <Campo label="¿Enfermedades de transmisión sexual (VIH/VPH)?">
           <SiNo valor={form.ets} onChange={(v) => set("ets", v)} />
         </Campo>
-        <Campo label="¿Cuál?">
-          <input
-            value={form.ets_cual ?? ""}
-            onChange={(e) => set("ets_cual", e.target.value || null)}
-            className={inputClase}
-          />
-        </Campo>
+        {form.ets === true && (
+          <Campo label="¿Cuál?">
+            <input
+              value={form.ets_cual ?? ""}
+              onChange={(e) => set("ets_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
       </Seccion>
     </>
   );

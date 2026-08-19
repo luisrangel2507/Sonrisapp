@@ -141,6 +141,19 @@ CREATE TABLE IF NOT EXISTS perfil_dentista (
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Inventario de insumos del consultorio (materiales, anestésicos,
+-- guantes, etc.) — cantidad_minima define cuándo se marca "bajo stock".
+CREATE TABLE IF NOT EXISTS inventario (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(160) NOT NULL,
+  cantidad NUMERIC(10,2) NOT NULL DEFAULT 0,
+  unidad VARCHAR(30),
+  cantidad_minima NUMERIC(10,2),
+  notas TEXT,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);
