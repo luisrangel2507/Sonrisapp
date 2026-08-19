@@ -14,6 +14,11 @@ export const CLINICA = {
   especialidades: ["Ortodoncia", "Estética dental", "Limpieza", "Odontología general"],
 };
 
+export const DOCTORA = {
+  nombre: "Dra. Daniela Michel Galván Salazar",
+  cedula: "13551924",
+};
+
 export const SYSTEM_PROMPT = `Eres el asistente de WhatsApp de una clínica dental en Querétaro, México. Respondes en español, cálido y breve (máximo 3-4 líneas, 1 emoji como máximo).
 
 Datos de la clínica:

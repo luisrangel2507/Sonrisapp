@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, CreditCard, Plus, Save } from "lucide-react";
+import { ChevronLeft, CreditCard, ClipboardList, Plus, Save } from "lucide-react";
 import type { Paciente, PacienteNota } from "@/lib/types";
 import { Odontograma } from "@/components/Odontograma";
 
@@ -116,12 +116,20 @@ export default function PacienteDetallePage() {
             </h2>
             <div className="text-xs text-[#a49c8a]">{paciente.folio}</div>
           </div>
-          <Link
-            href={`/dashboard/lealtad/${paciente.id}`}
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-          >
-            <CreditCard size={13} /> Lealtad
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
+              className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+            >
+              <ClipboardList size={13} /> Historia clínica
+            </Link>
+            <Link
+              href={`/dashboard/lealtad/${paciente.id}`}
+              className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+            >
+              <CreditCard size={13} /> Lealtad
+            </Link>
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-2">

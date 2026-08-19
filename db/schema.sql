@@ -85,9 +85,46 @@ CREATE TABLE IF NOT EXISTS pagos (
   nota TEXT
 );
 
+-- Historia clínica — formulario de ficha de identificación y
+-- antecedentes que se llena una vez por paciente (editable después).
+CREATE TABLE IF NOT EXISTS historia_clinica (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE UNIQUE,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  sexo VARCHAR(1), -- 'F' | 'M'
+  nombre_padre_tutor VARCHAR(160),
+  domicilio VARCHAR(255),
+  ocupacion VARCHAR(120),
+  emergencia_nombre VARCHAR(160),
+  emergencia_telefono VARCHAR(20),
+  motivo_consulta TEXT,
+  -- Antecedentes heredofamiliares
+  fam_enfermedad_sistemica BOOLEAN,
+  fam_enfermedad_cual TEXT,
+  -- Antecedentes personales
+  enfermedad_actual TEXT,
+  toma_medicamento TEXT,
+  alergico_medicamento BOOLEAN,
+  alergico_medicamento_cual TEXT,
+  alergico_anestesico BOOLEAN,
+  alergico_anestesico_cual TEXT,
+  cirugia_previa BOOLEAN,
+  cirugia_previa_cual TEXT,
+  problemas_sangrado BOOLEAN,
+  embarazada BOOLEAN,
+  lactancia BOOLEAN,
+  -- Antecedentes personales no patológicos
+  consume_alcohol BOOLEAN,
+  consume_tabaco BOOLEAN,
+  ets BOOLEAN,
+  ets_cual TEXT,
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_notas_paciente ON paciente_notas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_cita ON pagos(cita_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_paciente ON pagos(paciente_id);
+CREATE INDEX IF NOT EXISTS idx_historia_clinica_paciente ON historia_clinica(paciente_id);
