@@ -146,7 +146,13 @@ export function CamposHistoriaClinica({
               <button
                 key={s}
                 type="button"
-                onClick={() => set("sexo", s)}
+                onClick={() => {
+                  set("sexo", s);
+                  if (s === "M") {
+                    set("embarazada", null);
+                    set("lactancia", null);
+                  }
+                }}
                 className={`rounded-full border px-4 py-1.5 text-[13px] font-semibold ${
                   form.sexo === s ? "border-[#2b2118] bg-[#2b2118] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
                 }`}
@@ -272,12 +278,16 @@ export function CamposHistoriaClinica({
         <Campo label="¿Presenta problemas de sangrado o cicatrización?">
           <SiNo valor={form.problemas_sangrado} onChange={(v) => set("problemas_sangrado", v)} />
         </Campo>
-        <Campo label="¿Está embarazada?">
-          <SiNo valor={form.embarazada} onChange={(v) => set("embarazada", v)} />
-        </Campo>
-        <Campo label="¿Está en periodo de lactancia?">
-          <SiNo valor={form.lactancia} onChange={(v) => set("lactancia", v)} />
-        </Campo>
+        {form.sexo === "F" && (
+          <>
+            <Campo label="¿Está embarazada?">
+              <SiNo valor={form.embarazada} onChange={(v) => set("embarazada", v)} />
+            </Campo>
+            <Campo label="¿Está en periodo de lactancia?">
+              <SiNo valor={form.lactancia} onChange={(v) => set("lactancia", v)} />
+            </Campo>
+          </>
+        )}
       </Seccion>
 
       <Seccion titulo="Antecedentes personales no patológicos">
