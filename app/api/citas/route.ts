@@ -60,16 +60,56 @@ export async function POST(req: NextRequest) {
 }
 
 // PATCH { id, estado: 'completada' | 'cancelada' }
-// Al completar: suma +50 pts al paciente, incrementa visitas_totales y,
-// si cruza la meta configurada, avisa por WhatsApp.
+//   → cambia el estado. Al completar: suma +50 pts al paciente,
+//     incrementa visitas_totales y, si cruza la meta configurada,
+//     avisa por WhatsApp.
+// PATCH { id, tratamiento?, fecha_hora?, monto? }
+//   → edita los detalles de la cita, sin tocar el estado ni puntos.
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, estado } = body ?? {};
+    const { id, estado, tratamiento, fecha_hora, monto } = body ?? {};
 
-    if (!id || (estado !== "completada" && estado !== "cancelada")) {
+    if (!id) {
+      return NextResponse.json({ error: "id es requerido" }, { status: 400 });
+    }
+
+    if (estado === undefined) {
+      const asignaciones: string[] = [];
+      const valores: unknown[] = [];
+      let idx = 2;
+      if (tratamiento !== undefined) {
+        asignaciones.push(`tratamiento = $${idx++}`);
+        valores.push(tratamiento);
+      }
+      if (fecha_hora !== undefined) {
+        asignaciones.push(`fecha_hora = $${idx++}`);
+        valores.push(fecha_hora);
+      }
+      if (monto !== undefined) {
+        asignaciones.push(`monto = $${idx++}`);
+        valores.push(monto === "" || monto === null ? null : Number(monto));
+      }
+
+      if (asignaciones.length === 0) {
+        return NextResponse.json({ error: "nada que actualizar" }, { status: 400 });
+      }
+
+      const { rows } = await query(
+        `UPDATE citas SET ${asignaciones.join(", ")} WHERE id = $1 RETURNING id`,
+        [id, ...valores]
+      );
+      if (rows.length === 0) {
+        return NextResponse.json({ error: "cita no encontrada" }, { status: 404 });
+      }
+
+      const { rows: citaActualizada } = await query(`${CITAS_SELECT} WHERE c.id = $1`, [id]);
+      return NextResponse.json({ cita: citaActualizada[0] });
+    }
+
+    if (estado !== "completada" && estado !== "cancelada") {
       return NextResponse.json(
-        { error: "id y estado ('completada' o 'cancelada') son requeridos" },
+        { error: "estado debe ser 'completada' o 'cancelada'" },
         { status: 400 }
       );
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight, Pencil, CalendarDays } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -31,6 +31,19 @@ function formatearFechaHora(fechaHora: string) {
 function claveDia(fecha: string | Date) {
   const d = typeof fecha === "string" ? new Date(fecha) : fecha;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function aDatetimeLocal(fecha: string) {
+  const d = new Date(fecha);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function iniciales(nombre: string) {
+  const partes = nombre.trim().split(/\s+/);
+  const primera = partes[0]?.[0] ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primera + ultima).toUpperCase();
 }
 
 function CalendarioCitas({
@@ -70,7 +83,7 @@ function CalendarioCitas({
   const hoyClave = claveDia(new Date());
 
   return (
-    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
+    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm md:max-w-md">
       <div className="flex items-center justify-between">
         <button
           onClick={() => setMesVista(new Date(mesVista.getFullYear(), mesVista.getMonth() - 1, 1))}
@@ -79,7 +92,7 @@ function CalendarioCitas({
         >
           <ChevronLeft size={16} />
         </button>
-        <div className="text-sm font-semibold capitalize text-[#2b2118]">
+        <div className="text-[15px] font-semibold capitalize text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
           {mesVista.toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
         </div>
         <button
@@ -109,7 +122,7 @@ function CalendarioCitas({
             <button
               key={i}
               onClick={() => onSeleccionarDia(seleccionado ? null : clave)}
-              className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[12px] font-medium ${
+              className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[12px] font-medium transition-colors ${
                 seleccionado
                   ? "bg-[#2b2118] text-white"
                   : noLaboral
@@ -163,6 +176,12 @@ export default function CitasPage() {
   const [guardandoPago, setGuardandoPago] = useState(false);
 
   const [diaFiltro, setDiaFiltro] = useState<string | null>(null);
+
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [editTratamiento, setEditTratamiento] = useState("");
+  const [editFechaHora, setEditFechaHora] = useState("");
+  const [editMonto, setEditMonto] = useState("");
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   async function cargar() {
     try {
@@ -258,6 +277,32 @@ export default function CitasPage() {
     await cargar();
   }
 
+  function abrirEdicion(c: Cita) {
+    setPagoAbiertoId(null);
+    setEditandoId(c.id);
+    setEditTratamiento(c.tratamiento);
+    setEditFechaHora(aDatetimeLocal(c.fecha_hora));
+    setEditMonto(c.monto != null ? String(c.monto) : "");
+  }
+
+  async function guardarEdicion() {
+    if (!editandoId || !editTratamiento.trim() || !editFechaHora || guardandoEdicion) return;
+    setGuardandoEdicion(true);
+    await fetch("/api/citas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editandoId,
+        tratamiento: editTratamiento,
+        fecha_hora: new Date(editFechaHora).toISOString(),
+        monto: editMonto ? Number(editMonto) : null,
+      }),
+    });
+    setEditandoId(null);
+    setGuardandoEdicion(false);
+    await cargar();
+  }
+
   async function registrarPago(cita: Cita) {
     const restante = (cita.monto ?? 0) - cita.pagado;
     const montoFinal = montoPago ? Number(montoPago) : restante;
@@ -286,6 +331,12 @@ export default function CitasPage() {
 
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6">
+      <datalist id="tratamientos-sugeridos">
+        {TRATAMIENTOS.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
+
       {error && (
         <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
           {error}
@@ -299,7 +350,7 @@ export default function CitasPage() {
           <Plus size={15} /> Agendar cita
         </button>
       ) : (
-        <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
+        <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm md:max-w-md">
           <select
             value={pacienteId}
             onChange={(e) => setPacienteId(e.target.value)}
@@ -344,11 +395,6 @@ export default function CitasPage() {
             placeholder="Tratamiento"
             className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
           />
-          <datalist id="tratamientos-sugeridos">
-            {TRATAMIENTOS.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="datetime-local"
@@ -393,7 +439,8 @@ export default function CitasPage() {
           <CalendarioCitas citas={citas} diaFiltro={diaFiltro} onSeleccionarDia={setDiaFiltro} />
 
           {diaFiltro && (
-            <div className="text-sm font-medium capitalize text-[#2b2118]">
+            <div className="flex items-center gap-1.5 text-sm font-medium capitalize text-[#2b2118]">
+              <CalendarDays size={15} className="text-[#C96F3B]" />
               Citas del{" "}
               {new Date(`${diaFiltro}T00:00:00`).toLocaleDateString("es-MX", {
                 weekday: "long",
@@ -408,102 +455,173 @@ export default function CitasPage() {
               {diaFiltro ? "Sin citas ese día." : "Sin citas agendadas todavía."}
             </p>
           ) : (
-      <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
-        {citasVisibles.map((c) => {
-          const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
-          return (
-            <div key={c.id} className="rounded-2xl border border-[#EFE9DC] bg-white/70 p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-sm font-medium text-[#2b2118]">{c.paciente_nombre}</div>
-                  <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
-                  <div className="mt-0.5 text-xs text-[#a49c8a]">{formatearFechaHora(c.fecha_hora)}</div>
-                </div>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${ESTADO_ESTILO[c.estado]}`}>
-                  {c.estado}
-                </span>
-              </div>
+            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
+              {citasVisibles.map((c) => {
+                const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
+                const progresoPago = c.monto ? Math.min(100, (c.pagado / c.monto) * 100) : 0;
+                return (
+                  <div key={c.id} className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[13px] font-semibold text-[#2b2118]">
+                        {iniciales(c.paciente_nombre)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-[#2b2118]">{c.paciente_nombre}</div>
+                            <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[c.estado]}`}
+                          >
+                            {c.estado}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 text-xs text-[#8a8272]">{formatearFechaHora(c.fecha_hora)}</div>
 
-              {c.monto != null && (
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-[#8a8272]">
-                  <DollarSign size={12} />
-                  {formatearDinero(c.pagado)} de {formatearDinero(c.monto)}
-                  {restante ? <span className="font-semibold text-[#B0503A]"> · falta {formatearDinero(restante)}</span> : " · pagado"}
-                </div>
-              )}
+                        {c.monto != null && (
+                          <div className="mt-2.5">
+                            <div className="flex items-center justify-between text-xs text-[#8a8272]">
+                              <span>
+                                {formatearDinero(c.pagado)} de {formatearDinero(c.monto)}
+                              </span>
+                              {restante ? (
+                                <span className="font-semibold text-[#B0503A]">falta {formatearDinero(restante)}</span>
+                              ) : (
+                                <span className="font-semibold text-[#3F6B33]">pagado</span>
+                              )}
+                            </div>
+                            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#EFE9DC]">
+                              <div
+                                className="h-full rounded-full bg-[#3F6B33] transition-all"
+                                style={{ width: `${progresoPago}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
 
-              {c.estado !== "cancelada" && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {c.estado === "agendada" && (
-                    <>
-                      <button
-                        onClick={() => cambiarEstado(c.id, "completada")}
-                        className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
-                      >
-                        <Check size={12} /> Completada
-                      </button>
-                      <button
-                        onClick={() => cambiarEstado(c.id, "cancelada")}
-                        className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
-                      >
-                        <X size={12} /> Cancelar
-                      </button>
-                    </>
-                  )}
-                  {restante !== null && restante > 0 && (
-                    <button
-                      onClick={() => {
-                        setPagoAbiertoId(pagoAbiertoId === c.id ? null : c.id);
-                        setMontoPago("");
-                      }}
-                      className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
-                    >
-                      <DollarSign size={12} /> Registrar pago
-                    </button>
-                  )}
-                </div>
-              )}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {c.estado === "agendada" && (
+                            <>
+                              <button
+                                onClick={() => cambiarEstado(c.id, "completada")}
+                                className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
+                              >
+                                <Check size={12} /> Completada
+                              </button>
+                              <button
+                                onClick={() => cambiarEstado(c.id, "cancelada")}
+                                className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
+                              >
+                                <X size={12} /> Cancelar
+                              </button>
+                            </>
+                          )}
+                          {c.estado !== "cancelada" && restante !== null && restante > 0 && (
+                            <button
+                              onClick={() => {
+                                setEditandoId(null);
+                                setPagoAbiertoId(pagoAbiertoId === c.id ? null : c.id);
+                                setMontoPago("");
+                              }}
+                              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+                            >
+                              <DollarSign size={12} /> Registrar pago
+                            </button>
+                          )}
+                          <button
+                            onClick={() => (editandoId === c.id ? setEditandoId(null) : abrirEdicion(c))}
+                            className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+                          >
+                            <Pencil size={12} /> Editar
+                          </button>
+                        </div>
 
-              {pagoAbiertoId === c.id && (
-                <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-                  <input
-                    type="number"
-                    min="0"
-                    value={montoPago}
-                    onChange={(e) => setMontoPago(e.target.value)}
-                    placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
-                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                  />
-                  <select
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                  >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => registrarPago(c)}
-                      disabled={guardandoPago}
-                      className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-                    >
-                      {guardandoPago ? "Guardando…" : "Guardar pago"}
-                    </button>
-                    <button
-                      onClick={() => setPagoAbiertoId(null)}
-                      className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
-                    >
-                      Cancelar
-                    </button>
+                        {editandoId === c.id && (
+                          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                            <input
+                              list="tratamientos-sugeridos"
+                              value={editTratamiento}
+                              onChange={(e) => setEditTratamiento(e.target.value)}
+                              placeholder="Tratamiento"
+                              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="datetime-local"
+                                value={editFechaHora}
+                                onChange={(e) => setEditFechaHora(e.target.value)}
+                                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                              />
+                              <input
+                                type="number"
+                                min="0"
+                                value={editMonto}
+                                onChange={(e) => setEditMonto(e.target.value)}
+                                placeholder="Monto"
+                                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={guardarEdicion}
+                                disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
+                                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                              >
+                                {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
+                              </button>
+                              <button
+                                onClick={() => setEditandoId(null)}
+                                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {pagoAbiertoId === c.id && (
+                          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                            <input
+                              type="number"
+                              min="0"
+                              value={montoPago}
+                              onChange={(e) => setMontoPago(e.target.value)}
+                              placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
+                              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                            />
+                            <select
+                              value={metodoPago}
+                              onChange={(e) => setMetodoPago(e.target.value)}
+                              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                            >
+                              <option value="efectivo">Efectivo</option>
+                              <option value="tarjeta">Tarjeta</option>
+                              <option value="transferencia">Transferencia</option>
+                            </select>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => registrarPago(c)}
+                                disabled={guardandoPago}
+                                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                              >
+                                {guardandoPago ? "Guardando…" : "Guardar pago"}
+                              </button>
+                              <button
+                                onClick={() => setPagoAbiertoId(null)}
+                                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
           )}
         </>
       )}
