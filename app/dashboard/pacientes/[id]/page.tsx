@@ -6,9 +6,10 @@ import Link from "next/link";
 import { ChevronLeft, CreditCard, ClipboardList, Plus, Save, Share2 } from "lucide-react";
 import type { Paciente, PacienteNota } from "@/lib/types";
 import { Odontograma } from "@/components/Odontograma";
+import { fechaSoloDia } from "@/lib/fechas";
 
 function formatearFecha(fecha: string) {
-  return new Date(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+  return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function PacienteDetallePage() {

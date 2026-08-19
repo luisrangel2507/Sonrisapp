@@ -11,13 +11,14 @@ import {
   type HistorialDental,
 } from "@/lib/dental";
 import type { Paciente } from "@/lib/types";
+import { fechaSoloDia } from "@/lib/fechas";
 
 // Arco inferior en orden de despliegue (espejo del arco superior para
 // que cada diente quede alineado en vertical con su pareja de arriba).
 const ARCO_INFERIOR_VISUAL = [...ARCO_INFERIOR].reverse();
 
 function formatearFecha(fecha: string) {
-  return new Date(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+  return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function DienteIcono({ arriba }: { arriba: boolean }) {

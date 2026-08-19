@@ -1,9 +1,16 @@
 import type { HistoriaClinica } from "@/lib/types";
+import { fechaSoloDia } from "@/lib/fechas";
 
 export type FormStateHistoriaClinica = Omit<HistoriaClinica, "actualizado_en">;
 
+function hoyLocal() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
-  fecha: new Date().toISOString().slice(0, 10),
+  fecha: hoyLocal(),
   sexo: null,
   nombre_padre_tutor: null,
   domicilio: null,
@@ -33,7 +40,7 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
 export function calcularEdad(fechaNacimiento: string | null) {
   if (!fechaNacimiento) return null;
   const hoy = new Date();
-  const nacimiento = new Date(fechaNacimiento);
+  const nacimiento = fechaSoloDia(fechaNacimiento);
   let edad = hoy.getFullYear() - nacimiento.getFullYear();
   const aunNoCumple =
     hoy.getMonth() < nacimiento.getMonth() ||
@@ -126,7 +133,7 @@ export function CamposHistoriaClinica({
           </Campo>
           <Campo label="Fecha de nacimiento">
             <div className="text-sm text-[#2b2118]">
-              {pacienteFechaNacimiento ? new Date(pacienteFechaNacimiento).toLocaleDateString("es-MX") : "—"}
+              {pacienteFechaNacimiento ? fechaSoloDia(pacienteFechaNacimiento).toLocaleDateString("es-MX") : "—"}
             </div>
           </Campo>
           <Campo label="Edad">
