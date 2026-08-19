@@ -56,24 +56,28 @@ export default function PacientesPage() {
   return (
     <>
       <div className="mx-4 mt-2 space-y-3">
-        <div className="relative">
-          <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#a49c8a]" />
-          <input
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre, folio o teléfono…"
-            className="w-full rounded-full border border-[#EFE9DC] bg-white py-2.5 pl-10 pr-4 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
-          />
+        <div className="md:flex md:items-center md:gap-3">
+          <div className="relative md:flex-1">
+            <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#a49c8a]" />
+            <input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por nombre, folio o teléfono…"
+              className="w-full rounded-full border border-[#EFE9DC] bg-white py-2.5 pl-10 pr-4 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+            />
+          </div>
+
+          {!formAbierto && (
+            <button
+              onClick={() => setFormAbierto(true)}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white md:mt-0 md:w-auto md:shrink-0 md:px-8"
+            >
+              <Plus size={15} /> Nuevo paciente
+            </button>
+          )}
         </div>
 
-        {!formAbierto ? (
-          <button
-            onClick={() => setFormAbierto(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white"
-          >
-            <Plus size={15} /> Nuevo paciente
-          </button>
-        ) : (
+        {formAbierto && (
           <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
             <input
               value={nombre}

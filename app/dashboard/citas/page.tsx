@@ -455,7 +455,7 @@ export default function CitasPage() {
               {diaFiltro ? "Sin citas ese día." : "Sin citas agendadas todavía."}
             </p>
           ) : (
-            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
+            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
               {citasVisibles.map((c) => {
                 const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
                 const progresoPago = c.monto ? Math.min(100, (c.pagado / c.monto) * 100) : 0;

@@ -1,14 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Save, LogOut } from "lucide-react";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 
 export default function PerfilPage() {
+  const router = useRouter();
   const [precios, setPrecios] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
+
+  async function cerrarSesion() {
+    if (cerrandoSesion) return;
+    setCerrandoSesion(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   useEffect(() => {
     fetch("/api/precios-servicios")
@@ -87,6 +98,14 @@ export default function PerfilPage() {
           <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar precios"}
         </button>
       </div>
+
+      <button
+        onClick={cerrarSesion}
+        disabled={cerrandoSesion}
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white/70 py-3 text-[14px] font-semibold text-[#B0503A] disabled:opacity-50"
+      >
+        <LogOut size={15} /> {cerrandoSesion ? "Cerrando sesión…" : "Cerrar sesión"}
+      </button>
     </div>
   );
 }

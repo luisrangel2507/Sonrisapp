@@ -34,7 +34,7 @@ export default function LealtadListaPage() {
   const ordenados = [...pacientes].sort((a, b) => b.puntos - a.puntos);
 
   return (
-    <div className="mx-4 mt-2 space-y-2 pb-6 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
+    <div className="mx-4 mt-2 space-y-2 pb-6 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
       {ordenados.map((p) => {
         const progreso = Math.min(100, Math.round((p.puntos / (p.meta_premio || 1)) * 100));
         const cumple = proximoCumpleanos(p.fecha_nacimiento);

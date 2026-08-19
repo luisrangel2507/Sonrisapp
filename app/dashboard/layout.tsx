@@ -1,26 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Activity, Users, CreditCard, Calendar, UserCog } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { UserCog, Activity, Users, CreditCard, Calendar } from "lucide-react";
 
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
   { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
   { href: "/dashboard/citas", label: "Citas", icon: Calendar },
   { href: "/dashboard/lealtad", label: "Lealtad", icon: CreditCard },
-  { href: "/dashboard/perfil", label: "Perfil", icon: UserCog },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function cerrarSesion() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
 
   function esActivo(href: string) {
     return href === "/dashboard" ? pathname === href : pathname?.startsWith(href);
@@ -49,12 +41,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        <button
-          onClick={cerrarSesion}
-          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium text-[#8a8272] hover:bg-[#EFE9DC]/70"
+        <Link
+          href="/dashboard/perfil"
+          className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
+            esActivo("/dashboard/perfil") ? "bg-[#2b2118] text-white" : "text-[#8a8272] hover:bg-[#EFE9DC]/70"
+          }`}
         >
-          <LogOut size={16} /> Cerrar sesión
-        </button>
+          <UserCog size={16} /> Perfil
+        </Link>
       </aside>
 
       <div className="min-w-0 flex-1">
@@ -65,14 +59,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="font-bold text-[#2b2118]">Sonris</span>
               <span className="font-bold italic text-[#C96F3B]">App</span>
             </h1>
-            <button
-              onClick={cerrarSesion}
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
+            <Link
+              href="/dashboard/perfil"
+              aria-label="Perfil"
+              title="Perfil"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white"
             >
-              <LogOut size={17} className="text-[#2b2118]" />
-            </button>
+              <UserCog size={17} className="text-[#2b2118]" />
+            </Link>
           </div>
 
           <div className="flex gap-2 overflow-x-auto px-5 pb-4">
@@ -92,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <div className="mx-auto max-w-md pb-10 md:max-w-4xl md:px-8 md:py-8">{children}</div>
+        <div className="mx-auto max-w-md pb-10 md:max-w-5xl md:px-8 md:py-8">{children}</div>
       </div>
     </div>
   );
