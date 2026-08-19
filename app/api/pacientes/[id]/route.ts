@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
+import { esFechaFutura } from "@/lib/fechas";
 
 export async function GET(
   _req: NextRequest,
@@ -53,6 +54,9 @@ export async function PATCH(
 
     if (actualizaciones.length === 0) {
       return NextResponse.json({ error: "nada que actualizar" }, { status: 400 });
+    }
+    if (body.fecha_nacimiento && esFechaFutura(body.fecha_nacimiento)) {
+      return NextResponse.json({ error: "la fecha de nacimiento no puede ser futura" }, { status: 400 });
     }
 
     const asignaciones = actualizaciones.map((campo, i) => `${campo} = $${i + 2}`).join(", ");

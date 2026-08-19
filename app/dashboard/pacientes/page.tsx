@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChevronRight } from "lucide-react";
 import type { Paciente } from "@/lib/types";
+import { hoyISO } from "@/lib/fechas";
 
 // Heurística: el nombre llega como texto libre ("Nombre(s) Apellidos"),
 // así que se usa la última palabra como apellido para ordenar — no es
@@ -112,6 +113,7 @@ export default function PacientesPage() {
             <input
               type="date"
               value={fechaNacimiento}
+              max={hoyISO()}
               onChange={(e) => setFechaNacimiento(e.target.value)}
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
             />

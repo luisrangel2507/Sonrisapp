@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, CreditCard, ClipboardList, Plus, Save, Share2 } from "lucide-react";
 import type { Paciente, PacienteNota } from "@/lib/types";
 import { Odontograma } from "@/components/Odontograma";
-import { fechaSoloDia } from "@/lib/fechas";
+import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 
 function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
@@ -191,6 +191,7 @@ export default function PacienteDetallePage() {
               <input
                 type="date"
                 value={fechaNacimiento}
+                max={hoyISO()}
                 onChange={(e) => setFechaNacimiento(e.target.value)}
                 className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
               />

@@ -4,6 +4,7 @@ import { generarFolio } from "@/lib/folio";
 import { generarHistorialToken } from "@/lib/historial-token";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
+import { esFechaFutura } from "@/lib/fechas";
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
 
     if (!nombre || typeof nombre !== "string") {
       return NextResponse.json({ error: "nombre es requerido" }, { status: 400 });
+    }
+    if (fecha_nacimiento && esFechaFutura(fecha_nacimiento)) {
+      return NextResponse.json({ error: "la fecha de nacimiento no puede ser futura" }, { status: 400 });
     }
 
     const folio = await generarFolio();

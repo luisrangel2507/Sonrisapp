@@ -1,16 +1,10 @@
 import type { HistoriaClinica } from "@/lib/types";
-import { fechaSoloDia } from "@/lib/fechas";
+import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 
 export type FormStateHistoriaClinica = Omit<HistoriaClinica, "actualizado_en">;
 
-function hoyLocal() {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
 export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
-  fecha: hoyLocal(),
+  fecha: hoyISO(),
   sexo: null,
   nombre_padre_tutor: null,
   domicilio: null,
@@ -46,7 +40,10 @@ export function calcularEdad(fechaNacimiento: string | null) {
     hoy.getMonth() < nacimiento.getMonth() ||
     (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate());
   if (aunNoCumple) edad--;
-  return edad;
+  // Una fecha de nacimiento en el futuro no es válida (típicamente un
+  // error de captura, p. ej. el selector de fecha se quedó en el año
+  // actual) — mostrar "—" en vez de una edad negativa sin sentido.
+  return edad < 0 ? null : edad;
 }
 
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {

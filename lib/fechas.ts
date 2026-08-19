@@ -9,6 +9,22 @@ export function fechaSoloDia(fecha: string): Date {
   return new Date(y, m - 1, d);
 }
 
+// Fecha de hoy en horario local, como "YYYY-MM-DD" — para el atributo
+// max de <input type="date"> (p. ej. no permitir fechas de nacimiento
+// futuras) y para valores por defecto de formularios.
+export function hoyISO(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Valida en el servidor que una fecha (p. ej. de nacimiento) no sea
+// futura — el atributo max del input es solo una ayuda visual, no
+// impide mandar cualquier fecha por la API directamente.
+export function esFechaFutura(fechaISO: string): boolean {
+  return fechaISO.slice(0, 10) > new Date().toISOString().slice(0, 10);
+}
+
 export function proximoCumpleanos(fechaNacimiento: string | null) {
   if (!fechaNacimiento) return null;
   const hoy = new Date();
