@@ -16,6 +16,22 @@ function apellidoParaOrdenar(nombreCompleto: string) {
   return partes[partes.length - 1] ?? nombreCompleto;
 }
 
+function iniciales(nombreCompleto: string) {
+  const partes = nombreCompleto.trim().split(/\s+/);
+  const primera = partes[0]?.[0] ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primera + ultima).toUpperCase();
+}
+
+// Mismos tonos suaves que ya se usan en las tarjetas del Panel — se
+// van alternando por paciente para que la lista no se vea tan plana.
+const PALETA_AVATAR = [
+  { bg: "bg-[#F7E5E0]", text: "text-[#B0503A]" },
+  { bg: "bg-[#E8F0E3]", text: "text-[#3F6B33]" },
+  { bg: "bg-[#FCEFD2]", text: "text-[#B08419]" },
+  { bg: "bg-[#EFE3F0]", text: "text-[#7A4D8A]" },
+];
+
 export default function PacientesPage() {
   const router = useRouter();
   const [pacientes, setPacientes] = useState<Paciente[] | null>(null);
@@ -152,24 +168,34 @@ export default function PacientesPage() {
           </p>
         ) : (
           <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-            {ordenados.map((p) => (
-              <Link
-                key={p.id}
-                href={`/dashboard/pacientes/${p.id}`}
-                className="flex items-center justify-between rounded-2xl border border-[#EFE9DC] bg-white/70 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-[#2b2118]">{p.nombre}</div>
-                  <div className="text-xs text-[#a49c8a]">
-                    {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
+            {ordenados.map((p, i) => {
+              const color = PALETA_AVATAR[i % PALETA_AVATAR.length];
+              return (
+                <Link
+                  key={p.id}
+                  href={`/dashboard/pacientes/${p.id}`}
+                  className="flex items-center gap-3 rounded-2xl border border-[#EFE9DC] bg-white/70 px-4 py-3 shadow-sm transition-colors hover:bg-white active:bg-white"
+                >
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${color.bg} ${color.text}`}
+                  >
+                    {iniciales(p.nombre)}
                   </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-xs font-semibold text-[#C96F3B]">{p.puntos} pts</span>
-                  <ChevronRight size={16} className="text-[#a49c8a]" />
-                </div>
-              </Link>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-[#2b2118]">{p.nombre}</div>
+                    <div className="truncate text-xs text-[#a49c8a]">
+                      {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="rounded-full bg-[#FBF3EC] px-2.5 py-1 text-[11px] font-bold text-[#C96F3B]">
+                      {p.puntos} pts
+                    </span>
+                    <ChevronRight size={16} className="text-[#a49c8a]" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
