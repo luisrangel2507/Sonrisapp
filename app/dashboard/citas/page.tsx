@@ -124,12 +124,12 @@ export default function CitasPage() {
       {!formAbierto ? (
         <button
           onClick={() => setFormAbierto(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white md:w-auto md:px-8"
         >
           <Plus size={15} /> Agendar cita
         </button>
       ) : (
-        <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
+        <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
           <select
             value={pacienteId}
             onChange={(e) => setPacienteId(e.target.value)}
@@ -195,7 +195,8 @@ export default function CitasPage() {
           Sin citas agendadas todavía.
         </p>
       ) : (
-        citas.map((c) => {
+      <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
+        {citas.map((c) => {
           const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
           return (
             <div key={c.id} className="rounded-2xl border border-[#EFE9DC] bg-white/70 p-4">
@@ -288,7 +289,8 @@ export default function CitasPage() {
               )}
             </div>
           );
-        })
+        })}
+      </div>
       )}
     </div>
   );

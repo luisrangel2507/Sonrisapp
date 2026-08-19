@@ -104,7 +104,7 @@ export default function PanelPage() {
         </Link>
       </div>
 
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+      <div className="mx-4 mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
           icon={Calendar}
           iconBg="bg-[#F7E5E0] text-[#B0503A]"

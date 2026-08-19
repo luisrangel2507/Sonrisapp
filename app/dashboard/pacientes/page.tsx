@@ -68,7 +68,7 @@ export default function PacientesPage() {
             <Plus size={15} /> Nuevo paciente
           </button>
         ) : (
-          <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
+          <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -113,11 +113,11 @@ export default function PacientesPage() {
         )}
       </div>
 
-      <div className="mx-4 mt-4 space-y-2">
+      <div className="mx-4 mt-4 space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3">
         {pacientes === null ? (
-          <p className="text-sm text-[#8a8272]">Cargando…</p>
+          <p className="text-sm text-[#8a8272] md:col-span-full">Cargando…</p>
         ) : pacientes.length === 0 ? (
-          <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
+          <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272] md:col-span-full">
             {busqueda ? "Sin resultados." : "Aún no hay pacientes registrados."}
           </p>
         ) : (
