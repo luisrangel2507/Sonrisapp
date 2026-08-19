@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Check, X, DollarSign } from "lucide-react";
+import { Plus, Check, X, DollarSign, UserPlus } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
+
+const NUEVO_PACIENTE = "__nuevo__";
 
 const ESTADO_ESTILO: Record<Cita["estado"], string> = {
   agendada: "bg-[#F7E5E0] text-[#B0503A]",
@@ -25,14 +27,18 @@ function formatearFechaHora(fechaHora: string) {
 export default function CitasPage() {
   const [citas, setCitas] = useState<Cita[] | null>(null);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [precios, setPrecios] = useState<Record<string, number | null>>({});
   const [error, setError] = useState<string | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
   const [pagoAbiertoId, setPagoAbiertoId] = useState<number | null>(null);
 
   const [pacienteId, setPacienteId] = useState("");
+  const [nombreNuevo, setNombreNuevo] = useState("");
+  const [telefonoNuevo, setTelefonoNuevo] = useState("");
   const [tratamiento, setTratamiento] = useState("");
   const [fechaHora, setFechaHora] = useState("");
   const [monto, setMonto] = useState("");
+  const [montoTocado, setMontoTocado] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
   const [montoPago, setMontoPago] = useState("");
@@ -41,16 +47,23 @@ export default function CitasPage() {
 
   async function cargar() {
     try {
-      const [resCitas, resPacientes] = await Promise.all([
+      const [resCitas, resPacientes, resPrecios] = await Promise.all([
         fetch("/api/citas"),
         fetch("/api/pacientes"),
+        fetch("/api/precios-servicios"),
       ]);
       const dataCitas = await resCitas.json();
       const dataPacientes = await resPacientes.json();
+      const dataPrecios = await resPrecios.json();
       if (!resCitas.ok) throw new Error(dataCitas.error || `error ${resCitas.status}`);
       if (!resPacientes.ok) throw new Error(dataPacientes.error || `error ${resPacientes.status}`);
       setCitas(dataCitas.citas ?? []);
       setPacientes(dataPacientes.pacientes ?? []);
+      if (resPrecios.ok) {
+        const mapa: Record<string, number | null> = {};
+        for (const p of dataPrecios.precios ?? []) mapa[p.servicio] = p.precio;
+        setPrecios(mapa);
+      }
       setError(null);
     } catch (err) {
       setError(`No se pudo cargar la agenda: ${err instanceof Error ? err.message : "error desconocido"}`);
@@ -61,24 +74,58 @@ export default function CitasPage() {
     cargar();
   }, []);
 
+  function elegirTratamiento(valor: string) {
+    setTratamiento(valor);
+    const precio = precios[valor];
+    if (!montoTocado && precio != null) setMonto(String(precio));
+  }
+
+  function resetForm() {
+    setPacienteId("");
+    setNombreNuevo("");
+    setTelefonoNuevo("");
+    setTratamiento("");
+    setFechaHora("");
+    setMonto("");
+    setMontoTocado(false);
+    setFormAbierto(false);
+  }
+
   async function crearCita() {
-    if (!pacienteId || !tratamiento.trim() || !fechaHora || guardando) return;
+    const esNuevo = pacienteId === NUEVO_PACIENTE;
+    if (esNuevo ? !nombreNuevo.trim() : !pacienteId) return;
+    if (!tratamiento.trim() || !fechaHora || guardando) return;
+
     setGuardando(true);
+
+    let idFinal = pacienteId;
+    if (esNuevo) {
+      const resPaciente = await fetch("/api/pacientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nombreNuevo, telefono: telefonoNuevo || null }),
+      });
+      const dataPaciente = await resPaciente.json();
+      if (!resPaciente.ok || !dataPaciente.paciente?.id) {
+        setError(`No se pudo dar de alta al paciente: ${dataPaciente.error || "error desconocido"}`);
+        setGuardando(false);
+        return;
+      }
+      idFinal = String(dataPaciente.paciente.id);
+    }
+
     await fetch("/api/citas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        paciente_id: Number(pacienteId),
+        paciente_id: Number(idFinal),
         tratamiento,
         fecha_hora: new Date(fechaHora).toISOString(),
         monto: monto ? Number(monto) : null,
       }),
     });
-    setPacienteId("");
-    setTratamiento("");
-    setFechaHora("");
-    setMonto("");
-    setFormAbierto(false);
+
+    resetForm();
     setGuardando(false);
     await cargar();
   }
@@ -114,6 +161,9 @@ export default function CitasPage() {
     await cargar();
   }
 
+  const esNuevo = pacienteId === NUEVO_PACIENTE;
+  const puedeAgendar = (esNuevo ? nombreNuevo.trim() : pacienteId) && tratamiento.trim() && fechaHora && !guardando;
+
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6">
       {error && (
@@ -136,16 +186,41 @@ export default function CitasPage() {
             className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
           >
             <option value="">Selecciona paciente…</option>
+            <option value={NUEVO_PACIENTE}>+ Paciente nuevo (dar de alta)</option>
             {pacientes.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre} {p.folio ? `· ${p.folio}` : ""}
               </option>
             ))}
           </select>
+
+          {esNuevo && (
+            <div className="space-y-2 rounded-xl border border-[#C96F3B]/30 bg-[#FBF3EC] p-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">
+                <UserPlus size={13} /> Datos del paciente nuevo
+              </div>
+              <input
+                value={nombreNuevo}
+                onChange={(e) => setNombreNuevo(e.target.value)}
+                placeholder="Nombre completo *"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              />
+              <input
+                value={telefonoNuevo}
+                onChange={(e) => setTelefonoNuevo(e.target.value)}
+                placeholder="Teléfono (con WhatsApp)"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              />
+              <p className="text-[11px] text-[#a49c8a]">
+                Se le da de alta y se le crea su ficha automáticamente al agendar.
+              </p>
+            </div>
+          )}
+
           <input
             list="tratamientos-sugeridos"
             value={tratamiento}
-            onChange={(e) => setTratamiento(e.target.value)}
+            onChange={(e) => elegirTratamiento(e.target.value)}
             placeholder="Tratamiento"
             className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
           />
@@ -165,7 +240,10 @@ export default function CitasPage() {
               type="number"
               min="0"
               value={monto}
-              onChange={(e) => setMonto(e.target.value)}
+              onChange={(e) => {
+                setMonto(e.target.value);
+                setMontoTocado(true);
+              }}
               placeholder="Monto (opcional)"
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
             />
@@ -173,13 +251,13 @@ export default function CitasPage() {
           <div className="flex gap-2 pt-1">
             <button
               onClick={crearCita}
-              disabled={!pacienteId || !tratamiento.trim() || !fechaHora || guardando}
+              disabled={!puedeAgendar}
               className="flex-1 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
             >
               {guardando ? "Guardando…" : "Agendar"}
             </button>
             <button
-              onClick={() => setFormAbierto(false)}
+              onClick={resetForm}
               className="rounded-full border border-[#EFE9DC] px-4 py-2.5 text-[13px] font-medium text-[#8a8272]"
             >
               Cancelar

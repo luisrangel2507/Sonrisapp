@@ -9,6 +9,7 @@ export const config = {
     "/api/pagos/:path*",
     "/api/dashboard/:path*",
     "/api/bot/:path*",
+    "/api/precios-servicios/:path*",
   ],
 };
 

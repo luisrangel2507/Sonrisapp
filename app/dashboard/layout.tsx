@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Activity, Users, CreditCard, Calendar } from "lucide-react";
+import { LogOut, Activity, Users, CreditCard, Calendar, UserCog } from "lucide-react";
 
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
   { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
   { href: "/dashboard/citas", label: "Citas", icon: Calendar },
   { href: "/dashboard/lealtad", label: "Lealtad", icon: CreditCard },
+  { href: "/dashboard/perfil", label: "Perfil", icon: UserCog },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -121,6 +121,13 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Precio por defecto de cada servicio (configurable en el perfil del
+-- dentista) — se usa para autorrellenar el monto al agendar.
+CREATE TABLE IF NOT EXISTS precios_servicios (
+  servicio VARCHAR(120) PRIMARY KEY,
+  precio NUMERIC(10,2)
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);
