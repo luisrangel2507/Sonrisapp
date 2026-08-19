@@ -318,180 +318,176 @@ function CitaTimelineItem({
   const progresoPago = cita.monto ? Math.min(100, (cita.pagado / cita.monto) * 100) : 0;
 
   return (
-    <div className="flex gap-3">
-      <div className="w-14 shrink-0 pt-1 text-right text-[13px] font-semibold text-[#2b2118]">
-        {formatearHora(cita.fecha_hora)}
+    <div className={esUltimo ? "" : "pb-4"}>
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: ESTADO_COLOR_NODO[cita.estado] }} />
+        <span className="text-[13px] font-semibold text-[#2b2118]">{formatearHora(cita.fecha_hora)}</span>
       </div>
-      <div className="flex flex-col items-center">
-        <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: ESTADO_COLOR_NODO[cita.estado] }} />
-        {!esUltimo && <span className="mt-1 w-px flex-1 bg-[#EFE9DC]" />}
-      </div>
-      <div className={`min-w-0 flex-1 ${esUltimo ? "" : "pb-5"}`}>
-        <div className="rounded-2xl bg-[#FBF9F5] p-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[12px] font-semibold text-[#2b2118]">
-              {iniciales(cita.paciente_nombre)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold leading-snug text-[#2b2118]">{cita.paciente_nombre}</div>
-                  <div className="text-xs text-[#a49c8a]">{cita.tratamiento}</div>
-                </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[cita.estado]}`}>
-                  {cita.estado}
-                </span>
+
+      <div className="mt-2 rounded-2xl bg-[#FBF9F5] p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[12px] font-semibold text-[#2b2118]">
+            {iniciales(cita.paciente_nombre)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold leading-snug text-[#2b2118]">{cita.paciente_nombre}</div>
+                <div className="text-xs text-[#a49c8a]">{cita.tratamiento}</div>
               </div>
-
-              {cita.monto != null && (
-                <div className="mt-2.5">
-                  <div className="flex items-center justify-between text-xs text-[#8a8272]">
-                    <span>
-                      {formatearDinero(cita.pagado)} de {formatearDinero(cita.monto)}
-                    </span>
-                    {restante ? (
-                      <span className="font-semibold text-[#B0503A]">falta {formatearDinero(restante)}</span>
-                    ) : (
-                      <span className="font-semibold text-[#3F6B33]">pagado</span>
-                    )}
-                  </div>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#EFE9DC]">
-                    <div className="h-full rounded-full bg-[#3F6B33] transition-all" style={{ width: `${progresoPago}%` }} />
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {cita.estado === "agendada" && (
-                  <>
-                    <button
-                      onClick={() => onCambiarEstado("completada")}
-                      className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
-                    >
-                      <Check size={12} /> Completada
-                    </button>
-                    <button
-                      onClick={() => onCambiarEstado("cancelada")}
-                      className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
-                    >
-                      <X size={12} /> Cancelar
-                    </button>
-                  </>
-                )}
-                {cita.estado !== "cancelada" && restante !== null && restante > 0 && (
-                  <button
-                    onClick={() => (pagando ? onCerrarPago() : onAbrirPago())}
-                    className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
-                  >
-                    <DollarSign size={12} /> Registrar pago
-                  </button>
-                )}
-                <button
-                  onClick={() => (editando ? onCerrarEdicion() : onAbrirEdicion())}
-                  className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
-                >
-                  <Pencil size={12} /> Editar
-                </button>
-                {cita.pagado > 0 && (
-                  <button
-                    onClick={onDeshacerPago}
-                    disabled={deshaciendoPago}
-                    className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
-                  >
-                    <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
-                  </button>
-                )}
-              </div>
-
-              {editando && (
-                <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-                  <select
-                    value={editTratamiento}
-                    onChange={(e) => setEditTratamiento(e.target.value)}
-                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                  >
-                    {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
-                      <option value={editTratamiento}>{editTratamiento}</option>
-                    )}
-                    {TRATAMIENTOS.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="datetime-local"
-                      value={editFechaHora}
-                      onChange={(e) => setEditFechaHora(e.target.value)}
-                      className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      value={editMonto}
-                      onChange={(e) => setEditMonto(e.target.value)}
-                      placeholder="Monto"
-                      className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={onGuardarEdicion}
-                      disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
-                      className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-                    >
-                      {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
-                    </button>
-                    <button
-                      onClick={onCerrarEdicion}
-                      className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {pagando && (
-                <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-                  <input
-                    type="number"
-                    min="0"
-                    value={montoPago}
-                    onChange={(e) => setMontoPago(e.target.value)}
-                    placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
-                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                  />
-                  <select
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                  >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={onGuardarPago}
-                      disabled={guardandoPago}
-                      className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-                    >
-                      {guardandoPago ? "Guardando…" : "Guardar pago"}
-                    </button>
-                    <button
-                      onClick={onCerrarPago}
-                      className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[cita.estado]}`}>
+                {cita.estado}
+              </span>
             </div>
           </div>
         </div>
+
+        {cita.monto != null && (
+          <div className="mt-2.5">
+            <div className="flex items-center justify-between text-xs text-[#8a8272]">
+              <span>
+                {formatearDinero(cita.pagado)} de {formatearDinero(cita.monto)}
+              </span>
+              {restante ? (
+                <span className="font-semibold text-[#B0503A]">falta {formatearDinero(restante)}</span>
+              ) : (
+                <span className="font-semibold text-[#3F6B33]">pagado</span>
+              )}
+            </div>
+            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#EFE9DC]">
+              <div className="h-full rounded-full bg-[#3F6B33] transition-all" style={{ width: `${progresoPago}%` }} />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {cita.estado === "agendada" && (
+            <>
+              <button
+                onClick={() => onCambiarEstado("completada")}
+                className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
+              >
+                <Check size={12} /> Completada
+              </button>
+              <button
+                onClick={() => onCambiarEstado("cancelada")}
+                className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
+              >
+                <X size={12} /> Cancelar
+              </button>
+            </>
+          )}
+          {cita.estado !== "cancelada" && restante !== null && restante > 0 && (
+            <button
+              onClick={() => (pagando ? onCerrarPago() : onAbrirPago())}
+              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+            >
+              <DollarSign size={12} /> Registrar pago
+            </button>
+          )}
+          <button
+            onClick={() => (editando ? onCerrarEdicion() : onAbrirEdicion())}
+            className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+          >
+            <Pencil size={12} /> Editar
+          </button>
+          {cita.pagado > 0 && (
+            <button
+              onClick={onDeshacerPago}
+              disabled={deshaciendoPago}
+              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+            >
+              <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
+            </button>
+          )}
+        </div>
+
+        {editando && (
+          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            <select
+              value={editTratamiento}
+              onChange={(e) => setEditTratamiento(e.target.value)}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            >
+              {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
+                <option value={editTratamiento}>{editTratamiento}</option>
+              )}
+              {TRATAMIENTOS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="datetime-local"
+                value={editFechaHora}
+                onChange={(e) => setEditFechaHora(e.target.value)}
+                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              />
+              <input
+                type="number"
+                min="0"
+                value={editMonto}
+                onChange={(e) => setEditMonto(e.target.value)}
+                placeholder="Monto"
+                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={onGuardarEdicion}
+                disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
+                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
+              </button>
+              <button
+                onClick={onCerrarEdicion}
+                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {pagando && (
+          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            <input
+              type="number"
+              min="0"
+              value={montoPago}
+              onChange={(e) => setMontoPago(e.target.value)}
+              placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            />
+            <select
+              value={metodoPago}
+              onChange={(e) => setMetodoPago(e.target.value)}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            >
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="transferencia">Transferencia</option>
+            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={onGuardarPago}
+                disabled={guardandoPago}
+                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {guardandoPago ? "Guardando…" : "Guardar pago"}
+              </button>
+              <button
+                onClick={onCerrarPago}
+                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -556,6 +552,10 @@ export default function CitasPage() {
 
   useEffect(() => {
     cargar();
+    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+      setFormAbierto(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   function elegirTratamiento(valor: string) {

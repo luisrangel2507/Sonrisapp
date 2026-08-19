@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Plus } from "lucide-react";
 import {
   ARCO_SUPERIOR,
@@ -21,54 +21,35 @@ function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function DienteIcono({ arriba }: { arriba: boolean }) {
-  return (
-    <svg viewBox="0 0 24 34" width="100%" height="100%" style={arriba ? undefined : { transform: "scaleY(-1)" }}>
-      <path
-        d="M12 2C7.5 2 3 4.7 3 10c0 4.6 1.7 8.2 2.8 13 .4 2 1.3 4.7 3 4.7 1.4 0 1.9-2 2.3-3.9.3-1.3.6-2.3 1-2.3s.6 1 1 2.3c.4 1.9 1 3.9 2.3 3.9 1.7 0 2.6-2.7 3-4.7C19.3 18.2 21 14.6 21 10c0-5.3-4.5-8-9-8z"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+// Recorte del odontograma-hud.jpg (1300×799) donde cae cada arco
+// dental — calibrado a ojo sobre la foto. 16 columnas iguales por
+// arco, en el mismo orden que ARCO_SUPERIOR / ARCO_INFERIOR_VISUAL.
+const BANDA_SUPERIOR = { x0: 0.145, x1: 0.865, y0: 0.105, y1: 0.335 };
+const BANDA_INFERIOR = { x0: 0.145, x1: 0.865, y0: 0.585, y1: 0.895 };
+
+function posicionDiente(indice: number, banda: typeof BANDA_SUPERIOR) {
+  const anchoCol = (banda.x1 - banda.x0) / 16;
+  return {
+    left: `${(banda.x0 + anchoCol * indice) * 100}%`,
+    width: `${anchoCol * 100}%`,
+    top: `${banda.y0 * 100}%`,
+    height: `${(banda.y1 - banda.y0) * 100}%`,
+  };
 }
 
-function Diente({
-  numero,
-  arriba,
-  estado,
-  activo,
-  onClick,
-}: {
-  numero: number;
-  arriba: boolean;
-  estado: EstadoDiente;
-  activo: boolean;
-  onClick: () => void;
-}) {
+function estiloDiente(estado: EstadoDiente, activo: boolean): CSSProperties {
   const est = ESTADO_DIENTE[estado];
-  return (
-    <button
-      onClick={onClick}
-      className="shrink-0"
-      style={{ width: 19, height: 30 }}
-      aria-label={`Diente ${numero}`}
-    >
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          color: est.ring,
-          fill: activo ? `rgba(${est.glow},0.55)` : `rgba(${est.glow},0.16)`,
-          stroke: est.ring,
-          strokeWidth: activo ? 1.8 : 1,
-          filter: activo ? `drop-shadow(0 0 5px rgba(${est.glow},0.7))` : undefined,
-          transition: "filter 0.15s",
-        }}
-      >
-        <DienteIcono arriba={arriba} />
-      </div>
-    </button>
-  );
+  if (activo) {
+    return {
+      backgroundColor: "rgba(0,0,0,0.42)",
+      border: `2px solid ${est.ring}`,
+      boxShadow: `0 0 10px rgba(${est.glow},0.8)`,
+    };
+  }
+  if (estado === "sano") {
+    return { backgroundColor: "transparent", border: "1px solid transparent" };
+  }
+  return { backgroundColor: `rgba(${est.glow},0.38)`, border: `1px solid ${est.ring}` };
 }
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
@@ -148,46 +129,34 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+        <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/odontograma-hud.jpg"
-            alt=""
-            className="w-full object-cover"
+            alt="Odontograma"
+            className="block w-full select-none"
             style={{ aspectRatio: "1300 / 799" }}
+            draggable={false}
           />
-        </div>
 
-        <div className="mt-5 overflow-x-auto">
-          <div className="mx-auto w-max space-y-1">
-            <div className="flex items-end justify-center gap-[3px]">
-              {ARCO_SUPERIOR.map((n, i) => (
-                <div key={n} className="flex items-end" style={i === 8 ? { marginLeft: 8 } : undefined}>
-                  <Diente
-                    numero={n}
-                    arriba={true}
-                    estado={historial[n]?.estado ?? "sano"}
-                    activo={n === seleccionado}
-                    onClick={() => seleccionar(n)}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-dashed border-white/15" />
-            <div className="flex items-start justify-center gap-[3px]">
-              {ARCO_INFERIOR_VISUAL.map((n, i) => (
-                <div key={n} className="flex items-start" style={i === 8 ? { marginLeft: 8 } : undefined}>
-                  <Diente
-                    numero={n}
-                    arriba={false}
-                    estado={historial[n]?.estado ?? "sano"}
-                    activo={n === seleccionado}
-                    onClick={() => seleccionar(n)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          {ARCO_SUPERIOR.map((n, i) => (
+            <button
+              key={n}
+              onClick={() => seleccionar(n)}
+              aria-label={`Diente ${n}`}
+              className="absolute rounded-[3px] transition-colors"
+              style={{ ...posicionDiente(i, BANDA_SUPERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+            />
+          ))}
+          {ARCO_INFERIOR_VISUAL.map((n, i) => (
+            <button
+              key={n}
+              onClick={() => seleccionar(n)}
+              aria-label={`Diente ${n}`}
+              className="absolute rounded-[3px] transition-colors"
+              style={{ ...posicionDiente(i, BANDA_INFERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+            />
+          ))}
         </div>
 
         <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">

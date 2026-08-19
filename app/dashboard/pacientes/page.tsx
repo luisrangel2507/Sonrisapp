@@ -39,6 +39,13 @@ export default function PacientesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busqueda]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+      setFormAbierto(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
   async function crearPaciente() {
     if (!nombre.trim() || guardando) return;
     setGuardando(true);

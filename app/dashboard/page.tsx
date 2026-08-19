@@ -87,10 +87,10 @@ export default function PanelPage() {
       </div>
 
       <div className="mt-4 flex gap-3 px-4">
-        <Pill tone="green" onClick={() => router.push("/dashboard/citas")}>
+        <Pill tone="green" onClick={() => router.push("/dashboard/citas?nuevo=1")}>
           Agendar cita
         </Pill>
-        <Pill tone="rose" onClick={() => router.push("/dashboard/pacientes")}>
+        <Pill tone="rose" onClick={() => router.push("/dashboard/pacientes?nuevo=1")}>
           Nuevo paciente
         </Pill>
       </div>
