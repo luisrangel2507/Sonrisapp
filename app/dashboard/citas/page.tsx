@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight, Pencil, CalendarDays, RotateCcw } from "lucide-react";
+import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight, Pencil, RotateCcw } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -14,23 +14,26 @@ const ESTADO_ESTILO: Record<Cita["estado"], string> = {
   cancelada: "bg-[#EFE9DC] text-[#a49c8a]",
 };
 
+const ESTADO_COLOR_NODO: Record<Cita["estado"], string> = {
+  agendada: "#C96F3B",
+  completada: "#3F6B33",
+  cancelada: "#a49c8a",
+};
+
 // Domingo — la clínica no abre (ver CLINICA.horario en lib/panel-data.ts).
 const DIA_NO_LABORAL = 0;
-const DIAS_SEMANA = ["D", "L", "M", "M", "J", "V", "S"];
 
-function formatearFechaHora(fechaHora: string) {
-  return new Date(fechaHora).toLocaleString("es-MX", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function formatearHora(fechaHora: string) {
+  return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 }
 
 function claveDia(fecha: string | Date) {
   const d = typeof fecha === "string" ? new Date(fecha) : fecha;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function inicioDelDia(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function aDatetimeLocal(fecha: string) {
@@ -46,109 +49,95 @@ function iniciales(nombre: string) {
   return (primera + ultima).toUpperCase();
 }
 
-function CalendarioCitas({
-  citas,
-  diaFiltro,
+function SelectorSemana({
+  diaSeleccionado,
+  citasPorDia,
   onSeleccionarDia,
 }: {
-  citas: Cita[];
-  diaFiltro: string | null;
-  onSeleccionarDia: (clave: string | null) => void;
+  diaSeleccionado: Date;
+  citasPorDia: Record<string, number>;
+  onSeleccionarDia: (d: Date) => void;
 }) {
-  const [mesVista, setMesVista] = useState(() => {
-    const hoy = new Date();
-    return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  });
+  const inicioSemana = useMemo(() => {
+    const d = inicioDelDia(diaSeleccionado);
+    d.setDate(d.getDate() - d.getDay());
+    return d;
+  }, [diaSeleccionado]);
 
-  const citasPorDia = useMemo(() => {
-    const mapa: Record<string, number> = {};
-    for (const c of citas) {
-      const clave = claveDia(c.fecha_hora);
-      mapa[clave] = (mapa[clave] ?? 0) + 1;
-    }
-    return mapa;
-  }, [citas]);
-
-  const dias = useMemo(() => {
-    const primerDia = new Date(mesVista.getFullYear(), mesVista.getMonth(), 1);
-    const ultimoDia = new Date(mesVista.getFullYear(), mesVista.getMonth() + 1, 0);
-    const lista: (Date | null)[] = [];
-    for (let i = 0; i < primerDia.getDay(); i++) lista.push(null);
-    for (let d = 1; d <= ultimoDia.getDate(); d++) {
-      lista.push(new Date(mesVista.getFullYear(), mesVista.getMonth(), d));
-    }
-    return lista;
-  }, [mesVista]);
+  const dias = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + i)),
+    [inicioSemana]
+  );
 
   const hoyClave = claveDia(new Date());
+  const claveSeleccionado = claveDia(diaSeleccionado);
+
+  function moverSemana(delta: number) {
+    onSeleccionarDia(new Date(diaSeleccionado.getFullYear(), diaSeleccionado.getMonth(), diaSeleccionado.getDate() + delta * 7));
+  }
 
   return (
-    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm md:max-w-md">
+    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <button
-          onClick={() => setMesVista(new Date(mesVista.getFullYear(), mesVista.getMonth() - 1, 1))}
+          onClick={() => moverSemana(-1)}
           className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
-          aria-label="Mes anterior"
+          aria-label="Semana anterior"
         >
           <ChevronLeft size={16} />
         </button>
-        <div className="text-[15px] font-semibold capitalize text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
-          {mesVista.toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
-        </div>
         <button
-          onClick={() => setMesVista(new Date(mesVista.getFullYear(), mesVista.getMonth() + 1, 1))}
+          onClick={() => onSeleccionarDia(inicioDelDia(new Date()))}
+          className="text-[16px] font-bold capitalize text-[#2b2118]"
+          style={{ fontFamily: "Georgia, serif" }}
+        >
+          {diaSeleccionado.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+        </button>
+        <button
+          onClick={() => moverSemana(1)}
           className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
-          aria-label="Mes siguiente"
+          aria-label="Semana siguiente"
         >
           <ChevronRight size={16} />
         </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-[#a49c8a]">
-        {DIAS_SEMANA.map((d, i) => (
-          <div key={i}>{d}</div>
-        ))}
-      </div>
-
-      <div className="mt-1 grid grid-cols-7 gap-1">
-        {dias.map((fecha, i) => {
-          if (!fecha) return <div key={i} />;
-          const clave = claveDia(fecha);
-          const numCitas = citasPorDia[clave] ?? 0;
-          const noLaboral = fecha.getDay() === DIA_NO_LABORAL;
+      <div className="mt-3 grid grid-cols-7 gap-1">
+        {dias.map((d) => {
+          const clave = claveDia(d);
+          const seleccionado = clave === claveSeleccionado;
           const esHoy = clave === hoyClave;
-          const seleccionado = clave === diaFiltro;
+          const noLaboral = d.getDay() === DIA_NO_LABORAL;
+          const numCitas = citasPorDia[clave] ?? 0;
           return (
             <button
-              key={i}
-              onClick={() => onSeleccionarDia(seleccionado ? null : clave)}
-              className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[12px] font-medium transition-colors ${
-                seleccionado
-                  ? "bg-[#2b2118] text-white"
-                  : noLaboral
-                    ? "text-[#c9c2b3]"
+              key={clave}
+              onClick={() => onSeleccionarDia(d)}
+              className="flex flex-col items-center gap-1 rounded-2xl py-1.5"
+            >
+              <span className={`text-[10px] font-medium uppercase ${noLaboral ? "text-[#c9c2b3]" : "text-[#a49c8a]"}`}>
+                {d.toLocaleDateString("es-MX", { weekday: "short" }).replace(".", "")}
+              </span>
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-semibold transition-colors ${
+                  seleccionado
+                    ? "bg-[#2b2118] text-white"
                     : esHoy
                       ? "border border-[#C96F3B] text-[#2b2118]"
-                      : "text-[#2b2118] hover:bg-[#EFE9DC]/70"
-              }`}
-            >
-              {fecha.getDate()}
+                      : noLaboral
+                        ? "text-[#c9c2b3]"
+                        : "text-[#2b2118] hover:bg-[#EFE9DC]/70"
+                }`}
+              >
+                {d.getDate()}
+              </span>
               <span
                 className="h-1 w-1 rounded-full"
-                style={{ backgroundColor: numCitas > 0 ? (seleccionado ? "#fff" : "#C96F3B") : "transparent" }}
+                style={{ backgroundColor: numCitas > 0 ? "#C96F3B" : "transparent" }}
               />
             </button>
           );
         })}
-      </div>
-
-      <div className="mt-3 flex items-center justify-between border-t border-[#EFE9DC] pt-3">
-        <span className="text-[11px] text-[#c9c2b3]">Domingo · no laboral</span>
-        {diaFiltro && (
-          <button onClick={() => onSeleccionarDia(null)} className="text-[11px] font-semibold text-[#C96F3B]">
-            Ver todas las citas
-          </button>
-        )}
       </div>
     </div>
   );
@@ -175,7 +164,7 @@ export default function CitasPage() {
   const [metodoPago, setMetodoPago] = useState("efectivo");
   const [guardandoPago, setGuardandoPago] = useState(false);
 
-  const [diaFiltro, setDiaFiltro] = useState<string | null>(null);
+  const [diaSeleccionado, setDiaSeleccionado] = useState(() => inicioDelDia(new Date()));
 
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [editTratamiento, setEditTratamiento] = useState("");
@@ -265,6 +254,7 @@ export default function CitasPage() {
       }),
     });
 
+    if (fechaHora) setDiaSeleccionado(inicioDelDia(new Date(fechaHora)));
     resetForm();
     setGuardando(false);
     await cargar();
@@ -339,9 +329,24 @@ export default function CitasPage() {
     await cargar();
   }
 
+  const citasPorDia = useMemo(() => {
+    const mapa: Record<string, number> = {};
+    for (const c of citas ?? []) {
+      const clave = claveDia(c.fecha_hora);
+      mapa[clave] = (mapa[clave] ?? 0) + 1;
+    }
+    return mapa;
+  }, [citas]);
+
+  const citasDelDia = useMemo(() => {
+    const clave = claveDia(diaSeleccionado);
+    return (citas ?? [])
+      .filter((c) => claveDia(c.fecha_hora) === clave)
+      .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+  }, [citas, diaSeleccionado]);
+
   const esNuevo = pacienteId === NUEVO_PACIENTE;
   const puedeAgendar = (esNuevo ? nombreNuevo.trim() : pacienteId) && tratamiento.trim() && fechaHora && !guardando;
-  const citasVisibles = diaFiltro ? (citas ?? []).filter((c) => claveDia(c.fecha_hora) === diaFiltro) : citas ?? [];
 
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6">
@@ -449,210 +454,210 @@ export default function CitasPage() {
         <p className="text-sm text-[#8a8272]">Cargando…</p>
       ) : (
         <>
-          <CalendarioCitas citas={citas} diaFiltro={diaFiltro} onSeleccionarDia={setDiaFiltro} />
+          <SelectorSemana diaSeleccionado={diaSeleccionado} citasPorDia={citasPorDia} onSeleccionarDia={setDiaSeleccionado} />
 
-          {diaFiltro && (
-            <div className="flex items-center gap-1.5 text-sm font-medium capitalize text-[#2b2118]">
-              <CalendarDays size={15} className="text-[#C96F3B]" />
-              Citas del{" "}
-              {new Date(`${diaFiltro}T00:00:00`).toLocaleDateString("es-MX", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </div>
-          )}
-
-          {citasVisibles.length === 0 ? (
-            <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
-              {diaFiltro ? "Sin citas ese día." : "Sin citas agendadas todavía."}
-            </p>
-          ) : (
-            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-              {citasVisibles.map((c) => {
+          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            {citasDelDia.length === 0 ? (
+              <p className="text-sm text-[#8a8272]">Sin citas para este día.</p>
+            ) : (
+              citasDelDia.map((c, i) => {
+                const esUltimo = i === citasDelDia.length - 1;
                 const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
                 const progresoPago = c.monto ? Math.min(100, (c.pagado / c.monto) * 100) : 0;
                 return (
-                  <div key={c.id} className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[13px] font-semibold text-[#2b2118]">
-                        {iniciales(c.paciente_nombre)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold text-[#2b2118]">{c.paciente_nombre}</div>
-                            <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
+                  <div key={c.id} className="flex gap-3">
+                    <div className="w-14 shrink-0 pt-1 text-right text-[13px] font-semibold text-[#2b2118]">
+                      {formatearHora(c.fecha_hora)}
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span
+                        className="mt-1.5 h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: ESTADO_COLOR_NODO[c.estado] }}
+                      />
+                      {!esUltimo && <span className="mt-1 w-px flex-1 bg-[#EFE9DC]" />}
+                    </div>
+                    <div className={`min-w-0 flex-1 ${esUltimo ? "" : "pb-5"}`}>
+                      <div className="rounded-2xl bg-[#FBF9F5] p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[12px] font-semibold text-[#2b2118]">
+                            {iniciales(c.paciente_nombre)}
                           </div>
-                          <span
-                            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[c.estado]}`}
-                          >
-                            {c.estado}
-                          </span>
-                        </div>
-                        <div className="mt-1.5 text-xs text-[#8a8272]">{formatearFechaHora(c.fecha_hora)}</div>
-
-                        {c.monto != null && (
-                          <div className="mt-2.5">
-                            <div className="flex items-center justify-between text-xs text-[#8a8272]">
-                              <span>
-                                {formatearDinero(c.pagado)} de {formatearDinero(c.monto)}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold leading-snug text-[#2b2118]">{c.paciente_nombre}</div>
+                                <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
+                              </div>
+                              <span
+                                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[c.estado]}`}
+                              >
+                                {c.estado}
                               </span>
-                              {restante ? (
-                                <span className="font-semibold text-[#B0503A]">falta {formatearDinero(restante)}</span>
-                              ) : (
-                                <span className="font-semibold text-[#3F6B33]">pagado</span>
+                            </div>
+
+                            {c.monto != null && (
+                              <div className="mt-2.5">
+                                <div className="flex items-center justify-between text-xs text-[#8a8272]">
+                                  <span>
+                                    {formatearDinero(c.pagado)} de {formatearDinero(c.monto)}
+                                  </span>
+                                  {restante ? (
+                                    <span className="font-semibold text-[#B0503A]">falta {formatearDinero(restante)}</span>
+                                  ) : (
+                                    <span className="font-semibold text-[#3F6B33]">pagado</span>
+                                  )}
+                                </div>
+                                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#EFE9DC]">
+                                  <div
+                                    className="h-full rounded-full bg-[#3F6B33] transition-all"
+                                    style={{ width: `${progresoPago}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {c.estado === "agendada" && (
+                                <>
+                                  <button
+                                    onClick={() => cambiarEstado(c.id, "completada")}
+                                    className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
+                                  >
+                                    <Check size={12} /> Completada
+                                  </button>
+                                  <button
+                                    onClick={() => cambiarEstado(c.id, "cancelada")}
+                                    className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
+                                  >
+                                    <X size={12} /> Cancelar
+                                  </button>
+                                </>
+                              )}
+                              {c.estado !== "cancelada" && restante !== null && restante > 0 && (
+                                <button
+                                  onClick={() => {
+                                    setEditandoId(null);
+                                    setPagoAbiertoId(pagoAbiertoId === c.id ? null : c.id);
+                                    setMontoPago("");
+                                  }}
+                                  className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+                                >
+                                  <DollarSign size={12} /> Registrar pago
+                                </button>
+                              )}
+                              <button
+                                onClick={() => (editandoId === c.id ? setEditandoId(null) : abrirEdicion(c))}
+                                className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+                              >
+                                <Pencil size={12} /> Editar
+                              </button>
+                              {c.pagado > 0 && (
+                                <button
+                                  onClick={() => deshacerPago(c)}
+                                  disabled={deshaciendoPagoId === c.id}
+                                  className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+                                >
+                                  <RotateCcw size={12} />{" "}
+                                  {deshaciendoPagoId === c.id ? "Deshaciendo…" : "No se pagó, deshacer"}
+                                </button>
                               )}
                             </div>
-                            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#EFE9DC]">
-                              <div
-                                className="h-full rounded-full bg-[#3F6B33] transition-all"
-                                style={{ width: `${progresoPago}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {c.estado === "agendada" && (
-                            <>
-                              <button
-                                onClick={() => cambiarEstado(c.id, "completada")}
-                                className="flex items-center gap-1 rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
-                              >
-                                <Check size={12} /> Completada
-                              </button>
-                              <button
-                                onClick={() => cambiarEstado(c.id, "cancelada")}
-                                className="flex items-center gap-1 rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
-                              >
-                                <X size={12} /> Cancelar
-                              </button>
-                            </>
-                          )}
-                          {c.estado !== "cancelada" && restante !== null && restante > 0 && (
-                            <button
-                              onClick={() => {
-                                setEditandoId(null);
-                                setPagoAbiertoId(pagoAbiertoId === c.id ? null : c.id);
-                                setMontoPago("");
-                              }}
-                              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
-                            >
-                              <DollarSign size={12} /> Registrar pago
-                            </button>
-                          )}
-                          <button
-                            onClick={() => (editandoId === c.id ? setEditandoId(null) : abrirEdicion(c))}
-                            className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
-                          >
-                            <Pencil size={12} /> Editar
-                          </button>
-                          {c.pagado > 0 && (
-                            <button
-                              onClick={() => deshacerPago(c)}
-                              disabled={deshaciendoPagoId === c.id}
-                              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
-                            >
-                              <RotateCcw size={12} />{" "}
-                              {deshaciendoPagoId === c.id ? "Deshaciendo…" : "No se pagó, deshacer"}
-                            </button>
-                          )}
+                            {editandoId === c.id && (
+                              <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                                <select
+                                  value={editTratamiento}
+                                  onChange={(e) => setEditTratamiento(e.target.value)}
+                                  className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                                >
+                                  {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
+                                    <option value={editTratamiento}>{editTratamiento}</option>
+                                  )}
+                                  {TRATAMIENTOS.map((t) => (
+                                    <option key={t} value={t}>
+                                      {t}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input
+                                    type="datetime-local"
+                                    value={editFechaHora}
+                                    onChange={(e) => setEditFechaHora(e.target.value)}
+                                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={editMonto}
+                                    onChange={(e) => setEditMonto(e.target.value)}
+                                    placeholder="Monto"
+                                    className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={guardarEdicion}
+                                    disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
+                                    className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                                  >
+                                    {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditandoId(null)}
+                                    className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {pagoAbiertoId === c.id && (
+                              <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={montoPago}
+                                  onChange={(e) => setMontoPago(e.target.value)}
+                                  placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
+                                  className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                                />
+                                <select
+                                  value={metodoPago}
+                                  onChange={(e) => setMetodoPago(e.target.value)}
+                                  className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                                >
+                                  <option value="efectivo">Efectivo</option>
+                                  <option value="tarjeta">Tarjeta</option>
+                                  <option value="transferencia">Transferencia</option>
+                                </select>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => registrarPago(c)}
+                                    disabled={guardandoPago}
+                                    className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                                  >
+                                    {guardandoPago ? "Guardando…" : "Guardar pago"}
+                                  </button>
+                                  <button
+                                    onClick={() => setPagoAbiertoId(null)}
+                                    className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-
-                        {editandoId === c.id && (
-                          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-                            <select
-                              value={editTratamiento}
-                              onChange={(e) => setEditTratamiento(e.target.value)}
-                              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                            >
-                              {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
-                                <option value={editTratamiento}>{editTratamiento}</option>
-                              )}
-                              {TRATAMIENTOS.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="grid grid-cols-2 gap-2">
-                              <input
-                                type="datetime-local"
-                                value={editFechaHora}
-                                onChange={(e) => setEditFechaHora(e.target.value)}
-                                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                              />
-                              <input
-                                type="number"
-                                min="0"
-                                value={editMonto}
-                                onChange={(e) => setEditMonto(e.target.value)}
-                                placeholder="Monto"
-                                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                              />
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={guardarEdicion}
-                                disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
-                                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-                              >
-                                {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
-                              </button>
-                              <button
-                                onClick={() => setEditandoId(null)}
-                                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {pagoAbiertoId === c.id && (
-                          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-                            <input
-                              type="number"
-                              min="0"
-                              value={montoPago}
-                              onChange={(e) => setMontoPago(e.target.value)}
-                              placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
-                              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                            />
-                            <select
-                              value={metodoPago}
-                              onChange={(e) => setMetodoPago(e.target.value)}
-                              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                            >
-                              <option value="efectivo">Efectivo</option>
-                              <option value="tarjeta">Tarjeta</option>
-                              <option value="transferencia">Transferencia</option>
-                            </select>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => registrarPago(c)}
-                                disabled={guardandoPago}
-                                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-                              >
-                                {guardandoPago ? "Guardando…" : "Guardar pago"}
-                              </button>
-                              <button
-                                onClick={() => setPagoAbiertoId(null)}
-                                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </>
       )}
     </div>
