@@ -1,17 +1,19 @@
 // Catálogo usado por el bot de WhatsApp y como sugerencias al agendar.
 
 export const TRATAMIENTOS = [
-  { nombre: "Limpieza dental", precio: "$800 – $1,200", duracion: "45 min" },
-  { nombre: "Brackets metálicos", precio: "$18,000 – $28,000", duracion: "60 min/sesión" },
-  { nombre: "Blanqueamiento", precio: "$2,500 – $4,000", duracion: "60 min" },
-  { nombre: "Extracción simple", precio: "$900 – $1,500", duracion: "30 min" },
-  { nombre: "Resina / empaste", precio: "$700 – $1,400", duracion: "40 min" },
+  "Ortodoncia",
+  "Odontología integral",
+  "Cirugía maxilofacial",
+  "Endodoncia",
+  "Prótesis dental",
+  "Implantología",
+  "Periodoncia",
 ];
 
 export const CLINICA = {
   direccion: "Av. Constituyentes 123, Querétaro, Qro.",
   horario: "Lun–Vie 9:00–19:00, Sáb 9:00–14:00",
-  especialidades: ["Ortodoncia", "Estética dental", "Limpieza", "Odontología general"],
+  especialidades: TRATAMIENTOS,
 };
 
 export const DOCTORA = {
@@ -24,8 +26,6 @@ export const SYSTEM_PROMPT = `Eres el asistente de WhatsApp de una clínica dent
 Datos de la clínica:
 - Dirección: ${CLINICA.direccion}
 - Horario: ${CLINICA.horario}
-- Especialidades: ${CLINICA.especialidades.join(", ")}
-- Catálogo de precios:
-${TRATAMIENTOS.map((t) => `  • ${t.nombre}: ${t.precio} (${t.duracion})`).join("\n")}
+- Servicios: ${CLINICA.especialidades.join(", ")}
 
-Responde dudas sobre horarios, precios, ubicación y especialidades usando SOLO estos datos. Si detectas intención de agendar, guía paso a paso (tratamiento → fecha/hora que prefiere → nombre) y di que un asesor confirmará el horario exacto.`;
+Responde dudas sobre horarios, ubicación y servicios usando SOLO estos datos. El precio exacto depende de cada caso, así que si preguntan por precios, di que se define en la valoración con la doctora y ofrece agendar. Si detectas intención de agendar, guía paso a paso (servicio → fecha/hora que prefiere → nombre) y di que un asesor confirmará el horario exacto.`;

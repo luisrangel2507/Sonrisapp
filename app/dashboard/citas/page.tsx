@@ -151,7 +151,7 @@ export default function CitasPage() {
           />
           <datalist id="tratamientos-sugeridos">
             {TRATAMIENTOS.map((t) => (
-              <option key={t.nombre} value={t.nombre} />
+              <option key={t} value={t} />
             ))}
           </datalist>
           <div className="grid grid-cols-2 gap-2">
