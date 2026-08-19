@@ -13,4 +13,8 @@ body {
   /* Evita el "rebote" elástico de Safari en iOS al llegar al fondo/tope
      de la página, que se sentía como si el scroll se regresara solo. */
   overscroll-behavior-y: none;
+  /* En modo standalone (app instalada) ya no hay chrome de Safari que
+     deje espacio junto al notch/Dynamic Island o el home indicator. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
