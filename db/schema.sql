@@ -154,6 +154,17 @@ CREATE TABLE IF NOT EXISTS inventario (
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Cuentas de acceso al panel (doctora + quien más necesite entrar).
+-- El usuario admin original (APP_LOGIN_USER/APP_LOGIN_PASSWORD) se
+-- sigue aceptando aparte para no romper el acceso ya configurado.
+CREATE TABLE IF NOT EXISTS usuarios (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(160) NOT NULL,
+  usuario VARCHAR(60) NOT NULL UNIQUE,
+  contrasena_hash TEXT NOT NULL,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);

@@ -55,6 +55,13 @@ export interface ResumenDashboard {
   por_cobrar: number;
 }
 
+export interface Usuario {
+  id: number;
+  nombre: string;
+  usuario: string;
+  creado_en: string;
+}
+
 export interface InventarioItem {
   id: number;
   nombre: string;

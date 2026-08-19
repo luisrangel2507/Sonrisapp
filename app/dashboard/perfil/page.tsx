@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, UserCog } from "lucide-react";
+import { Save, LogOut, Camera, UserCog, UserPlus, Trash2 } from "lucide-react";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
+import type { Usuario } from "@/lib/types";
 
 const FOTO_MAX_DIM = 480;
 const FOTO_CALIDAD = 0.85;
@@ -49,6 +50,58 @@ export default function PerfilPage() {
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [errorFoto, setErrorFoto] = useState("");
 
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nuevoUsuario, setNuevoUsuario] = useState("");
+  const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [creandoUsuario, setCreandoUsuario] = useState(false);
+  const [errorUsuario, setErrorUsuario] = useState("");
+  const [borrandoId, setBorrandoId] = useState<number | null>(null);
+
+  function cargarUsuarios() {
+    fetch("/api/usuarios")
+      .then((res) => res.json())
+      .then((data) => setUsuarios(data.usuarios ?? []))
+      .finally(() => setCargandoUsuarios(false));
+  }
+
+  async function crearUsuario(e: React.FormEvent) {
+    e.preventDefault();
+    if (creandoUsuario) return;
+    setErrorUsuario("");
+    setCreandoUsuario(true);
+    try {
+      const res = await fetch("/api/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nuevoNombre, usuario: nuevoUsuario, contrasena: nuevaContrasena }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "no se pudo crear el usuario");
+      setNuevoNombre("");
+      setNuevoUsuario("");
+      setNuevaContrasena("");
+      cargarUsuarios();
+    } catch (err) {
+      setErrorUsuario(err instanceof Error ? err.message : "no se pudo crear el usuario");
+    } finally {
+      setCreandoUsuario(false);
+    }
+  }
+
+  async function borrarUsuario(id: number) {
+    if (borrandoId) return;
+    if (!confirm("¿Quitar el acceso de este usuario?")) return;
+    setBorrandoId(id);
+    try {
+      await fetch(`/api/usuarios/${id}`, { method: "DELETE" });
+      setUsuarios((prev) => prev.filter((u) => u.id !== id));
+    } finally {
+      setBorrandoId(null);
+    }
+  }
+
   async function cerrarSesion() {
     if (cerrandoSesion) return;
     setCerrandoSesion(true);
@@ -72,6 +125,8 @@ export default function PerfilPage() {
     fetch("/api/perfil")
       .then((res) => res.json())
       .then((data) => setFoto(data.foto ?? null));
+
+    cargarUsuarios();
   }, []);
 
   async function guardar() {
@@ -196,6 +251,75 @@ export default function PerfilPage() {
         >
           <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar precios"}
         </button>
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">Usuarios</div>
+        <p className="mb-4 text-[12px] text-[#a49c8a]">
+          Quién más puede entrar al panel. Cada quien usa su propio usuario y contraseña.
+        </p>
+
+        {cargandoUsuarios ? (
+          <p className="text-sm text-[#8a8272]">Cargando…</p>
+        ) : usuarios.length === 0 ? (
+          <p className="text-sm text-[#a49c8a]">Todavía no hay usuarios adicionales.</p>
+        ) : (
+          <div className="mb-4 space-y-2">
+            {usuarios.map((u) => (
+              <div
+                key={u.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-[#2b2118]">{u.nombre}</div>
+                  <div className="truncate text-xs text-[#a49c8a]">@{u.usuario}</div>
+                </div>
+                <button
+                  onClick={() => borrarUsuario(u.id)}
+                  disabled={borrandoId === u.id}
+                  aria-label="Quitar usuario"
+                  className="shrink-0 rounded-full p-2 text-[#B0503A] disabled:opacity-50"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={crearUsuario} className="space-y-3">
+          <input
+            value={nuevoNombre}
+            onChange={(e) => setNuevoNombre(e.target.value)}
+            placeholder="Nombre completo"
+            required
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+          />
+          <input
+            value={nuevoUsuario}
+            onChange={(e) => setNuevoUsuario(e.target.value)}
+            placeholder="Usuario (para iniciar sesión)"
+            required
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+          />
+          <input
+            value={nuevaContrasena}
+            onChange={(e) => setNuevaContrasena(e.target.value)}
+            placeholder="Contraseña (mínimo 6 caracteres)"
+            type="text"
+            required
+            minLength={6}
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+          />
+          {errorUsuario && <p className="text-[12px] text-[#B0503A]">{errorUsuario}</p>}
+          <button
+            type="submit"
+            disabled={creandoUsuario}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+          >
+            <UserPlus size={15} /> {creandoUsuario ? "Creando…" : "Crear usuario"}
+          </button>
+        </form>
       </div>
 
       <button

@@ -67,3 +67,36 @@ export function compararSeguro(a: string, b: string) {
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
+
+// Hash de contraseñas de la tabla `usuarios` — PBKDF2 vía Web Crypto
+// (sin dependencias externas, igual que el resto de este archivo).
+const PBKDF2_ITERACIONES = 100_000;
+
+async function derivarPBKDF2(contrasena: string, salt: Uint8Array) {
+  const claveBase = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(contrasena),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  return crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: PBKDF2_ITERACIONES, hash: "SHA-256" },
+    claveBase,
+    256
+  );
+}
+
+export async function hashContrasena(contrasena: string) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const bits = await derivarPBKDF2(contrasena, salt);
+  return `${aBase64Url(salt.buffer as ArrayBuffer)}.${aBase64Url(bits)}`;
+}
+
+export async function verificarContrasena(contrasena: string, hashGuardado: string) {
+  const [saltB64, hashB64] = hashGuardado.split(".");
+  if (!saltB64 || !hashB64) return false;
+  const salt = deBase64Url(saltB64);
+  const bits = await derivarPBKDF2(contrasena, salt);
+  return compararSeguro(aBase64Url(bits), hashB64);
+}
