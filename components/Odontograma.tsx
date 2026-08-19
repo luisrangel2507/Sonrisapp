@@ -160,15 +160,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                       stroke={est.ring}
                       strokeWidth={activo ? 2 : 1.2}
                     />
-                    <text
-                      textAnchor="middle"
-                      dy="3.5"
-                      fontSize={activo ? 11 : 9.5}
-                      fontWeight={activo ? 700 : 500}
-                      fill={activo ? "#ffffff" : "#c9c3dd"}
-                    >
-                      {mostrarNumero(n)}
-                    </text>
                   </g>
                 );
               })}
