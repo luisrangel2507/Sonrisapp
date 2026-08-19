@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, ChevronRight } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import type { Paciente } from "@/lib/types";
+
+function nombreCorto(nombreCompleto: string) {
+  const partes = nombreCompleto.trim().split(/\s+/);
+  const inicialApellido = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return inicialApellido ? `${partes[0]} ${inicialApellido}.` : partes[0];
+}
 
 export default function PacientesPage() {
   const router = useRouter();
@@ -113,32 +119,26 @@ export default function PacientesPage() {
         )}
       </div>
 
-      <div className="mx-4 mt-4 space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3">
+      <div className="mx-4 mt-4">
         {pacientes === null ? (
-          <p className="text-sm text-[#8a8272] md:col-span-full">Cargando…</p>
+          <p className="text-sm text-[#8a8272]">Cargando…</p>
         ) : pacientes.length === 0 ? (
-          <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272] md:col-span-full">
+          <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
             {busqueda ? "Sin resultados." : "Aún no hay pacientes registrados."}
           </p>
         ) : (
-          pacientes.map((p) => (
-            <Link
-              key={p.id}
-              href={`/dashboard/pacientes/${p.id}`}
-              className="flex items-center justify-between rounded-2xl border border-[#EFE9DC] bg-white/70 px-4 py-3"
-            >
-              <div>
-                <div className="text-sm font-medium text-[#2b2118]">{p.nombre}</div>
-                <div className="text-xs text-[#a49c8a]">
-                  {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2">
+            {pacientes.map((p) => (
+              <Link
+                key={p.id}
+                href={`/dashboard/pacientes/${p.id}`}
+                className="flex items-center gap-2 rounded-full border border-[#EFE9DC] bg-white/70 py-2 pl-3.5 pr-4"
+              >
+                <span className="text-sm font-medium text-[#2b2118]">{nombreCorto(p.nombre)}</span>
                 <span className="text-xs font-semibold text-[#C96F3B]">{p.puntos} pts</span>
-                <ChevronRight size={16} className="text-[#a49c8a]" />
-              </div>
-            </Link>
-          ))
+              </Link>
+            ))}
+          </div>
         )}
       </div>
     </>

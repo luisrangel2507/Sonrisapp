@@ -12,20 +12,62 @@ import {
 } from "@/lib/dental";
 import type { Paciente } from "@/lib/types";
 
-const MOUTH_IMG = "/odontograma-boca.jpg";
-
-function anguloYPosicion(angulo: number, radio: number, cx: number, cy: number) {
-  const rad = (angulo * Math.PI) / 180;
-  return { x: cx + radio * Math.sin(rad), y: cy - radio * Math.cos(rad) };
-}
-
-const nodos = [
-  ...ARCO_SUPERIOR.map((n, i) => ({ n, angulo: -95 + i * (190 / 15) })),
-  ...ARCO_INFERIOR.map((n, i) => ({ n, angulo: 95 + i * (170 / 15) })),
-];
+// Arco inferior en orden de despliegue (espejo del arco superior para
+// que cada diente quede alineado en vertical con su pareja de arriba).
+const ARCO_INFERIOR_VISUAL = [...ARCO_INFERIOR].reverse();
 
 function formatearFecha(fecha: string) {
   return new Date(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function DienteIcono({ arriba }: { arriba: boolean }) {
+  return (
+    <svg viewBox="0 0 24 34" width="100%" height="100%" style={arriba ? undefined : { transform: "scaleY(-1)" }}>
+      <path
+        d="M12 2C7.5 2 3 4.7 3 10c0 4.6 1.7 8.2 2.8 13 .4 2 1.3 4.7 3 4.7 1.4 0 1.9-2 2.3-3.9.3-1.3.6-2.3 1-2.3s.6 1 1 2.3c.4 1.9 1 3.9 2.3 3.9 1.7 0 2.6-2.7 3-4.7C19.3 18.2 21 14.6 21 10c0-5.3-4.5-8-9-8z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function Diente({
+  numero,
+  arriba,
+  estado,
+  activo,
+  onClick,
+}: {
+  numero: number;
+  arriba: boolean;
+  estado: EstadoDiente;
+  activo: boolean;
+  onClick: () => void;
+}) {
+  const est = ESTADO_DIENTE[estado];
+  return (
+    <button
+      onClick={onClick}
+      className="shrink-0"
+      style={{ width: 19, height: 30 }}
+      aria-label={`Diente ${numero}`}
+    >
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          color: est.ring,
+          fill: activo ? `rgba(${est.glow},0.55)` : `rgba(${est.glow},0.16)`,
+          stroke: est.ring,
+          strokeWidth: activo ? 1.8 : 1,
+          filter: activo ? `drop-shadow(0 0 5px rgba(${est.glow},0.7))` : undefined,
+          transition: "filter 0.15s",
+        }}
+      >
+        <DienteIcono arriba={arriba} />
+      </div>
+    </button>
+  );
 }
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
@@ -38,8 +80,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [nota, setNota] = useState("");
   const [estadoNuevo, setEstadoNuevo] = useState<EstadoDiente | "">("");
   const [guardando, setGuardando] = useState(false);
-
-  const cx = 170, cy = 170, rInner = 100, rBadge = 150;
 
   async function cargarHistorial() {
     setCargando(true);
@@ -74,11 +114,16 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
     await cargarHistorial();
   }
 
+  function seleccionar(n: number) {
+    setSeleccionado(n);
+    setFormAbierto(false);
+  }
+
   return (
     <div className="space-y-4">
       <div
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
-        style={{ background: "radial-gradient(circle at 50% 35%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
+        style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
       >
         <div className="flex items-center justify-between">
           <div>
@@ -102,90 +147,36 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         </div>
 
-        <div className="relative mt-4 flex justify-center">
-          <div className="relative" style={{ width: "100%", maxWidth: 320, aspectRatio: "1/1" }}>
-            <img
-              src={MOUTH_IMG}
-              alt="Odontograma"
-              className="absolute rounded-full object-cover"
-              style={{
-                left: "17.6%", top: "17.6%", width: "64.8%", height: "64.8%",
-                boxShadow: "0 0 40px rgba(124,92,224,0.45)",
-              }}
-            />
-            <svg width="100%" height="100%" viewBox="0 0 340 340" className="absolute inset-0">
-              <defs>
-                <radialGradient id="scanGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#7C5CE0" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#7C5CE0" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <circle cx={cx} cy={cy} r={rInner + 45} fill="url(#scanGlow)" />
-              <circle cx={cx} cy={cy} r={rInner + 10} fill="none" stroke="#7C5CE0" strokeOpacity="0.3" strokeWidth="1" />
-
-              {nodos.map(({ n, angulo }) => {
-                const outer = anguloYPosicion(angulo, rBadge, cx, cy);
-                const inner = anguloYPosicion(angulo, rInner - 4, cx, cy);
-                const est = ESTADO_DIENTE[historial[n]?.estado ?? "sano"];
-                const activo = n === seleccionado;
-                return (
-                  <line
-                    key={n}
-                    x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y}
-                    stroke={activo ? est.ring : "#ffffff"}
-                    strokeOpacity={activo ? 0.6 : 0.12}
-                    strokeWidth={activo ? 1.5 : 1}
+        <div className="mt-5 overflow-x-auto">
+          <div className="mx-auto w-max space-y-1">
+            <div className="flex items-end justify-center gap-[3px]">
+              {ARCO_SUPERIOR.map((n, i) => (
+                <div key={n} className="flex items-end" style={i === 8 ? { marginLeft: 8 } : undefined}>
+                  <Diente
+                    numero={n}
+                    arriba={true}
+                    estado={historial[n]?.estado ?? "sano"}
+                    activo={n === seleccionado}
+                    onClick={() => seleccionar(n)}
                   />
-                );
-              })}
-              {nodos.map(({ n, angulo }) => {
-                const pos = anguloYPosicion(angulo, rBadge, cx, cy);
-                const est = ESTADO_DIENTE[historial[n]?.estado ?? "sano"];
-                const activo = n === seleccionado;
-                return (
-                  <g
-                    key={n}
-                    transform={`translate(${pos.x}, ${pos.y})`}
-                    onClick={() => {
-                      setSeleccionado(n);
-                      setFormAbierto(false);
-                    }}
-                    className="cursor-pointer"
-                    style={{ transition: "transform 0.15s" }}
-                  >
-                    {activo && <circle r="16" fill={`rgba(${est.glow},0.3)`} />}
-                    <circle
-                      r={activo ? 13 : 11}
-                      fill={activo ? `rgba(${est.glow},0.25)` : "#171129"}
-                      stroke={est.ring}
-                      strokeWidth={activo ? 2 : 1.2}
-                    />
-                  </g>
-                );
-              })}
-            </svg>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-dashed border-white/15" />
+            <div className="flex items-start justify-center gap-[3px]">
+              {ARCO_INFERIOR_VISUAL.map((n, i) => (
+                <div key={n} className="flex items-start" style={i === 8 ? { marginLeft: 8 } : undefined}>
+                  <Diente
+                    numero={n}
+                    arriba={false}
+                    estado={historial[n]?.estado ?? "sano"}
+                    activo={n === seleccionado}
+                    onClick={() => seleccionar(n)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div className="mt-3 flex justify-center gap-2">
-          {[
-            { id: "frontal", label: "Frontal" },
-            { id: "superior", label: "Superior" },
-            { id: "inferior", label: "Inferior" },
-            { id: "lateral", label: "Lateral" },
-          ].map((v) => (
-            <button
-              key={v.id}
-              disabled={v.id !== "frontal"}
-              className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${
-                v.id === "frontal"
-                  ? "border-[#7C5CE0]/50 bg-[#7C5CE0]/15 text-white"
-                  : "border-white/10 text-white/25"
-              }`}
-            >
-              {v.label}{v.id !== "frontal" && " · próx."}
-            </button>
-          ))}
         </div>
 
         <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">

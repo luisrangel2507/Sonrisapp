@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Check, X, DollarSign, UserPlus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -14,6 +14,10 @@ const ESTADO_ESTILO: Record<Cita["estado"], string> = {
   cancelada: "bg-[#EFE9DC] text-[#a49c8a]",
 };
 
+// Domingo — la clínica no abre (ver CLINICA.horario en lib/panel-data.ts).
+const DIA_NO_LABORAL = 0;
+const DIAS_SEMANA = ["D", "L", "M", "M", "J", "V", "S"];
+
 function formatearFechaHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleString("es-MX", {
     weekday: "short",
@@ -22,6 +26,119 @@ function formatearFechaHora(fechaHora: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function claveDia(fecha: string | Date) {
+  const d = typeof fecha === "string" ? new Date(fecha) : fecha;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function CalendarioCitas({
+  citas,
+  diaFiltro,
+  onSeleccionarDia,
+}: {
+  citas: Cita[];
+  diaFiltro: string | null;
+  onSeleccionarDia: (clave: string | null) => void;
+}) {
+  const [mesVista, setMesVista] = useState(() => {
+    const hoy = new Date();
+    return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  });
+
+  const citasPorDia = useMemo(() => {
+    const mapa: Record<string, number> = {};
+    for (const c of citas) {
+      const clave = claveDia(c.fecha_hora);
+      mapa[clave] = (mapa[clave] ?? 0) + 1;
+    }
+    return mapa;
+  }, [citas]);
+
+  const dias = useMemo(() => {
+    const primerDia = new Date(mesVista.getFullYear(), mesVista.getMonth(), 1);
+    const ultimoDia = new Date(mesVista.getFullYear(), mesVista.getMonth() + 1, 0);
+    const lista: (Date | null)[] = [];
+    for (let i = 0; i < primerDia.getDay(); i++) lista.push(null);
+    for (let d = 1; d <= ultimoDia.getDate(); d++) {
+      lista.push(new Date(mesVista.getFullYear(), mesVista.getMonth(), d));
+    }
+    return lista;
+  }, [mesVista]);
+
+  const hoyClave = claveDia(new Date());
+
+  return (
+    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setMesVista(new Date(mesVista.getFullYear(), mesVista.getMonth() - 1, 1))}
+          className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
+          aria-label="Mes anterior"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <div className="text-sm font-semibold capitalize text-[#2b2118]">
+          {mesVista.toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
+        </div>
+        <button
+          onClick={() => setMesVista(new Date(mesVista.getFullYear(), mesVista.getMonth() + 1, 1))}
+          className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
+          aria-label="Mes siguiente"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-[#a49c8a]">
+        {DIAS_SEMANA.map((d, i) => (
+          <div key={i}>{d}</div>
+        ))}
+      </div>
+
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {dias.map((fecha, i) => {
+          if (!fecha) return <div key={i} />;
+          const clave = claveDia(fecha);
+          const numCitas = citasPorDia[clave] ?? 0;
+          const noLaboral = fecha.getDay() === DIA_NO_LABORAL;
+          const esHoy = clave === hoyClave;
+          const seleccionado = clave === diaFiltro;
+          return (
+            <button
+              key={i}
+              onClick={() => onSeleccionarDia(seleccionado ? null : clave)}
+              className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[12px] font-medium ${
+                seleccionado
+                  ? "bg-[#2b2118] text-white"
+                  : noLaboral
+                    ? "text-[#c9c2b3]"
+                    : esHoy
+                      ? "border border-[#C96F3B] text-[#2b2118]"
+                      : "text-[#2b2118] hover:bg-[#EFE9DC]/70"
+              }`}
+            >
+              {fecha.getDate()}
+              <span
+                className="h-1 w-1 rounded-full"
+                style={{ backgroundColor: numCitas > 0 ? (seleccionado ? "#fff" : "#C96F3B") : "transparent" }}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between border-t border-[#EFE9DC] pt-3">
+        <span className="text-[11px] text-[#c9c2b3]">Domingo · no laboral</span>
+        {diaFiltro && (
+          <button onClick={() => onSeleccionarDia(null)} className="text-[11px] font-semibold text-[#C96F3B]">
+            Ver todas las citas
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function CitasPage() {
@@ -44,6 +161,8 @@ export default function CitasPage() {
   const [montoPago, setMontoPago] = useState("");
   const [metodoPago, setMetodoPago] = useState("efectivo");
   const [guardandoPago, setGuardandoPago] = useState(false);
+
+  const [diaFiltro, setDiaFiltro] = useState<string | null>(null);
 
   async function cargar() {
     try {
@@ -163,6 +282,7 @@ export default function CitasPage() {
 
   const esNuevo = pacienteId === NUEVO_PACIENTE;
   const puedeAgendar = (esNuevo ? nombreNuevo.trim() : pacienteId) && tratamiento.trim() && fechaHora && !guardando;
+  const citasVisibles = diaFiltro ? (citas ?? []).filter((c) => claveDia(c.fecha_hora) === diaFiltro) : citas ?? [];
 
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6">
@@ -268,13 +388,28 @@ export default function CitasPage() {
 
       {citas === null ? (
         <p className="text-sm text-[#8a8272]">Cargando…</p>
-      ) : citas.length === 0 ? (
-        <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
-          Sin citas agendadas todavía.
-        </p>
       ) : (
+        <>
+          <CalendarioCitas citas={citas} diaFiltro={diaFiltro} onSeleccionarDia={setDiaFiltro} />
+
+          {diaFiltro && (
+            <div className="text-sm font-medium capitalize text-[#2b2118]">
+              Citas del{" "}
+              {new Date(`${diaFiltro}T00:00:00`).toLocaleDateString("es-MX", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+            </div>
+          )}
+
+          {citasVisibles.length === 0 ? (
+            <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
+              {diaFiltro ? "Sin citas ese día." : "Sin citas agendadas todavía."}
+            </p>
+          ) : (
       <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
-        {citas.map((c) => {
+        {citasVisibles.map((c) => {
           const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
           return (
             <div key={c.id} className="rounded-2xl border border-[#EFE9DC] bg-white/70 p-4">
@@ -369,6 +504,8 @@ export default function CitasPage() {
           );
         })}
       </div>
+          )}
+        </>
       )}
     </div>
   );
