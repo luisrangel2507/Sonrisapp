@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight, Pencil, CalendarDays } from "lucide-react";
+import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight, Pencil, CalendarDays, RotateCcw } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -183,6 +183,8 @@ export default function CitasPage() {
   const [editMonto, setEditMonto] = useState("");
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
+  const [deshaciendoPagoId, setDeshaciendoPagoId] = useState<number | null>(null);
+
   async function cargar() {
     try {
       const [resCitas, resPacientes, resPrecios] = await Promise.all([
@@ -325,18 +327,24 @@ export default function CitasPage() {
     await cargar();
   }
 
+  async function deshacerPago(cita: Cita) {
+    if (deshaciendoPagoId) return;
+    const ok = window.confirm(
+      `¿Deshacer el último pago registrado de ${cita.paciente_nombre}? Esto no se puede recuperar.`
+    );
+    if (!ok) return;
+    setDeshaciendoPagoId(cita.id);
+    await fetch(`/api/pagos?cita_id=${cita.id}`, { method: "DELETE" });
+    setDeshaciendoPagoId(null);
+    await cargar();
+  }
+
   const esNuevo = pacienteId === NUEVO_PACIENTE;
   const puedeAgendar = (esNuevo ? nombreNuevo.trim() : pacienteId) && tratamiento.trim() && fechaHora && !guardando;
   const citasVisibles = diaFiltro ? (citas ?? []).filter((c) => claveDia(c.fecha_hora) === diaFiltro) : citas ?? [];
 
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6">
-      <datalist id="tratamientos-sugeridos">
-        {TRATAMIENTOS.map((t) => (
-          <option key={t} value={t} />
-        ))}
-      </datalist>
-
       {error && (
         <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
           {error}
@@ -388,13 +396,18 @@ export default function CitasPage() {
             </div>
           )}
 
-          <input
-            list="tratamientos-sugeridos"
+          <select
             value={tratamiento}
             onChange={(e) => elegirTratamiento(e.target.value)}
-            placeholder="Tratamiento"
             className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-          />
+          >
+            <option value="">Selecciona tratamiento…</option>
+            {TRATAMIENTOS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="datetime-local"
@@ -535,17 +548,34 @@ export default function CitasPage() {
                           >
                             <Pencil size={12} /> Editar
                           </button>
+                          {c.pagado > 0 && (
+                            <button
+                              onClick={() => deshacerPago(c)}
+                              disabled={deshaciendoPagoId === c.id}
+                              className="flex items-center gap-1 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+                            >
+                              <RotateCcw size={12} />{" "}
+                              {deshaciendoPagoId === c.id ? "Deshaciendo…" : "No se pagó, deshacer"}
+                            </button>
+                          )}
                         </div>
 
                         {editandoId === c.id && (
                           <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-                            <input
-                              list="tratamientos-sugeridos"
+                            <select
                               value={editTratamiento}
                               onChange={(e) => setEditTratamiento(e.target.value)}
-                              placeholder="Tratamiento"
                               className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-                            />
+                            >
+                              {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
+                                <option value={editTratamiento}>{editTratamiento}</option>
+                              )}
+                              {TRATAMIENTOS.map((t) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
+                            </select>
                             <div className="grid grid-cols-2 gap-2">
                               <input
                                 type="datetime-local"

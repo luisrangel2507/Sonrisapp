@@ -58,3 +58,30 @@ export async function POST(req: NextRequest) {
     return errorJson(err);
   }
 }
+
+// DELETE /api/pagos?cita_id=X — deshace el pago más reciente de esa
+// cita (p. ej. si se registró por error y en realidad no se pagó).
+export async function DELETE(req: NextRequest) {
+  try {
+    const citaId = req.nextUrl.searchParams.get("cita_id");
+    if (!citaId) {
+      return NextResponse.json({ error: "cita_id es requerido" }, { status: 400 });
+    }
+
+    const { rows } = await query<{ id: number }>(
+      `DELETE FROM pagos WHERE id = (
+         SELECT id FROM pagos WHERE cita_id = $1 ORDER BY fecha DESC, id DESC LIMIT 1
+       )
+       RETURNING id`,
+      [Number(citaId)]
+    );
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "esta cita no tiene pagos que deshacer" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, id: rows[0].id });
+  } catch (err) {
+    return errorJson(err);
+  }
+}

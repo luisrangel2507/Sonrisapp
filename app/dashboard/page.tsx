@@ -9,11 +9,14 @@ import { Pill } from "@/components/Pill";
 import { StatCard } from "@/components/StatCard";
 import { BotChat } from "@/components/BotChat";
 import { formatearDinero } from "@/lib/dinero";
+import { DOCTORA } from "@/lib/panel-data";
 import type { Cita, ResumenDashboard } from "@/lib/types";
 
 function formatearHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 }
+
+const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
 
 export default function PanelPage() {
   const router = useRouter();
@@ -54,7 +57,7 @@ export default function PanelPage() {
       <div className="flex items-start justify-between border-y border-[#EFE9DC] px-5 py-4">
         <div>
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Hola de nuevo, Eduardo
+            Bienvenida, {NOMBRE_CORTO_DOCTORA}
           </h2>
           <p className="mt-1 text-sm text-[#8a8272]">Tu clínica no descansa ni cuando tú duermes.</p>
         </div>
