@@ -20,14 +20,22 @@ export default function PanelPage() {
   const [showChat, setShowChat] = useState(false);
   const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
   const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/resumen")
-      .then((res) => res.json())
-      .then((data) => setResumen(data.resumen ?? null));
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setResumen(data.resumen ?? null))
+      .catch((err) => setError(`No se pudo cargar el resumen: ${err.message}`));
 
     fetch("/api/citas")
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         const hoy = new Date().toDateString();
         const citas: Cita[] = data.citas ?? [];
@@ -36,7 +44,8 @@ export default function PanelPage() {
             .filter((c) => c.estado !== "cancelada" && new Date(c.fecha_hora).toDateString() === hoy)
             .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
         );
-      });
+      })
+      .catch((err) => setError(`No se pudieron cargar las citas: ${err.message}`));
   }, []);
 
   return (
@@ -53,6 +62,12 @@ export default function PanelPage() {
           <div className="text-2xl font-bold text-[#3F6B33]">{resumen?.citas_hoy ?? "…"}</div>
         </div>
       </div>
+
+      {error && (
+        <div className="mx-4 mt-4 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+          {error}
+        </div>
+      )}
 
       <div className="mt-5">
         <Hero />

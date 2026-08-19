@@ -10,4 +10,7 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  /* Evita el "rebote" elástico de Safari en iOS al llegar al fondo/tope
+     de la página, que se sentía como si el scroll se regresara solo. */
+  overscroll-behavior-y: none;
 }

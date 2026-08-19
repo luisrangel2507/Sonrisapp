@@ -25,6 +25,7 @@ function formatearFechaHora(fechaHora: string) {
 export default function CitasPage() {
   const [citas, setCitas] = useState<Cita[] | null>(null);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
   const [pagoAbiertoId, setPagoAbiertoId] = useState<number | null>(null);
 
@@ -39,14 +40,21 @@ export default function CitasPage() {
   const [guardandoPago, setGuardandoPago] = useState(false);
 
   async function cargar() {
-    const [resCitas, resPacientes] = await Promise.all([
-      fetch("/api/citas"),
-      fetch("/api/pacientes"),
-    ]);
-    const dataCitas = await resCitas.json();
-    const dataPacientes = await resPacientes.json();
-    setCitas(dataCitas.citas ?? []);
-    setPacientes(dataPacientes.pacientes ?? []);
+    try {
+      const [resCitas, resPacientes] = await Promise.all([
+        fetch("/api/citas"),
+        fetch("/api/pacientes"),
+      ]);
+      const dataCitas = await resCitas.json();
+      const dataPacientes = await resPacientes.json();
+      if (!resCitas.ok) throw new Error(dataCitas.error || `error ${resCitas.status}`);
+      if (!resPacientes.ok) throw new Error(dataPacientes.error || `error ${resPacientes.status}`);
+      setCitas(dataCitas.citas ?? []);
+      setPacientes(dataPacientes.pacientes ?? []);
+      setError(null);
+    } catch (err) {
+      setError(`No se pudo cargar la agenda: ${err instanceof Error ? err.message : "error desconocido"}`);
+    }
   }
 
   useEffect(() => {
@@ -108,6 +116,11 @@ export default function CitasPage() {
 
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6">
+      {error && (
+        <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+          {error}
+        </div>
+      )}
       {!formAbierto ? (
         <button
           onClick={() => setFormAbierto(true)}
