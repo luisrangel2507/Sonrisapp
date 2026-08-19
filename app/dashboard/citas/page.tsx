@@ -362,20 +362,12 @@ function CitaTimelineItem({
 
         <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto">
           {cita.estado === "agendada" && (
-            <>
-              <button
-                onClick={() => onCambiarEstado("completada")}
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
-              >
-                <Check size={12} /> Completada
-              </button>
-              <button
-                onClick={() => onCambiarEstado("cancelada")}
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#F7E5E0] px-3 py-1.5 text-[12px] font-semibold text-[#B0503A]"
-              >
-                <X size={12} /> Cancelar
-              </button>
-            </>
+            <button
+              onClick={() => onCambiarEstado("completada")}
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
+            >
+              <Check size={12} /> Completada
+            </button>
           )}
           {cita.estado !== "cancelada" && restante !== null && restante > 0 && (
             <button
@@ -446,9 +438,17 @@ function CitaTimelineItem({
                 onClick={onCerrarEdicion}
                 className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
               >
-                Cancelar
+                Cerrar
               </button>
             </div>
+            {cita.estado === "agendada" && (
+              <button
+                onClick={() => onCambiarEstado("cancelada")}
+                className="flex w-full items-center justify-center gap-1 rounded-full bg-[#F7E5E0] py-2 text-[13px] font-semibold text-[#B0503A]"
+              >
+                <X size={13} /> Cancelar cita
+              </button>
+            )}
           </div>
         )}
 
