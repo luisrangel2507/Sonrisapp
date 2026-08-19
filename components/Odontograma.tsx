@@ -150,7 +150,12 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/odontograma-hud.jpg" alt="" className="h-32 w-full object-cover" />
+          <img
+            src="/odontograma-hud.jpg"
+            alt=""
+            className="w-full object-cover"
+            style={{ aspectRatio: "1300 / 799" }}
+          />
         </div>
 
         <div className="mt-5 overflow-x-auto">
