@@ -177,25 +177,23 @@ export default function PacienteDetallePage() {
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-[11px] font-medium text-[#a49c8a]">Teléfono</label>
-              <input
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-[#a49c8a]">Fecha de nacimiento</label>
-              <input
-                type="date"
-                value={fechaNacimiento}
-                max={hoyISO()}
-                onChange={(e) => setFechaNacimiento(e.target.value)}
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
-              />
-            </div>
+          <div>
+            <label className="block text-[11px] font-medium text-[#a49c8a]">Teléfono</label>
+            <input
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-[#a49c8a]">Fecha de nacimiento</label>
+            <input
+              type="date"
+              value={fechaNacimiento}
+              max={hoyISO()}
+              onChange={(e) => setFechaNacimiento(e.target.value)}
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            />
           </div>
           <div>
             <label className="block text-[11px] font-medium text-[#a49c8a]">Email</label>
