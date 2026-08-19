@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { generarFolio } from "@/lib/folio";
+import { generarHistorialToken } from "@/lib/historial-token";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
 
@@ -33,12 +34,13 @@ export async function POST(req: NextRequest) {
     }
 
     const folio = await generarFolio();
+    const historialToken = generarHistorialToken();
 
     const { rows } = await query(
-      `INSERT INTO pacientes (nombre, telefono, email, fecha_nacimiento, folio)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO pacientes (nombre, telefono, email, fecha_nacimiento, folio, historial_token)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING ${PACIENTE_COLUMNAS}`,
-      [nombre, telefono ?? null, email ?? null, fecha_nacimiento ?? null, folio]
+      [nombre, telefono ?? null, email ?? null, fecha_nacimiento ?? null, folio, historialToken]
     );
 
     const paciente = rows[0];

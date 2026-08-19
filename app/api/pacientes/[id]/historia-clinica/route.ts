@@ -1,36 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
-
-const CAMPOS = [
-  "fecha",
-  "sexo",
-  "nombre_padre_tutor",
-  "domicilio",
-  "ocupacion",
-  "emergencia_nombre",
-  "emergencia_telefono",
-  "motivo_consulta",
-  "fam_enfermedad_sistemica",
-  "fam_enfermedad_cual",
-  "enfermedad_actual",
-  "toma_medicamento",
-  "alergico_medicamento",
-  "alergico_medicamento_cual",
-  "alergico_anestesico",
-  "alergico_anestesico_cual",
-  "cirugia_previa",
-  "cirugia_previa_cual",
-  "problemas_sangrado",
-  "embarazada",
-  "lactancia",
-  "consume_alcohol",
-  "consume_tabaco",
-  "ets",
-  "ets_cual",
-] as const;
-
-const COLUMNAS = `${CAMPOS.join(", ")}, actualizado_en`;
+import { HISTORIA_CLINICA_CAMPOS as CAMPOS, HISTORIA_CLINICA_COLUMNAS as COLUMNAS } from "@/lib/historia-clinica-campos";
 
 export async function GET(
   _req: NextRequest,

@@ -22,7 +22,10 @@ CREATE TABLE IF NOT EXISTS pacientes (
   -- Historial clínico general
   alergias TEXT,
   medicamentos TEXT,
-  antecedentes_medicos TEXT
+  antecedentes_medicos TEXT,
+  -- Token para el link público donde el paciente llena su propia
+  -- historia clínica (ver /formulario/[token]).
+  historial_token VARCHAR(40) UNIQUE
 );
 
 -- Por si esta base ya corrió una versión anterior de este archivo
@@ -30,6 +33,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS alergias TEXT;
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS medicamentos TEXT;
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS antecedentes_medicos TEXT;
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historial_token VARCHAR(40) UNIQUE;
 
 CREATE TABLE IF NOT EXISTS citas (
   id SERIAL PRIMARY KEY,

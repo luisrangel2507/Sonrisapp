@@ -13,6 +13,7 @@ export interface Paciente {
   alergias: string | null;
   medicamentos: string | null;
   antecedentes_medicos: string | null;
+  historial_token: string | null;
 }
 
 export interface PacienteNota {

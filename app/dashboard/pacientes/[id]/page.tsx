@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, CreditCard, ClipboardList, Plus, Save } from "lucide-react";
+import { ChevronLeft, CreditCard, ClipboardList, Plus, Save, Share2 } from "lucide-react";
 import type { Paciente, PacienteNota } from "@/lib/types";
 import { Odontograma } from "@/components/Odontograma";
 
@@ -33,6 +33,9 @@ export default function PacienteDetallePage() {
   const [tipoNota, setTipoNota] = useState("");
   const [textoNota, setTextoNota] = useState("");
   const [guardandoNota, setGuardandoNota] = useState(false);
+
+  const [enviandoLink, setEnviandoLink] = useState(false);
+  const [linkCopiado, setLinkCopiado] = useState(false);
 
   async function cargar() {
     setCargando(true);
@@ -98,6 +101,33 @@ export default function PacienteDetallePage() {
     setNotas(data.notas ?? []);
   }
 
+  async function compartirLink() {
+    if (enviandoLink || !paciente) return;
+    setEnviandoLink(true);
+    try {
+      const res = await fetch(`/api/pacientes/${pacienteId}/historial-token`);
+      const data = await res.json();
+      if (!data.token) return;
+
+      const url = `${window.location.origin}/formulario/${data.token}`;
+      const texto = `Hola ${paciente.nombre.split(" ")[0]}, antes de tu cita completa tu historia clínica aquí: ${url}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "Historia clínica — SonrisApp", text: texto, url });
+        } catch {
+          // el usuario canceló el share, no hacer nada
+        }
+      } else {
+        await navigator.clipboard.writeText(texto);
+        setLinkCopiado(true);
+        setTimeout(() => setLinkCopiado(false), 2500);
+      }
+    } finally {
+      setEnviandoLink(false);
+    }
+  }
+
   if (cargando || !paciente) {
     return <p className="mx-4 mt-6 text-sm text-[#8a8272]">Cargando…</p>;
   }
@@ -109,27 +139,32 @@ export default function PacienteDetallePage() {
       </Link>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
-              {paciente.nombre}
-            </h2>
-            <div className="text-xs text-[#a49c8a]">{paciente.folio}</div>
-          </div>
-          <div className="flex gap-2">
-            <Link
-              href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
-              className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-            >
-              <ClipboardList size={13} /> Historia clínica
-            </Link>
-            <Link
-              href={`/dashboard/lealtad/${paciente.id}`}
-              className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-            >
-              <CreditCard size={13} /> Lealtad
-            </Link>
-          </div>
+        <div>
+          <h2 className="text-lg font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
+            {paciente.nombre}
+          </h2>
+          <div className="text-xs text-[#a49c8a]">{paciente.folio}</div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+          >
+            <ClipboardList size={13} /> Historia clínica
+          </Link>
+          <Link
+            href={`/dashboard/lealtad/${paciente.id}`}
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+          >
+            <CreditCard size={13} /> Lealtad
+          </Link>
+          <button
+            onClick={compartirLink}
+            disabled={enviandoLink}
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118] disabled:opacity-50"
+          >
+            <Share2 size={13} /> {linkCopiado ? "Link copiado ✓" : "Enviar link para llenar historial"}
+          </button>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-2">
