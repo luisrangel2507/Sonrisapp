@@ -9,7 +9,7 @@ export function Hero() {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-black/0" />
       <p className="absolute bottom-5 left-5 right-5 text-lg font-medium text-white drop-shadow-sm">
-        Cada paciente que no se te va, es uno que sigue creciendo contigo.
+        La gente sale de tu consultorio con una sonrisa… Eso no tiene comparación.
       </p>
     </div>
   );
