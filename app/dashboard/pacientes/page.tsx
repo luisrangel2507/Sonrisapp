@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ChevronRight } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 
-function nombreCorto(nombreCompleto: string) {
+// Heurística: el nombre llega como texto libre ("Nombre(s) Apellidos"),
+// así que se usa la última palabra como apellido para ordenar — no es
+// perfecto con apellidos compuestos, pero es razonable sin separar el
+// nombre en campos de nombre/apellido en la base de datos.
+function apellidoParaOrdenar(nombreCompleto: string) {
   const partes = nombreCompleto.trim().split(/\s+/);
-  const inicialApellido = partes.length > 1 ? partes[partes.length - 1][0] : "";
-  return inicialApellido ? `${partes[0]} ${inicialApellido}.` : partes[0];
+  return partes[partes.length - 1] ?? nombreCompleto;
 }
 
 export default function PacientesPage() {
@@ -52,6 +55,14 @@ export default function PacientesPage() {
     setGuardando(false);
     if (data.paciente?.id) router.push(`/dashboard/pacientes/${data.paciente.id}`);
   }
+
+  const ordenados = useMemo(
+    () =>
+      [...(pacientes ?? [])].sort((a, b) =>
+        apellidoParaOrdenar(a.nombre).localeCompare(apellidoParaOrdenar(b.nombre), "es", { sensitivity: "base" })
+      ),
+    [pacientes]
+  );
 
   return (
     <>
@@ -131,15 +142,23 @@ export default function PacientesPage() {
             {busqueda ? "Sin resultados." : "Aún no hay pacientes registrados."}
           </p>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {pacientes.map((p) => (
+          <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+            {ordenados.map((p) => (
               <Link
                 key={p.id}
                 href={`/dashboard/pacientes/${p.id}`}
-                className="flex items-center gap-2 rounded-full border border-[#EFE9DC] bg-white/70 py-2 pl-3.5 pr-4"
+                className="flex items-center justify-between rounded-2xl border border-[#EFE9DC] bg-white/70 px-4 py-3"
               >
-                <span className="text-sm font-medium text-[#2b2118]">{nombreCorto(p.nombre)}</span>
-                <span className="text-xs font-semibold text-[#C96F3B]">{p.puntos} pts</span>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-[#2b2118]">{p.nombre}</div>
+                  <div className="text-xs text-[#a49c8a]">
+                    {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-xs font-semibold text-[#C96F3B]">{p.puntos} pts</span>
+                  <ChevronRight size={16} className="text-[#a49c8a]" />
+                </div>
               </Link>
             ))}
           </div>
