@@ -148,6 +148,11 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         </div>
 
+        <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/odontograma-hud.jpg" alt="" className="h-32 w-full object-cover" />
+        </div>
+
         <div className="mt-5 overflow-x-auto">
           <div className="mx-auto w-max space-y-1">
             <div className="flex items-end justify-center gap-[3px]">
