@@ -52,6 +52,75 @@ function estiloDiente(estado: EstadoDiente, activo: boolean): CSSProperties {
   return { backgroundColor: `rgba(${est.glow},0.38)`, border: `1px solid ${est.ring}` };
 }
 
+// Etiquetas con línea + círculo (como una carta dental) arriba y abajo
+// de la foto, para identificar el número de cada diente de un vistazo.
+const ALTURA_ETIQUETAS = 50;
+const LINEA_CERCA = 13;
+const LINEA_LEJOS = 29;
+
+function centroColumna(indice: number, banda: typeof BANDA_SUPERIOR) {
+  const anchoCol = (banda.x1 - banda.x0) / 16;
+  return (banda.x0 + anchoCol * (indice + 0.5)) * 100;
+}
+
+function EtiquetaDiente({
+  numero,
+  xPercent,
+  nivel,
+  arriba,
+  estado,
+  activo,
+  onClick,
+}: {
+  numero: number;
+  xPercent: number;
+  nivel: 0 | 1;
+  arriba: boolean;
+  estado: EstadoDiente;
+  activo: boolean;
+  onClick: () => void;
+}) {
+  const est = ESTADO_DIENTE[estado];
+  const largoLinea = nivel === 0 ? LINEA_CERCA : LINEA_LEJOS;
+  const colorLinea = activo || estado !== "sano" ? est.ring : "rgba(255,255,255,0.3)";
+  const circuloEstilo: CSSProperties = activo
+    ? { backgroundColor: est.ring, borderColor: est.ring, color: "#15101f" }
+    : estado === "sano"
+      ? { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.35)", color: "rgba(255,255,255,0.75)" }
+      : { backgroundColor: `rgba(${est.glow},0.22)`, borderColor: est.ring, color: est.ring };
+
+  return (
+    <>
+      <span
+        className="pointer-events-none absolute"
+        style={{
+          left: `${xPercent}%`,
+          transform: "translateX(-50%)",
+          width: 1,
+          height: largoLinea,
+          backgroundColor: colorLinea,
+          top: arriba ? ALTURA_ETIQUETAS - largoLinea : 0,
+        }}
+      />
+      <button
+        onClick={onClick}
+        aria-label={`Diente ${numero}`}
+        className="absolute flex items-center justify-center rounded-full border text-[8px] font-semibold leading-none transition-colors"
+        style={{
+          left: `${xPercent}%`,
+          transform: "translateX(-50%)",
+          width: 17,
+          height: 17,
+          top: arriba ? ALTURA_ETIQUETAS - largoLinea - 17 : largoLinea,
+          ...circuloEstilo,
+        }}
+      >
+        {numero}
+      </button>
+    </>
+  );
+}
+
 export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [seleccionado, setSeleccionado] = useState<number>(16);
   const [numeracion, setNumeracion] = useState<"fdi" | "universal">("fdi");
@@ -129,34 +198,66 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         </div>
 
-        <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/odontograma-hud.jpg"
-            alt="Odontograma"
-            className="block w-full select-none"
-            style={{ aspectRatio: "1300 / 799" }}
-            draggable={false}
-          />
+        <div className="relative mt-4">
+          <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
+            {ARCO_SUPERIOR.map((n, i) => (
+              <EtiquetaDiente
+                key={n}
+                numero={mostrarNumero(n)}
+                xPercent={centroColumna(i, BANDA_SUPERIOR)}
+                nivel={(i % 2) as 0 | 1}
+                arriba
+                estado={historial[n]?.estado ?? "sano"}
+                activo={n === seleccionado}
+                onClick={() => seleccionar(n)}
+              />
+            ))}
+          </div>
 
-          {ARCO_SUPERIOR.map((n, i) => (
-            <button
-              key={n}
-              onClick={() => seleccionar(n)}
-              aria-label={`Diente ${n}`}
-              className="absolute rounded-[3px] transition-colors"
-              style={{ ...posicionDiente(i, BANDA_SUPERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+          <div className="relative overflow-hidden rounded-2xl border border-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/odontograma-hud.jpg"
+              alt="Odontograma"
+              className="block w-full select-none"
+              style={{ aspectRatio: "1300 / 799" }}
+              draggable={false}
             />
-          ))}
-          {ARCO_INFERIOR_VISUAL.map((n, i) => (
-            <button
-              key={n}
-              onClick={() => seleccionar(n)}
-              aria-label={`Diente ${n}`}
-              className="absolute rounded-[3px] transition-colors"
-              style={{ ...posicionDiente(i, BANDA_INFERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
-            />
-          ))}
+
+            {ARCO_SUPERIOR.map((n, i) => (
+              <button
+                key={n}
+                onClick={() => seleccionar(n)}
+                aria-label={`Diente ${n}`}
+                className="absolute rounded-[3px] transition-colors"
+                style={{ ...posicionDiente(i, BANDA_SUPERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+              />
+            ))}
+            {ARCO_INFERIOR_VISUAL.map((n, i) => (
+              <button
+                key={n}
+                onClick={() => seleccionar(n)}
+                aria-label={`Diente ${n}`}
+                className="absolute rounded-[3px] transition-colors"
+                style={{ ...posicionDiente(i, BANDA_INFERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+              />
+            ))}
+          </div>
+
+          <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
+            {ARCO_INFERIOR_VISUAL.map((n, i) => (
+              <EtiquetaDiente
+                key={n}
+                numero={mostrarNumero(n)}
+                xPercent={centroColumna(i, BANDA_INFERIOR)}
+                nivel={(i % 2) as 0 | 1}
+                arriba={false}
+                estado={historial[n]?.estado ?? "sano"}
+                activo={n === seleccionado}
+                onClick={() => seleccionar(n)}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">
