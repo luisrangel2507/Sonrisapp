@@ -37,19 +37,28 @@ function posicionDiente(indice: number, banda: typeof BANDA_SUPERIOR) {
   };
 }
 
+// Redondeo asimétrico que aproxima la silueta de un diente (corona
+// redondeada arriba, borde más angosto abajo) en vez de un cuadro recto.
+const FORMA_DIENTE = "50% 50% 40% 40% / 60% 60% 20% 20%";
+
 function estiloDiente(estado: EstadoDiente, activo: boolean): CSSProperties {
   const est = ESTADO_DIENTE[estado];
   if (activo) {
     return {
+      borderRadius: FORMA_DIENTE,
       backgroundColor: "rgba(0,0,0,0.42)",
       border: `2px solid ${est.ring}`,
       boxShadow: `0 0 10px rgba(${est.glow},0.8)`,
     };
   }
   if (estado === "sano") {
-    return { backgroundColor: "transparent", border: "1px solid transparent" };
+    return { borderRadius: FORMA_DIENTE, backgroundColor: "transparent", border: "1px solid transparent" };
   }
-  return { backgroundColor: `rgba(${est.glow},0.38)`, border: `1px solid ${est.ring}` };
+  return {
+    borderRadius: FORMA_DIENTE,
+    backgroundColor: `rgba(${est.glow},0.38)`,
+    border: `1px solid ${est.ring}`,
+  };
 }
 
 // Etiquetas con línea + círculo (como una carta dental) arriba y abajo
@@ -229,7 +238,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                 key={n}
                 onClick={() => seleccionar(n)}
                 aria-label={`Diente ${n}`}
-                className="absolute rounded-[3px] transition-colors"
+                className="absolute transition-colors"
                 style={{ ...posicionDiente(i, BANDA_SUPERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
               />
             ))}
@@ -238,7 +247,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                 key={n}
                 onClick={() => seleccionar(n)}
                 aria-label={`Diente ${n}`}
-                className="absolute rounded-[3px] transition-colors"
+                className="absolute transition-colors"
                 style={{ ...posicionDiente(i, BANDA_INFERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
               />
             ))}
