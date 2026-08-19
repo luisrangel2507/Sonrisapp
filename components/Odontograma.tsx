@@ -6,7 +6,6 @@ import {
   ARCO_SUPERIOR,
   ARCO_INFERIOR,
   ESTADO_DIENTE,
-  FDI_A_UNIVERSAL,
   type EstadoDiente,
   type HistorialDental,
 } from "@/lib/dental";
@@ -132,7 +131,6 @@ function EtiquetaDiente({
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [seleccionado, setSeleccionado] = useState<number>(16);
-  const [numeracion, setNumeracion] = useState<"fdi" | "universal">("fdi");
   const [historial, setHistorial] = useState<HistorialDental>({});
   const [cargando, setCargando] = useState(true);
   const [formAbierto, setFormAbierto] = useState(false);
@@ -156,7 +154,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
 
   const info = historial[seleccionado];
   const estado = ESTADO_DIENTE[info?.estado ?? "sano"];
-  const mostrarNumero = (n: number) => (numeracion === "fdi" ? n : FDI_A_UNIVERSAL[n]);
 
   async function agregarRegistro() {
     if (!tipo.trim() || guardando) return;
@@ -185,25 +182,10 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
         style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-white/40">Odontograma clínico</div>
-            <div className="text-[13px] text-white/70">
-              {paciente.nombre} {paciente.folio ? `· ficha ${paciente.folio}` : ""}
-            </div>
-          </div>
-          <div className="flex rounded-full border border-white/15 bg-white/5 p-0.5 text-[11px]">
-            {(["fdi", "universal"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setNumeracion(s)}
-                className={`rounded-full px-3 py-1 font-medium capitalize transition-colors ${
-                  numeracion === s ? "bg-[#7C5CE0] text-white" : "text-white/50"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-white/40">Odontograma clínico</div>
+          <div className="text-[13px] text-white/70">
+            {paciente.nombre} {paciente.folio ? `· ficha ${paciente.folio}` : ""}
           </div>
         </div>
 
@@ -212,7 +194,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             {ARCO_SUPERIOR.map((n, i) => (
               <EtiquetaDiente
                 key={n}
-                numero={mostrarNumero(n)}
+                numero={n}
                 xPercent={centroColumna(i, BANDA_SUPERIOR)}
                 nivel={(i % 2) as 0 | 1}
                 arriba
@@ -257,7 +239,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             {ARCO_INFERIOR_VISUAL.map((n, i) => (
               <EtiquetaDiente
                 key={n}
-                numero={mostrarNumero(n)}
+                numero={n}
                 xPercent={centroColumna(i, BANDA_INFERIOR)}
                 nivel={(i % 2) as 0 | 1}
                 arriba={false}
@@ -283,7 +265,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
-              Diente {mostrarNumero(seleccionado)} ({numeracion === "fdi" ? "FDI" : "Universal"})
+              Diente {seleccionado} (FDI)
             </div>
             <div className="mt-0.5 text-sm font-medium" style={{ color: estado.ring }}>
               {estado.label}
