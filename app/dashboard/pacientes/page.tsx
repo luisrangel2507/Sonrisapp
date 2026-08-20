@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChevronRight } from "lucide-react";
@@ -49,7 +49,16 @@ export default function PacientesPage() {
     setPacientes(data.pacientes ?? []);
   }
 
+  // La primera carga (al entrar a la página) va sin el debounce del
+  // buscador — ese medio segundo de espera solo tiene sentido mientras
+  // se está escribiendo, no antes de mostrar la lista completa.
+  const primerRenderRef = useRef(true);
   useEffect(() => {
+    if (primerRenderRef.current) {
+      primerRenderRef.current = false;
+      cargar(busqueda);
+      return;
+    }
     const timeout = setTimeout(() => cargar(busqueda), 250);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
