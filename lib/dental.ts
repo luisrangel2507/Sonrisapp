@@ -4,12 +4,13 @@ export const ARCO_SUPERIOR = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25
 export const ARCO_INFERIOR = [38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48];
 export const NUMEROS_FDI = [...ARCO_SUPERIOR, ...ARCO_INFERIOR];
 
-export type EstadoDiente = "sano" | "observacion" | "caries" | "tratado" | "extraido";
+export type EstadoDiente = "sano" | "observacion" | "caries" | "fractura" | "tratado" | "extraido";
 
 export const ESTADO_DIENTE: Record<EstadoDiente, { ring: string; glow: string; label: string }> = {
   sano: { ring: "#5DC9E8", glow: "93,201,232", label: "Sano" },
   observacion: { ring: "#F0C24E", glow: "240,194,78", label: "Observación" },
   caries: { ring: "#E8508C", glow: "232,80,140", label: "Caries" },
+  fractura: { ring: "#F2703D", glow: "242,112,61", label: "Fractura" },
   tratado: { ring: "#5FE0A0", glow: "95,224,160", label: "Tratado" },
   extraido: { ring: "#7A7A88", glow: "122,122,136", label: "Extraído" },
 };
