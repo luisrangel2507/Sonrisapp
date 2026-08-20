@@ -2,9 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, UserCog, UserPlus, Trash2 } from "lucide-react";
+import { Save, LogOut, Camera, UserCog, UserPlus, Trash2, Bell, BellOff } from "lucide-react";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario } from "@/lib/types";
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from(Array.from(rawData).map((c) => c.charCodeAt(0)));
+}
 
 const FOTO_MAX_DIM = 480;
 const FOTO_CALIDAD = 0.85;
@@ -49,6 +56,12 @@ export default function PerfilPage() {
   const [foto, setFoto] = useState<string | null>(null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [errorFoto, setErrorFoto] = useState("");
+
+  const [notifSoportado, setNotifSoportado] = useState(false);
+  const [notifStandalone, setNotifStandalone] = useState(true);
+  const [notifActiva, setNotifActiva] = useState(false);
+  const [notifCargando, setNotifCargando] = useState(false);
+  const [notifError, setNotifError] = useState("");
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
@@ -127,7 +140,71 @@ export default function PerfilPage() {
       .then((data) => setFoto(data.foto ?? null));
 
     cargarUsuarios();
+
+    const soportado = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    setNotifSoportado(soportado);
+    setNotifStandalone(window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true);
+    if (soportado) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((sub) => setNotifActiva(!!sub))
+        .catch(() => {});
+    }
   }, []);
+
+  async function activarNotificaciones() {
+    if (notifCargando) return;
+    setNotifError("");
+    setNotifCargando(true);
+    try {
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) throw new Error("Notificaciones no configuradas todavía.");
+
+      const permiso = await Notification.requestPermission();
+      if (permiso !== "granted") throw new Error("No diste permiso para las notificaciones.");
+
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+
+      const res = await fetch("/api/push/suscribir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub.toJSON()),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar la suscripción.");
+
+      setNotifActiva(true);
+    } catch (err) {
+      setNotifError(err instanceof Error ? err.message : "No se pudieron activar las notificaciones.");
+    } finally {
+      setNotifCargando(false);
+    }
+  }
+
+  async function desactivarNotificaciones() {
+    if (notifCargando) return;
+    setNotifCargando(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch("/api/push/desuscribir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+        await sub.unsubscribe();
+      }
+      setNotifActiva(false);
+    } finally {
+      setNotifCargando(false);
+    }
+  }
 
   async function guardar() {
     setGuardando(true);
@@ -251,6 +328,41 @@ export default function PerfilPage() {
         >
           <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar precios"}
         </button>
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">
+          <Bell size={13} /> Notificaciones
+        </div>
+        <p className="mb-4 text-[12px] text-[#a49c8a]">
+          Avisos en este celular cuando falte 1 hora para una cita y un resumen de las citas del día a las 8am.
+        </p>
+
+        {!notifSoportado ? (
+          <p className="text-sm text-[#a49c8a]">Tu navegador no soporta notificaciones push.</p>
+        ) : !notifStandalone ? (
+          <p className="text-sm text-[#a49c8a]">
+            Primero agrega SonrisApp a tu pantalla de inicio (compartir → Agregar a inicio) y ábrela desde ahí —
+            en iPhone las notificaciones solo funcionan así.
+          </p>
+        ) : notifActiva ? (
+          <button
+            onClick={desactivarNotificaciones}
+            disabled={notifCargando}
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#8a8272] disabled:opacity-50"
+          >
+            <BellOff size={15} /> {notifCargando ? "Desactivando…" : "Notificaciones activas — desactivar"}
+          </button>
+        ) : (
+          <button
+            onClick={activarNotificaciones}
+            disabled={notifCargando}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+          >
+            <Bell size={15} /> {notifCargando ? "Activando…" : "Activar notificaciones en este celular"}
+          </button>
+        )}
+        {notifError && <p className="mt-2 text-[12px] text-[#B0503A]">{notifError}</p>}
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">

@@ -207,6 +207,24 @@ CREATE TABLE IF NOT EXISTS avisos_diarios (
   UNIQUE (paciente_id, fecha, tipo)
 );
 
+-- Suscripciones de notificaciones push del navegador (Web Push) — un
+-- registro por dispositivo/celular donde la doctora/staff activó las
+-- notificaciones desde Perfil. No lleva login asociado a propósito:
+-- el consultorio es de pocas personas y todas deben enterarse.
+CREATE TABLE IF NOT EXISTS push_subscripciones (
+  id SERIAL PRIMARY KEY,
+  endpoint TEXT UNIQUE NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Marca que ya se mandó el push del resumen del día — evita duplicarlo
+-- si el cron de las 8am se dispara más de una vez el mismo día.
+CREATE TABLE IF NOT EXISTS avisos_push_diarios (
+  fecha DATE PRIMARY KEY
+);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);

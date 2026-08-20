@@ -1,5 +1,6 @@
 import { query } from "@/lib/db";
 import { enviarWhatsApp, mensajeResumenHoy, mensajeRecordatorio1h } from "@/lib/whatsapp";
+import { enviarPush } from "@/lib/push";
 
 function formatearHoraMx(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", {
@@ -66,6 +67,25 @@ export async function enviarResumenDiario() {
     enviados++;
   }
 
+  // Notificación push al celular de la doctora/staff con el resumen del
+  // día — una sola vez, sin importar cuántos pacientes tengan cita.
+  const { rowCount: pushInsertado } = await query(
+    `INSERT INTO avisos_push_diarios (fecha) VALUES ($1) ON CONFLICT DO NOTHING`,
+    [hoy]
+  );
+  if (pushInsertado! > 0 && citas.length > 0) {
+    const primeras = citas
+      .slice(0, 4)
+      .map((c) => `${formatearHoraMx(c.fecha_hora)} — ${c.nombre}`)
+      .join("\n");
+    const resto = citas.length > 4 ? `\n+${citas.length - 4} más` : "";
+    await enviarPush(
+      `${citas.length} cita${citas.length === 1 ? "" : "s"} hoy`,
+      `${primeras}${resto}`,
+      "/dashboard/citas"
+    );
+  }
+
   return { pacientesConCitaHoy: porPaciente.size, mensajesEnviados: enviados };
 }
 
@@ -92,13 +112,17 @@ export async function enviarRecordatoriosHoraAntes() {
   let enviados = 0;
   for (const c of citas) {
     await query(`UPDATE citas SET recordatorio_1h_enviado = true WHERE id = $1`, [c.id]);
+
+    const hora = formatearHoraMx(c.fecha_hora);
     if (c.telefono) {
-      await enviarWhatsApp(
-        c.telefono,
-        mensajeRecordatorio1h(c.nombre, formatearHoraMx(c.fecha_hora), c.tratamiento)
-      );
+      await enviarWhatsApp(c.telefono, mensajeRecordatorio1h(c.nombre, hora, c.tratamiento));
       enviados++;
     }
+    await enviarPush(
+      "Cita en 1 hora",
+      `${c.tratamiento} con ${c.nombre} a las ${hora}`,
+      "/dashboard/citas"
+    );
   }
 
   return { citasEnVentana: citas.length, mensajesEnviados: enviados };

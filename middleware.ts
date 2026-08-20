@@ -13,6 +13,7 @@ export const config = {
     "/api/perfil/:path*",
     "/api/inventario/:path*",
     "/api/usuarios/:path*",
+    "/api/push/:path*",
   ],
 };
 
