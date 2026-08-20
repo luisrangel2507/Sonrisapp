@@ -132,10 +132,10 @@ function estiloPoligono(estado: EstadoDiente, activo: boolean): CSSProperties {
     return { fill: "transparent", stroke: "transparent", strokeWidth: 0 };
   }
   if (estado === "extraido") {
-    // Que el diente se vea "apagado" y casi fundido con el fondo de la
-    // foto, como si ya no estuviera — en vez de resaltar como las demás
-    // condiciones.
-    return { fill: "rgba(6,4,14,0.82)", stroke: est.ring, strokeWidth: 0.2 };
+    // Negro sólido tipo "hueco" con contorno bien definido, para que se
+    // note a propósito que ahí falta un diente y no se confunda con una
+    // sombra de la foto.
+    return { fill: "#0A0A0F", stroke: est.ring, strokeWidth: 0.45 };
   }
   return { fill: `rgba(${est.glow},0.38)`, stroke: est.ring, strokeWidth: 0.25 };
 }
