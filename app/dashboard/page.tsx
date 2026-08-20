@@ -22,7 +22,7 @@ export default function PanelPage() {
   const router = useRouter();
   const [showChat, setShowChat] = useState(false);
   const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
-  const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
+  const [citasHoy, setCitasHoy] = useState<Cita[] | null>(null);
   const [errorResumen, setErrorResumen] = useState<string | null>(null);
   const [errorCitas, setErrorCitas] = useState<string | null>(null);
 
@@ -97,7 +97,9 @@ export default function PanelPage() {
 
       <div className="mx-4 mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Citas de hoy</div>
-        {citasHoy.length === 0 ? (
+        {citasHoy === null ? (
+          <p className="mt-2 text-sm text-[#8a8272]">Cargando…</p>
+        ) : citasHoy.length === 0 ? (
           <p className="mt-2 text-sm text-[#8a8272]">Sin citas registradas por ahora.</p>
         ) : (
           <div className="mt-3 space-y-3">
