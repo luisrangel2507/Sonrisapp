@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useState, type CSSProperties } from "react";
 import { Plus } from "lucide-react";
 import {
   ARCO_SUPERIOR,
@@ -66,15 +66,36 @@ const CENTRO_X_DIENTE: Record<number, number> = {
   41: 46.44, 42: 40.84, 43: 35.3, 44: 29.38, 45: 25.66, 46: 21.98, 47: 19.12, 48: 16.9,
 };
 
-// Ícono de diente (corona + raíces) para la vista de carta clínica —
-// sin foto, como el formato de ficha que usan los consultorios.
-function IconoDiente({ arriba }: { arriba: boolean }) {
+// Silueta de cada diente (corona + raíz) para la vista de carta clínica
+// — una forma distinta por posición dentro del cuadrante (incisivo,
+// canino, premolar, molar), como en las cartas dentales clásicas, en
+// vez de un ícono genérico repetido. La posición se saca del último
+// dígito del número FDI (11→1, 26→6, 48→8...).
+const FORMA_DIENTE_POR_POSICION: Record<number, string> = {
+  // 1 — incisivo central: corona recta, raíz única larga.
+  1: "M7.5,7 C7.5,4 9.3,2 12,2 C14.7,2 16.5,4 16.5,7 C16.5,9.5 15.6,11.7 15,13 C14.8,20 14.7,29 13.6,35 C13.3,37 12.7,38 12,38 C11.3,38 10.7,37 10.4,35 C9.3,29 9.2,20 9,13 C8.4,11.7 7.5,9.5 7.5,7 Z",
+  // 2 — incisivo lateral: igual pero más angosto.
+  2: "M8.7,7 C8.7,4.2 10.2,2 12,2 C13.8,2 15.3,4.2 15.3,7 C15.3,9.2 14.6,11.2 14.1,12.5 C14,18 14,25 13.4,31 C13.1,34 12.6,36 12,36 C11.4,36 10.9,34 10.6,31 C10,25 10,18 9.9,12.5 C9.4,11.2 8.7,9.2 8.7,7 Z",
+  // 3 — canino: corona puntiaguda, raíz más larga y gruesa.
+  3: "M12,1 L15.8,8 C16.3,9.6 16,11.4 15.3,12.8 C15.4,19 15.5,28 14.7,35 C14.4,38 13.3,39.5 12,39.5 C10.7,39.5 9.6,38 9.3,35 C8.5,28 8.6,19 8.7,12.8 C8,11.4 7.7,9.6 8.2,8 Z",
+  // 4 — primer premolar: corona con dos cúspides suaves.
+  4: "M7.3,8 C7.3,5.5 8.5,3.5 10,3.3 C10.8,3.6 11.3,4.3 12,5 C12.7,4.3 13.2,3.6 14,3.3 C15.5,3.5 16.7,5.5 16.7,8 C16.7,10 15.9,11.8 15.2,13 C15.4,18 15.5,25 14.7,29.5 C14.4,31.5 13.3,33 12,33 C10.7,33 9.6,31.5 9.3,29.5 C8.5,25 8.6,18 8.8,13 C8.1,11.8 7.3,10 7.3,8 Z",
+  // 5 — segundo premolar: parecido, un poco más chico.
+  5: "M7.8,8 C7.8,5.7 8.9,3.9 10.2,3.6 C10.9,3.9 11.4,4.5 12,5.1 C12.6,4.5 13.1,3.9 13.8,3.6 C15.1,3.9 16.2,5.7 16.2,8 C16.2,9.8 15.5,11.5 14.9,12.6 C15.1,17 15.1,22.5 14.5,26.5 C14.2,28.3 13.2,29.5 12,29.5 C10.8,29.5 9.8,28.3 9.5,26.5 C8.9,22.5 8.9,17 9.1,12.6 C8.5,11.5 7.8,9.8 7.8,8 Z",
+  // 6 — primer molar: corona ancha de varias cúspides, raíz bifurcada.
+  6: "M5.8,9 C5.8,6 7.3,3.6 9.2,3 C10,4 10.7,4.8 11,5.8 C11.5,4.8 11.7,4.4 12,4 C12.3,4.4 12.5,4.8 13,5.8 C13.3,4.8 14,4 14.8,3 C16.7,3.6 18.2,6 18.2,9 C18.2,11 17.4,12.8 16.6,14 C15.8,19 15.3,26 14,32 C13.6,26.5 12.8,24 12,22 C11.2,24 10.4,26.5 10,32 C8.7,26 8.2,19 7.4,14 C6.6,12.8 5.8,11 5.8,9 Z",
+  // 7 — segundo molar: igual que el primero, un poco más chico.
+  7: "M6.5,9.5 C6.5,6.8 7.8,4.6 9.5,4 C10.2,4.8 10.8,5.5 11,6.3 C11.5,5.5 11.7,5.2 12,4.9 C12.3,5.2 12.5,5.5 13,6.3 C13.2,5.5 13.8,4.8 14.5,4 C16.2,4.6 17.5,6.8 17.5,9.5 C17.5,11.3 16.8,12.9 16.1,14 C15.4,18.5 15,24.5 13.8,29.5 C13.4,24.7 12.7,22.5 12,20.7 C11.3,22.5 10.6,24.7 10.2,29.5 C9,24.5 8.6,18.5 7.9,14 C7.2,12.9 6.5,11.3 6.5,9.5 Z",
+  // 8 — tercer molar (cordal): compacto, raíz corta.
+  8: "M7.5,10 C7.5,7.5 8.7,5.5 10.2,5 C10.8,5.7 11.3,6.3 11.5,7 C11.7,6.3 11.8,6.1 12,5.8 C12.2,6.1 12.3,6.3 12.5,7 C12.7,6.3 13.2,5.7 13.8,5 C15.3,5.5 16.5,7.5 16.5,10 C16.5,11.6 15.9,13 15.3,14 C14.8,18 14.5,22.5 13.5,26.5 C13.2,23.5 12.6,21.8 12,20.5 C11.4,21.8 10.8,23.5 10.5,26.5 C9.5,22.5 9.2,18 8.7,14 C8.1,13 7.5,11.6 7.5,10 Z",
+};
+
+function IconoDiente({ numero, arriba }: { numero: number; arriba: boolean }) {
+  const posicion = numero % 10;
+  const d = FORMA_DIENTE_POR_POSICION[posicion] ?? FORMA_DIENTE_POR_POSICION[1];
   return (
-    <svg viewBox="0 0 24 34" width="100%" height="100%" style={arriba ? undefined : { transform: "scaleY(-1)" }}>
-      <path
-        d="M12 2C7.5 2 3 4.7 3 10c0 4.6 1.7 8.2 2.8 13 .4 2 1.3 4.7 3 4.7 1.4 0 1.9-2 2.3-3.9.3-1.3.6-2.3 1-2.3s.6 1 1 2.3c.4 1.9 1 3.9 2.3 3.9 1.7 0 2.6-2.7 3-4.7C19.3 18.2 21 14.6 21 10c0-5.3-4.5-8-9-8z"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 40" width="100%" height="100%" style={arriba ? undefined : { transform: "scaleY(-1)" }}>
+      <path d={d} strokeLinejoin="round" />
     </svg>
   );
 }
@@ -101,8 +122,8 @@ function CasillaCarta({
       {arriba && etiqueta}
       <div
         style={{
-          width: 17,
-          height: 26,
+          width: 18,
+          height: 30,
           color: est.ring,
           fill: activo ? `rgba(${est.glow},0.55)` : estado === "sano" ? "rgba(255,255,255,0.06)" : `rgba(${est.glow},0.28)`,
           stroke: est.ring,
@@ -111,7 +132,7 @@ function CasillaCarta({
           transition: "filter 0.15s",
         }}
       >
-        <IconoDiente arriba={arriba} />
+        <IconoDiente numero={numero} arriba={arriba} />
       </div>
       {!arriba && etiqueta}
     </button>
@@ -218,6 +239,40 @@ function FilaEtiquetas({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// Fila de 16 dientes partida en dos cuadrantes con una línea divisoria
+// bien visible en medio — como en las cartas dentales clásicas, para
+// que se distingan las 4 zonas de un vistazo (no solo un espacio).
+function FilaCarta({
+  numeros,
+  arriba,
+  historial,
+  seleccionado,
+  onSeleccionar,
+}: {
+  numeros: number[];
+  arriba: boolean;
+  historial: HistorialDental;
+  seleccionado: number;
+  onSeleccionar: (n: number) => void;
+}) {
+  return (
+    <div className="flex w-max items-stretch justify-center gap-[3px]">
+      {numeros.map((n, i) => (
+        <Fragment key={n}>
+          {i === 8 && <div className="mx-2 w-px self-stretch bg-white/20" />}
+          <CasillaCarta
+            numero={n}
+            arriba={arriba}
+            estado={historial[n]?.estado ?? "sano"}
+            activo={n === seleccionado}
+            onClick={() => onSeleccionar(n)}
+          />
+        </Fragment>
+      ))}
     </div>
   );
 }
@@ -347,33 +402,21 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         ) : (
           <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex w-max justify-center gap-[3px]">
-              {ARCO_SUPERIOR.map((n, i) => (
-                <div key={n} style={i === 8 ? { marginLeft: 10 } : undefined}>
-                  <CasillaCarta
-                    numero={n}
-                    arriba
-                    estado={historial[n]?.estado ?? "sano"}
-                    activo={n === seleccionado}
-                    onClick={() => seleccionar(n)}
-                  />
-                </div>
-              ))}
-            </div>
+            <FilaCarta
+              numeros={ARCO_SUPERIOR}
+              arriba
+              historial={historial}
+              seleccionado={seleccionado}
+              onSeleccionar={seleccionar}
+            />
             <div className="border-t border-dashed border-white/15" />
-            <div className="flex w-max justify-center gap-[3px]">
-              {ARCO_INFERIOR_VISUAL.map((n, i) => (
-                <div key={n} style={i === 8 ? { marginLeft: 10 } : undefined}>
-                  <CasillaCarta
-                    numero={n}
-                    arriba={false}
-                    estado={historial[n]?.estado ?? "sano"}
-                    activo={n === seleccionado}
-                    onClick={() => seleccionar(n)}
-                  />
-                </div>
-              ))}
-            </div>
+            <FilaCarta
+              numeros={ARCO_INFERIOR_VISUAL}
+              arriba={false}
+              historial={historial}
+              seleccionado={seleccionado}
+              onSeleccionar={seleccionar}
+            />
           </div>
         )}
 
