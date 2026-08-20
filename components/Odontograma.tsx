@@ -20,19 +20,51 @@ function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// Recorte del odontograma-hud.jpg (1300×799) donde cae cada arco
-// dental — calibrado a ojo sobre la foto. 16 columnas iguales por
-// arco, en el mismo orden que ARCO_SUPERIOR / ARCO_INFERIOR_VISUAL.
-const BANDA_SUPERIOR = { x0: 0.145, x1: 0.865, y0: 0.105, y1: 0.335 };
-const BANDA_INFERIOR = { x0: 0.145, x1: 0.865, y0: 0.585, y1: 0.895 };
+// Dónde cae cada diente sobre odontograma-hud.jpg — calibrado a partir
+// de 32 fotos de referencia (una por diente, marcada a mano) en vez de
+// columnas parejas, así que sigue la forma y el tamaño real de cada uno.
+const POSICIONES_DIENTE: Record<number, { left: number; top: number; width: number; height: number }> = {
+  11: { left: 0.4102, top: 0.1547, width: 0.0905, height: 0.1833 },
+  12: { left: 0.349, top: 0.161, width: 0.0658, height: 0.1684 },
+  13: { left: 0.2917, top: 0.179, width: 0.0618, height: 0.1631 },
+  14: { left: 0.2383, top: 0.1981, width: 0.0579, height: 0.1472 },
+  15: { left: 0.1953, top: 0.2193, width: 0.0638, height: 0.1462 },
+  16: { left: 0.1621, top: 0.2362, width: 0.0742, height: 0.1451 },
+  17: { left: 0.1374, top: 0.251, width: 0.0716, height: 0.143 },
+  18: { left: 0.1198, top: 0.25, width: 0.0508, height: 0.1536 },
+  21: { left: 0.5, top: 0.1536, width: 0.0885, height: 0.1822 },
+  22: { left: 0.5866, top: 0.1684, width: 0.0645, height: 0.1589 },
+  23: { left: 0.6491, top: 0.1811, width: 0.0612, height: 0.1589 },
+  24: { left: 0.6966, top: 0.1981, width: 0.0625, height: 0.1536 },
+  25: { left: 0.7409, top: 0.2193, width: 0.0645, height: 0.1451 },
+  26: { left: 0.7656, top: 0.2373, width: 0.0736, height: 0.143 },
+  27: { left: 0.793, top: 0.2553, width: 0.0684, height: 0.1419 },
+  28: { left: 0.8281, top: 0.25, width: 0.0534, height: 0.1483 },
+  31: { left: 0.4987, top: 0.662, width: 0.0632, height: 0.1483 },
+  32: { left: 0.5599, top: 0.661, width: 0.0632, height: 0.1462 },
+  33: { left: 0.6198, top: 0.6462, width: 0.0618, height: 0.1568 },
+  34: { left: 0.6745, top: 0.6186, width: 0.0579, height: 0.1525 },
+  35: { left: 0.7096, top: 0.5932, width: 0.0703, height: 0.1472 },
+  36: { left: 0.7344, top: 0.5593, width: 0.0846, height: 0.1366 },
+  37: { left: 0.7578, top: 0.5212, width: 0.0957, height: 0.1292 },
+  38: { left: 0.7773, top: 0.4534, width: 0.1022, height: 0.1292 },
+  41: { left: 0.4388, top: 0.6642, width: 0.0599, height: 0.1462 },
+  42: { left: 0.3789, top: 0.6578, width: 0.0632, height: 0.1494 },
+  43: { left: 0.3203, top: 0.6462, width: 0.0605, height: 0.1557 },
+  44: { left: 0.2676, top: 0.6165, width: 0.0579, height: 0.1547 },
+  45: { left: 0.2188, top: 0.5921, width: 0.0723, height: 0.1451 },
+  46: { left: 0.181, top: 0.5572, width: 0.0853, height: 0.1366 },
+  47: { left: 0.1465, top: 0.5212, width: 0.0957, height: 0.1292 },
+  48: { left: 0.1224, top: 0.4555, width: 0.097, height: 0.1261 },
+};
 
-function posicionDiente(indice: number, banda: typeof BANDA_SUPERIOR) {
-  const anchoCol = (banda.x1 - banda.x0) / 16;
+function posicionDiente(n: number) {
+  const p = POSICIONES_DIENTE[n];
   return {
-    left: `${(banda.x0 + anchoCol * indice) * 100}%`,
-    width: `${anchoCol * 100}%`,
-    top: `${banda.y0 * 100}%`,
-    height: `${(banda.y1 - banda.y0) * 100}%`,
+    left: `${p.left * 100}%`,
+    width: `${p.width * 100}%`,
+    top: `${p.top * 100}%`,
+    height: `${p.height * 100}%`,
   };
 }
 
@@ -66,9 +98,9 @@ const ALTURA_ETIQUETAS = 50;
 const LINEA_CERCA = 13;
 const LINEA_LEJOS = 29;
 
-function centroColumna(indice: number, banda: typeof BANDA_SUPERIOR) {
-  const anchoCol = (banda.x1 - banda.x0) / 16;
-  return (banda.x0 + anchoCol * (indice + 0.5)) * 100;
+function centroDiente(n: number) {
+  const p = POSICIONES_DIENTE[n];
+  return (p.left + p.width / 2) * 100;
 }
 
 function EtiquetaDiente({
@@ -195,7 +227,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               <EtiquetaDiente
                 key={n}
                 numero={n}
-                xPercent={centroColumna(i, BANDA_SUPERIOR)}
+                xPercent={centroDiente(n)}
                 nivel={(i % 2) as 0 | 1}
                 arriba
                 estado={historial[n]?.estado ?? "sano"}
@@ -215,22 +247,22 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               draggable={false}
             />
 
-            {ARCO_SUPERIOR.map((n, i) => (
+            {ARCO_SUPERIOR.map((n) => (
               <button
                 key={n}
                 onClick={() => seleccionar(n)}
                 aria-label={`Diente ${n}`}
                 className="absolute transition-colors"
-                style={{ ...posicionDiente(i, BANDA_SUPERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+                style={{ ...posicionDiente(n), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
               />
             ))}
-            {ARCO_INFERIOR_VISUAL.map((n, i) => (
+            {ARCO_INFERIOR_VISUAL.map((n) => (
               <button
                 key={n}
                 onClick={() => seleccionar(n)}
                 aria-label={`Diente ${n}`}
                 className="absolute transition-colors"
-                style={{ ...posicionDiente(i, BANDA_INFERIOR), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
+                style={{ ...posicionDiente(n), ...estiloDiente(historial[n]?.estado ?? "sano", n === seleccionado) }}
               />
             ))}
           </div>
@@ -240,7 +272,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               <EtiquetaDiente
                 key={n}
                 numero={n}
-                xPercent={centroColumna(i, BANDA_INFERIOR)}
+                xPercent={centroDiente(n)}
                 nivel={(i % 2) as 0 | 1}
                 arriba={false}
                 estado={historial[n]?.estado ?? "sano"}
