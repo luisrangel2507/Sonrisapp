@@ -15,7 +15,7 @@ const ESTADO_ESTILO: Record<Cita["estado"], string> = {
 };
 
 const ESTADO_COLOR_NODO: Record<Cita["estado"], string> = {
-  agendada: "#C96F3B",
+  agendada: "#803449",
   completada: "#3F6B33",
   cancelada: "#a49c8a",
 };
@@ -155,7 +155,7 @@ function SelectorSemana({
                   seleccionado
                     ? "bg-[#2b2118] text-white"
                     : esHoy
-                      ? "border border-[#C96F3B] text-[#2b2118]"
+                      ? "border border-[#803449] text-[#2b2118]"
                       : noLaboral
                         ? "text-[#c9c2b3]"
                         : "text-[#2b2118] hover:bg-[#EFE9DC]/70"
@@ -165,7 +165,7 @@ function SelectorSemana({
               </span>
               <span
                 className="h-1 w-1 rounded-full"
-                style={{ backgroundColor: numCitas > 0 ? "#C96F3B" : "transparent" }}
+                style={{ backgroundColor: numCitas > 0 ? "#803449" : "transparent" }}
               />
             </button>
           );
@@ -240,14 +240,14 @@ function SelectorMes({
                 noLaboral
                   ? "text-[#c9c2b3]"
                   : esHoy
-                    ? "border border-[#C96F3B] text-[#2b2118]"
+                    ? "border border-[#803449] text-[#2b2118]"
                     : "text-[#2b2118] hover:bg-[#EFE9DC]/70"
               }`}
             >
               {fecha.getDate()}
               <span
                 className="h-1 w-1 rounded-full"
-                style={{ backgroundColor: numCitas > 0 ? "#C96F3B" : "transparent" }}
+                style={{ backgroundColor: numCitas > 0 ? "#803449" : "transparent" }}
               />
             </button>
           );
@@ -399,7 +399,7 @@ function CitaTimelineItem({
             <select
               value={editTratamiento}
               onChange={(e) => setEditTratamiento(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             >
               {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
                 <option value={editTratamiento}>{editTratamiento}</option>
@@ -416,7 +416,7 @@ function CitaTimelineItem({
                 type="datetime-local"
                 value={editFechaHora}
                 onChange={(e) => setEditFechaHora(e.target.value)}
-                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
               />
             </div>
             <div className="relative">
@@ -429,7 +429,7 @@ function CitaTimelineItem({
                 value={editMonto}
                 onChange={(e) => setEditMonto(e.target.value)}
                 placeholder="Monto"
-                className="w-full rounded-xl border border-[#EFE9DC] py-2 pl-7 pr-3 text-sm outline-none focus:border-[#C96F3B]"
+                className="w-full rounded-xl border border-[#EFE9DC] py-2 pl-7 pr-3 text-sm outline-none focus:border-[#803449]"
               />
             </div>
             <div className="flex gap-2">
@@ -466,12 +466,12 @@ function CitaTimelineItem({
               value={montoPago}
               onChange={(e) => setMontoPago(e.target.value)}
               placeholder={`Monto (falta ${formatearDinero(restante ?? 0)})`}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <select
               value={metodoPago}
               onChange={(e) => setMetodoPago(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             >
               <option value="efectivo">Efectivo</option>
               <option value="tarjeta">Tarjeta</option>
@@ -781,7 +781,7 @@ export default function CitasPage() {
           <select
             value={pacienteId}
             onChange={(e) => setPacienteId(e.target.value)}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
           >
             <option value="">Selecciona paciente…</option>
             <option value={NUEVO_PACIENTE}>+ Paciente nuevo (dar de alta)</option>
@@ -793,21 +793,21 @@ export default function CitasPage() {
           </select>
 
           {esNuevo && (
-            <div className="space-y-2 rounded-xl border border-[#C96F3B]/30 bg-[#FBF3EC] p-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">
+            <div className="space-y-2 rounded-xl border border-[#803449]/30 bg-[#F5E7E9] p-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
                 <UserPlus size={13} /> Datos del paciente nuevo
               </div>
               <input
                 value={nombreNuevo}
                 onChange={(e) => setNombreNuevo(e.target.value)}
                 placeholder="Nombre completo *"
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
               />
               <input
                 value={telefonoNuevo}
                 onChange={(e) => setTelefonoNuevo(e.target.value)}
                 placeholder="Teléfono (con WhatsApp)"
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
               />
               <p className="text-[11px] text-[#a49c8a]">
                 Se le da de alta y se le crea su ficha automáticamente al agendar.
@@ -818,7 +818,7 @@ export default function CitasPage() {
           <select
             value={tratamiento}
             onChange={(e) => elegirTratamiento(e.target.value)}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
           >
             <option value="">Selecciona tratamiento…</option>
             {TRATAMIENTOS.map((t) => (
@@ -833,7 +833,7 @@ export default function CitasPage() {
               type="datetime-local"
               value={fechaHora}
               onChange={(e) => setFechaHora(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div className="relative">
@@ -849,7 +849,7 @@ export default function CitasPage() {
                 setMontoTocado(true);
               }}
               placeholder="Monto (opcional)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-7 pr-3 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-7 pr-3 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div className="flex gap-2 pt-1">
@@ -910,7 +910,7 @@ export default function CitasPage() {
                   if (citasDia.length === 0) return null;
                   return (
                     <div key={clave} className="mb-5 last:mb-0">
-                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
                         {dia.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "short" })}
                       </div>
                       {citasDia.map((c, i) => (

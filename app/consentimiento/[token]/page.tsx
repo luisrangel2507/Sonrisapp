@@ -148,7 +148,7 @@ export default function ConsentimientoPublicoPage() {
                 value={nombreFirma}
                 onChange={(e) => setNombreFirma(e.target.value)}
                 placeholder="Nombre completo"
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
               />
             </div>
             <div>

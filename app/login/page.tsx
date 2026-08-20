@@ -45,22 +45,22 @@ export default function LoginPage() {
   return (
     <div
       className="flex min-h-dvh items-center justify-center px-5 py-10"
-      style={{ background: "radial-gradient(circle at 50% 0%, #FBE4D0 0%, #F5F1EA 55%, #F5F1EA 100%)" }}
+      style={{ background: "radial-gradient(circle at 50% 0%, #F0D9DE 0%, #F5F1EA 55%, #F5F1EA 100%)" }}
     >
       <div
         className="w-full max-w-sm overflow-hidden rounded-[26px] border bg-white"
         style={{
           borderColor: "#EFE9DC",
-          boxShadow: "0 20px 50px -20px rgba(201,111,59,0.35)",
+          boxShadow: "0 20px 50px -20px rgba(128,52,73,0.35)",
         }}
       >
-        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #E8508C 0%, #C96F3B 100%)" }} />
+        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #B2485F 0%, #803449 100%)" }} />
 
         <div className="flex items-center justify-between px-5 py-2.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C96F3B]">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#803449]">
             Sistema del consultorio
           </span>
-          <span className="h-1.5 w-1.5 rounded-full bg-[#E8508C] shadow-[0_0_6px_1px_rgba(232,80,140,0.5)]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#B2485F] shadow-[0_0_6px_1px_rgba(178,72,95,0.5)]" />
         </div>
 
         <div className="flex flex-col items-center gap-2.5 px-6 pb-1 pt-3">
@@ -82,7 +82,7 @@ export default function LoginPage() {
               autoCorrect="off"
               spellCheck={false}
               autoComplete="username"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
               placeholder="usuario"
             />
           </div>
@@ -98,7 +98,7 @@ export default function LoginPage() {
               autoCorrect="off"
               spellCheck={false}
               autoComplete="current-password"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
               placeholder="••••••••"
             />
           </div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
             type="submit"
             disabled={cargando || !usuario || !contrasena}
             className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #E8508C 0%, #C96F3B 130%)" }}
+            style={{ background: "linear-gradient(135deg, #B2485F 0%, #803449 130%)" }}
           >
             <LogIn size={15} /> {cargando ? "Entrando…" : "Entrar"}
           </button>

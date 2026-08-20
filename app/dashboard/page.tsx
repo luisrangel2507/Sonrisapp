@@ -112,7 +112,7 @@ export default function PanelPage() {
             ))}
           </div>
         )}
-        <Link href="/dashboard/citas" className="mt-3 block text-[12px] font-semibold text-[#C96F3B]">
+        <Link href="/dashboard/citas" className="mt-3 block text-[12px] font-semibold text-[#803449]">
           Ver toda la agenda →
         </Link>
       </div>

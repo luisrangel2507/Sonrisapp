@@ -106,7 +106,7 @@ export default function FormularioPublicoPage() {
           <p className="mt-2 text-sm text-[#8a8272]">Tu información fue enviada. Ya puedes cerrar esta ventana.</p>
           <button
             onClick={() => setEnviado(false)}
-            className="mt-4 text-[13px] font-medium text-[#C96F3B] underline underline-offset-2"
+            className="mt-4 text-[13px] font-medium text-[#803449] underline underline-offset-2"
           >
             Editar mi respuesta
           </button>

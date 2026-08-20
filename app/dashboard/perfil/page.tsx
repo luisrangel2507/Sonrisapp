@@ -289,7 +289,7 @@ export default function PerfilPage() {
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
           Precios por servicio
         </div>
         <p className="mb-4 text-[12px] text-[#a49c8a]">
@@ -313,7 +313,7 @@ export default function PerfilPage() {
                     value={precios[servicio] ?? ""}
                     onChange={(e) => setPrecios((prev) => ({ ...prev, [servicio]: e.target.value }))}
                     placeholder="—"
-                    className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-6 pr-3 text-right text-sm outline-none focus:border-[#C96F3B]"
+                    className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-6 pr-3 text-right text-sm outline-none focus:border-[#803449]"
                   />
                 </div>
               </div>
@@ -331,7 +331,7 @@ export default function PerfilPage() {
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">
+        <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
           <Bell size={13} /> Notificaciones
         </div>
         <p className="mb-4 text-[12px] text-[#a49c8a]">
@@ -366,7 +366,7 @@ export default function PerfilPage() {
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">Usuarios</div>
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">Usuarios</div>
         <p className="mb-4 text-[12px] text-[#a49c8a]">
           Quién más puede entrar al panel. Cada quien usa su propio usuario y contraseña.
         </p>
@@ -405,14 +405,14 @@ export default function PerfilPage() {
             onChange={(e) => setNuevoNombre(e.target.value)}
             placeholder="Nombre completo"
             required
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
           />
           <input
             value={nuevoUsuario}
             onChange={(e) => setNuevoUsuario(e.target.value)}
             placeholder="Usuario (para iniciar sesión)"
             required
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
           />
           <input
             value={nuevaContrasena}
@@ -421,7 +421,7 @@ export default function PerfilPage() {
             type="text"
             required
             minLength={6}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
           />
           {errorUsuario && <p className="text-[12px] text-[#B0503A]">{errorUsuario}</p>}
           <button

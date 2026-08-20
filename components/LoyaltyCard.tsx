@@ -11,7 +11,7 @@ export function LoyaltyCard({ paciente }: { paciente: Paciente }) {
     <div className="space-y-4">
       <div
         className="relative overflow-hidden rounded-[26px] p-6 text-white"
-        style={{ background: "linear-gradient(135deg, #2b2118 0%, #4a3a2a 55%, #C96F3B 130%)" }}
+        style={{ background: "linear-gradient(135deg, #2b2118 0%, #4a3a2a 55%, #803449 130%)" }}
       >
         <div className="flex items-start justify-between">
           <div>
@@ -61,9 +61,9 @@ export function LoyaltyCard({ paciente }: { paciente: Paciente }) {
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Cómo funciona</div>
         <ul className="space-y-2 text-[13px] text-[#8a8272]">
-          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#C96F3B]" /> Se genera sola al dar de alta al paciente.</li>
-          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#C96F3B]" /> +50 pts por visita, +20 pts por referido.</li>
-          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#C96F3B]" /> Al llegar a la meta, el bot le avisa por WhatsApp.</li>
+          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> Se genera sola al dar de alta al paciente.</li>
+          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> +50 pts por visita, +20 pts por referido.</li>
+          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> Al llegar a la meta, el bot le avisa por WhatsApp.</li>
         </ul>
         <div className="mt-4 text-[11px] text-[#a49c8a]">{paciente.visitas_totales} visitas registradas en total.</div>
       </div>

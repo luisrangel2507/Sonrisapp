@@ -364,7 +364,7 @@ export default function PacienteDetallePage() {
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div>
@@ -372,7 +372,7 @@ export default function PacienteDetallePage() {
             <input
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div>
@@ -382,7 +382,7 @@ export default function PacienteDetallePage() {
               value={fechaNacimiento}
               max={hoyISO()}
               onChange={(e) => setFechaNacimiento(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div>
@@ -390,7 +390,7 @@ export default function PacienteDetallePage() {
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
         </div>
@@ -410,7 +410,7 @@ export default function PacienteDetallePage() {
               onChange={(e) => setAlergias(e.target.value)}
               rows={2}
               placeholder="Ej. penicilina, látex…"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div>
@@ -419,7 +419,7 @@ export default function PacienteDetallePage() {
               value={medicamentos}
               onChange={(e) => setMedicamentos(e.target.value)}
               rows={2}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
           <div>
@@ -429,7 +429,7 @@ export default function PacienteDetallePage() {
               onChange={(e) => setAntecedentes(e.target.value)}
               rows={2}
               placeholder="Diabetes, hipertensión, embarazo, etc."
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
         </div>
@@ -460,7 +460,7 @@ export default function PacienteDetallePage() {
                 {i < notas.length - 1 && (
                   <span className="absolute left-[5px] top-3 h-full w-px bg-[#EFE9DC]" />
                 )}
-                <span className="absolute left-0 top-1 h-[11px] w-[11px] rounded-full border-2 border-white bg-[#C96F3B] shadow-sm" />
+                <span className="absolute left-0 top-1 h-[11px] w-[11px] rounded-full border-2 border-white bg-[#803449] shadow-sm" />
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="text-sm font-medium text-[#2b2118]">{n.tipo}</span>
@@ -505,14 +505,14 @@ export default function PacienteDetallePage() {
               value={tipoNota}
               onChange={(e) => setTipoNota(e.target.value)}
               placeholder="Tipo (ej. Consulta, Diagnóstico)"
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <textarea
               value={textoNota}
               onChange={(e) => setTextoNota(e.target.value)}
               placeholder="Nota (opcional)"
               rows={2}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
 
             {archivoNota ? (
@@ -636,7 +636,7 @@ export default function PacienteDetallePage() {
                       href={`/consentimiento/${c.token}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="ml-auto text-[12px] font-medium text-[#C96F3B] underline underline-offset-2"
+                      className="ml-auto text-[12px] font-medium text-[#803449] underline underline-offset-2"
                     >
                       Ver
                     </a>
@@ -645,7 +645,7 @@ export default function PacienteDetallePage() {
                   <button
                     onClick={() => compartirConsentimiento(c)}
                     disabled={compartiendoConsentId === c.id}
-                    className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-[#C96F3B] disabled:opacity-50"
+                    className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-[#803449] disabled:opacity-50"
                   >
                     <Share2 size={12} />
                     {linkConsentCopiadoId === c.id ? "Link copiado ✓" : "Compartir link para firmar"}
@@ -662,14 +662,14 @@ export default function PacienteDetallePage() {
               value={tituloConsent}
               onChange={(e) => setTituloConsent(e.target.value)}
               placeholder="Título (ej. Consentimiento para endodoncia)"
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <textarea
               value={contenidoConsent}
               onChange={(e) => setContenidoConsent(e.target.value)}
               placeholder="Texto del consentimiento que va a leer y firmar el paciente…"
               rows={5}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <div className="flex gap-2">
               <button

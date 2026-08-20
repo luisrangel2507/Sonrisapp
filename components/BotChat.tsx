@@ -83,7 +83,7 @@ export function BotChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
           placeholder="Escribe como paciente…"
-          className="flex-1 rounded-full border border-[#EFE9DC] bg-[#FBF9F4] px-4 py-2 text-sm outline-none focus:border-[#C96F3B]"
+          className="flex-1 rounded-full border border-[#EFE9DC] bg-[#FBF9F4] px-4 py-2 text-sm outline-none focus:border-[#803449]"
         />
         <button
           onClick={enviar}

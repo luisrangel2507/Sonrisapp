@@ -49,7 +49,7 @@ export function calcularEdad(fechaNacimiento: string | null) {
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-      <div className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-[#C96F3B]">{titulo}</div>
+      <div className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">{titulo}</div>
       <div className="space-y-4">{children}</div>
     </div>
   );
@@ -65,7 +65,7 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClase =
-  "w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]";
+  "w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]";
 
 function SiNo({
   valor,

@@ -36,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <img src="/icon.png" alt="" className="h-7 w-7 rounded-lg" />
           <h1 className="text-[22px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             <span className="font-bold text-[#2b2118]">Viña </span>
-            <span className="font-bold italic text-[#C96F3B]">Sonrisas</span>
+            <span className="font-bold italic text-[#803449]">Sonrisas</span>
           </h1>
         </div>
 
@@ -79,7 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg" />
               <h1 className="text-[24px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
                 <span className="font-bold text-[#2b2118]">Viña </span>
-                <span className="font-bold italic text-[#C96F3B]">Sonrisas</span>
+                <span className="font-bold italic text-[#803449]">Sonrisas</span>
               </h1>
             </div>
             <Link

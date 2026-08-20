@@ -98,7 +98,7 @@ export default function PacientesPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por nombre, folio o teléfono…"
-              className="w-full rounded-full border border-[#EFE9DC] bg-white py-2.5 pl-10 pr-4 text-sm text-[#2b2118] outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-full border border-[#EFE9DC] bg-white py-2.5 pl-10 pr-4 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
             />
           </div>
 
@@ -118,19 +118,19 @@ export default function PacientesPage() {
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre completo *"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <input
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
               placeholder="Teléfono (con WhatsApp)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email (opcional)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <label className="block text-[11px] font-medium text-[#a49c8a]">Fecha de nacimiento</label>
             <input
@@ -138,7 +138,7 @@ export default function PacientesPage() {
               value={fechaNacimiento}
               max={hoyISO()}
               onChange={(e) => setFechaNacimiento(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <div className="flex gap-2 pt-1">
               <button
@@ -188,7 +188,7 @@ export default function PacientesPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-[#FBF3EC] px-2.5 py-1 text-[11px] font-bold text-[#C96F3B]">
+                    <span className="rounded-full bg-[#F5E7E9] px-2.5 py-1 text-[11px] font-bold text-[#803449]">
                       {p.puntos} pts
                     </span>
                     <ChevronRight size={16} className="text-[#a49c8a]" />
