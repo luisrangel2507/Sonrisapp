@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserCog, Activity, Users, CreditCard, Calendar, Package } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package } from "lucide-react";
 
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
   { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
   { href: "/dashboard/citas", label: "Citas", icon: Calendar },
-  { href: "/dashboard/lealtad", label: "Lealtad", icon: CreditCard },
   { href: "/dashboard/inventario", label: "Inventario", icon: Package },
 ];
 

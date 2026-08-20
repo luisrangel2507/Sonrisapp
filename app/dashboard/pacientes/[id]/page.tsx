@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronLeft,
-  CreditCard,
   ClipboardList,
   FileSignature,
   FileText,
@@ -17,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import type { Consentimiento, Paciente, PacienteNota } from "@/lib/types";
+import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 
@@ -349,12 +349,6 @@ export default function PacienteDetallePage() {
           >
             <ClipboardList size={13} /> Historia clínica
           </Link>
-          <Link
-            href={`/dashboard/lealtad/${paciente.id}`}
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-          >
-            <CreditCard size={13} /> Lealtad
-          </Link>
           <button
             onClick={compartirLink}
             disabled={enviandoLink}
@@ -401,6 +395,8 @@ export default function PacienteDetallePage() {
           </div>
         </div>
       </div>
+
+      <LoyaltyCard paciente={paciente} />
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">

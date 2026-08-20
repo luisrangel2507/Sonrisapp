@@ -8,7 +8,7 @@ export function LoyaltyCard({ paciente }: { paciente: Paciente }) {
   const desde = new Date(paciente.creado_en).toLocaleDateString("es-MX", { month: "short", year: "numeric" });
 
   return (
-    <div className="mx-4 mt-2 space-y-4">
+    <div className="space-y-4">
       <div
         className="relative overflow-hidden rounded-[26px] p-6 text-white"
         style={{ background: "linear-gradient(135deg, #2b2118 0%, #4a3a2a 55%, #C96F3B 130%)" }}
