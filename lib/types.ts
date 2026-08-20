@@ -21,6 +21,9 @@ export interface PacienteNota {
   fecha: string;
   tipo: string;
   nota: string | null;
+  archivo: string | null;
+  archivo_nombre: string | null;
+  archivo_tipo: string | null;
 }
 
 export type EstadoCita = "agendada" | "completada" | "cancelada";

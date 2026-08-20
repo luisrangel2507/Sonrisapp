@@ -74,8 +74,17 @@ CREATE TABLE IF NOT EXISTS paciente_notas (
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   tipo VARCHAR(80) NOT NULL, -- 'Consulta', 'Diagnóstico', 'Nota general'...
   nota TEXT,
-  creado_por INTEGER -- id del doctor
+  creado_por INTEGER, -- id del doctor
+  -- Archivo adjunto (radiografía, foto, PDF) — data URL base64 ya
+  -- comprimida desde el cliente, igual que perfil_dentista.foto.
+  archivo TEXT,
+  archivo_nombre VARCHAR(200),
+  archivo_tipo VARCHAR(80)
 );
+
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo TEXT;
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo_nombre VARCHAR(200);
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo_tipo VARCHAR(80);
 
 -- Pagos — uno o varios por cita (permite abonos parciales).
 CREATE TABLE IF NOT EXISTS pagos (
