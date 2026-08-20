@@ -31,13 +31,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh bg-[#F5F1EA] md:flex">
       {/* Barra lateral — solo escritorio */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-[#EFE9DC] bg-white/60 px-4 py-6 md:flex">
-        <div className="flex items-center gap-2 px-2">
+        <div className="px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.png" alt="" className="h-7 w-7 rounded-lg" />
-          <h1 className="text-[22px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            <span className="font-bold text-[#2b2118]">Viña </span>
-            <span className="font-bold italic text-[#803449]">Sonrisas</span>
-          </h1>
+          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-44" />
         </div>
 
         <nav className="mt-8 flex flex-1 flex-col gap-1">
@@ -74,14 +70,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Encabezado + tabs — solo celular */}
         <div className="mx-auto max-w-md md:hidden">
           <div className="flex items-center justify-between px-5 pb-4 pt-6">
-            <div className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg" />
-              <h1 className="text-[24px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                <span className="font-bold text-[#2b2118]">Viña </span>
-                <span className="font-bold italic text-[#803449]">Sonrisas</span>
-              </h1>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-48" />
             <Link
               href="/dashboard/perfil"
               aria-label="Perfil"
