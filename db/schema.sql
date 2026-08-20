@@ -136,6 +136,25 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Consentimientos informados con firma digital. El paciente entra con
+-- el link público (token) igual que con la historia clínica, lee el
+-- texto y firma con el dedo/mouse — la firma se guarda como imagen
+-- (data URL base64, canvas) y ya no se puede volver a firmar.
+CREATE TABLE IF NOT EXISTS consentimientos (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  titulo VARCHAR(160) NOT NULL,
+  contenido TEXT NOT NULL,
+  token VARCHAR(40) UNIQUE NOT NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'pendiente', -- 'pendiente' | 'firmado'
+  firma TEXT,
+  nombre_firma VARCHAR(160),
+  firmado_en TIMESTAMPTZ,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_consentimientos_paciente ON consentimientos(paciente_id);
+
 -- Precio por defecto de cada servicio (configurable en el perfil del
 -- dentista) — se usa para autorrellenar el monto al agendar.
 CREATE TABLE IF NOT EXISTS precios_servicios (

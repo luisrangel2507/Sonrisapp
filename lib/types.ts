@@ -26,6 +26,21 @@ export interface PacienteNota {
   archivo_tipo: string | null;
 }
 
+export type EstadoConsentimiento = "pendiente" | "firmado";
+
+export interface Consentimiento {
+  id: number;
+  paciente_id: number;
+  titulo: string;
+  contenido: string;
+  token: string;
+  estado: EstadoConsentimiento;
+  firma: string | null;
+  nombre_firma: string | null;
+  firmado_en: string | null;
+  creado_en: string;
+}
+
 export type EstadoCita = "agendada" | "completada" | "cancelada";
 
 export interface Cita {

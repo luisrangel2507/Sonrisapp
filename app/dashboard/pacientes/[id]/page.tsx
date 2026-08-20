@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   CreditCard,
   ClipboardList,
+  FileSignature,
   FileText,
   Paperclip,
   Plus,
@@ -15,7 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { Paciente, PacienteNota } from "@/lib/types";
+import type { Consentimiento, Paciente, PacienteNota } from "@/lib/types";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 
@@ -101,14 +102,25 @@ export default function PacienteDetallePage() {
   const [enviandoLink, setEnviandoLink] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState(false);
 
+  const [consentimientos, setConsentimientos] = useState<Consentimiento[]>([]);
+  const [formConsentAbierto, setFormConsentAbierto] = useState(false);
+  const [tituloConsent, setTituloConsent] = useState("");
+  const [contenidoConsent, setContenidoConsent] = useState("");
+  const [creandoConsent, setCreandoConsent] = useState(false);
+  const [eliminandoConsentId, setEliminandoConsentId] = useState<number | null>(null);
+  const [compartiendoConsentId, setCompartiendoConsentId] = useState<number | null>(null);
+  const [linkConsentCopiadoId, setLinkConsentCopiadoId] = useState<number | null>(null);
+
   async function cargar() {
     setCargando(true);
-    const [resPaciente, resNotas] = await Promise.all([
+    const [resPaciente, resNotas, resConsent] = await Promise.all([
       fetch(`/api/pacientes/${pacienteId}`),
       fetch(`/api/pacientes/${pacienteId}/notas`),
+      fetch(`/api/pacientes/${pacienteId}/consentimientos`),
     ]);
     const dataPaciente = await resPaciente.json();
     const dataNotas = await resNotas.json();
+    const dataConsent = await resConsent.json();
     const p: Paciente = dataPaciente.paciente;
     setPaciente(p);
     setNombre(p.nombre);
@@ -119,6 +131,7 @@ export default function PacienteDetallePage() {
     setMedicamentos(p.medicamentos ?? "");
     setAntecedentes(p.antecedentes_medicos ?? "");
     setNotas(dataNotas.notas ?? []);
+    setConsentimientos(dataConsent.consentimientos ?? []);
     setCargando(false);
   }
 
@@ -244,6 +257,56 @@ export default function PacienteDetallePage() {
       }
     } finally {
       setEnviandoLink(false);
+    }
+  }
+
+  async function crearConsentimiento() {
+    if (!tituloConsent.trim() || !contenidoConsent.trim() || creandoConsent) return;
+    setCreandoConsent(true);
+    await fetch(`/api/pacientes/${pacienteId}/consentimientos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ titulo: tituloConsent, contenido: contenidoConsent }),
+    });
+    setTituloConsent("");
+    setContenidoConsent("");
+    setFormConsentAbierto(false);
+    setCreandoConsent(false);
+    const res = await fetch(`/api/pacientes/${pacienteId}/consentimientos`);
+    const data = await res.json();
+    setConsentimientos(data.consentimientos ?? []);
+  }
+
+  async function eliminarConsentimiento(id: number) {
+    if (eliminandoConsentId) return;
+    const ok = window.confirm("¿Eliminar este consentimiento?");
+    if (!ok) return;
+    setEliminandoConsentId(id);
+    await fetch(`/api/pacientes/${pacienteId}/consentimientos/${id}`, { method: "DELETE" });
+    setConsentimientos((prev) => prev.filter((c) => c.id !== id));
+    setEliminandoConsentId(null);
+  }
+
+  async function compartirConsentimiento(c: Consentimiento) {
+    if (compartiendoConsentId || !paciente) return;
+    setCompartiendoConsentId(c.id);
+    try {
+      const url = `${window.location.origin}/consentimiento/${c.token}`;
+      const texto = `Hola ${paciente.nombre.split(" ")[0]}, antes de tu cita firma tu consentimiento "${c.titulo}" aquí: ${url}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "Consentimiento — SonrisApp", text: texto, url });
+        } catch {
+          // el usuario canceló el share, no hacer nada
+        }
+      } else {
+        await navigator.clipboard.writeText(texto);
+        setLinkConsentCopiadoId(c.id);
+        setTimeout(() => setLinkConsentCopiadoId(null), 2500);
+      }
+    } finally {
+      setCompartiendoConsentId(null);
     }
   }
 
@@ -508,6 +571,132 @@ export default function PacienteDetallePage() {
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
           >
             <Plus size={14} /> Agregar entrada al historial
+          </button>
+        )}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            <FileSignature size={13} /> Consentimientos
+          </div>
+          <span className="text-[11px] text-[#a49c8a]">
+            {consentimientos.length} documento{consentimientos.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {consentimientos.length === 0 ? (
+            <p className="text-sm text-[#8a8272]">Sin consentimientos todavía.</p>
+          ) : (
+            consentimientos.map((c) => (
+              <div key={c.id} className="rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-[#2b2118]">{c.titulo}</div>
+                    {c.estado === "firmado" ? (
+                      <span className="mt-1 inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
+                        Firmado
+                      </span>
+                    ) : (
+                      <span className="mt-1 inline-block rounded-full bg-[#F7ECD9] px-2 py-0.5 text-[10px] font-semibold text-[#B0834A]">
+                        Pendiente de firma
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => eliminarConsentimiento(c.id)}
+                    disabled={eliminandoConsentId === c.id}
+                    className="shrink-0 text-[#c9a99a] disabled:opacity-50"
+                    aria-label="Eliminar consentimiento"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+
+                {c.estado === "firmado" ? (
+                  <div className="mt-2 flex items-center gap-3">
+                    {c.firma && (
+                      <img
+                        src={c.firma}
+                        alt="Firma"
+                        className="h-12 w-20 rounded-lg border border-[#EFE9DC] bg-white object-contain p-1"
+                      />
+                    )}
+                    <div className="text-[11px] text-[#a49c8a]">
+                      {c.nombre_firma}
+                      {c.firmado_en && (
+                        <>
+                          <br />
+                          {new Date(c.firmado_en).toLocaleDateString("es-MX", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </>
+                      )}
+                    </div>
+                    <a
+                      href={`/consentimiento/${c.token}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-auto text-[12px] font-medium text-[#C96F3B] underline underline-offset-2"
+                    >
+                      Ver
+                    </a>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => compartirConsentimiento(c)}
+                    disabled={compartiendoConsentId === c.id}
+                    className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-[#C96F3B] disabled:opacity-50"
+                  >
+                    <Share2 size={12} />
+                    {linkConsentCopiadoId === c.id ? "Link copiado ✓" : "Compartir link para firmar"}
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        {formConsentAbierto ? (
+          <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            <input
+              value={tituloConsent}
+              onChange={(e) => setTituloConsent(e.target.value)}
+              placeholder="Título (ej. Consentimiento para endodoncia)"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            />
+            <textarea
+              value={contenidoConsent}
+              onChange={(e) => setContenidoConsent(e.target.value)}
+              placeholder="Texto del consentimiento que va a leer y firmar el paciente…"
+              rows={5}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#C96F3B]"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={crearConsentimiento}
+                disabled={!tituloConsent.trim() || !contenidoConsent.trim() || creandoConsent}
+                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {creandoConsent ? "Creando…" : "Crear y generar link"}
+              </button>
+              <button
+                onClick={() => setFormConsentAbierto(false)}
+                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setFormConsentAbierto(true)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+          >
+            <Plus size={14} /> Nuevo consentimiento
           </button>
         )}
       </div>
