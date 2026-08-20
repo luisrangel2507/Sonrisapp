@@ -63,7 +63,7 @@ export default function LoginPage() {
 
         <div className="flex items-center justify-between px-5 py-2.5">
           <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#803449]">
-            Sistema del consultorio
+            Consultorio 24/7
           </span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#B2485F] shadow-[0_0_6px_1px_rgba(178,72,95,0.5)]" />
         </div>
