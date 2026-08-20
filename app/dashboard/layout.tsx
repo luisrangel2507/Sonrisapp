@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserCog, Activity, Users, Calendar, Package } from "lucide-react";
+
+// Cierra la sesión sola después de 5 minutos sin tocar la pantalla —
+// pensado para un dispositivo compartido del consultorio.
+const TIEMPO_INACTIVIDAD_MS = 5 * 60 * 1000;
 
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
@@ -14,6 +18,7 @@ const TABS = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [foto, setFoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,6 +27,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .then((data) => setFoto(data?.foto ?? null))
       .catch(() => {});
   }, [pathname]);
+
+  useEffect(() => {
+    let temporizador: ReturnType<typeof setTimeout>;
+
+    async function cerrarPorInactividad() {
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      router.push("/login");
+      router.refresh();
+    }
+
+    function reiniciarTemporizador() {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(cerrarPorInactividad, TIEMPO_INACTIVIDAD_MS);
+    }
+
+    const eventos = ["mousedown", "keydown", "touchstart", "scroll"] as const;
+    eventos.forEach((ev) => window.addEventListener(ev, reiniciarTemporizador));
+    reiniciarTemporizador();
+
+    return () => {
+      clearTimeout(temporizador);
+      eventos.forEach((ev) => window.removeEventListener(ev, reiniciarTemporizador));
+    };
+  }, [router]);
 
   function esActivo(href: string) {
     return href === "/dashboard" ? pathname === href : pathname?.startsWith(href);
