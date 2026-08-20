@@ -45,7 +45,12 @@ export default function LoginPage() {
   return (
     <div
       className="flex min-h-dvh items-center justify-center px-5 py-10"
-      style={{ background: "radial-gradient(circle at 50% 0%, #F0D9DE 0%, #F5F1EA 55%, #F5F1EA 100%)" }}
+      style={{
+        backgroundColor: "#3B0F1C",
+        backgroundImage: "url('/login-bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
       <div
         className="w-full max-w-sm overflow-hidden rounded-[26px] border bg-white"
