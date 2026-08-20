@@ -49,6 +49,8 @@ export default function PerfilPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [precios, setPrecios] = useState<Record<string, string>>({});
   const [preciosAbierto, setPreciosAbierto] = useState(false);
+  const [notifAbierto, setNotifAbierto] = useState(false);
+  const [usuariosAbierto, setUsuariosAbierto] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -348,107 +350,135 @@ export default function PerfilPage() {
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
-          <Bell size={13} /> Notificaciones
-        </div>
-        <p className="mb-4 text-[12px] text-[#a49c8a]">
-          Avisos en este celular cuando falte 1 hora para una cita y un resumen de las citas del día a las 8am.
-        </p>
+        <button
+          onClick={() => setNotifAbierto((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+            <Bell size={13} /> Notificaciones
+          </div>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-[#a49c8a] transition-transform ${notifAbierto ? "rotate-180" : ""}`}
+          />
+        </button>
 
-        {!notifSoportado ? (
-          <p className="text-sm text-[#a49c8a]">Tu navegador no soporta notificaciones push.</p>
-        ) : !notifStandalone ? (
-          <p className="text-sm text-[#a49c8a]">
-            Primero agrega Viña Sonrisas a tu pantalla de inicio (compartir → Agregar a inicio) y ábrela desde ahí —
-            en iPhone las notificaciones solo funcionan así.
-          </p>
-        ) : notifActiva ? (
-          <button
-            onClick={desactivarNotificaciones}
-            disabled={notifCargando}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#8a8272] disabled:opacity-50"
-          >
-            <BellOff size={15} /> {notifCargando ? "Desactivando…" : "Notificaciones activas — desactivar"}
-          </button>
-        ) : (
-          <button
-            onClick={activarNotificaciones}
-            disabled={notifCargando}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
-          >
-            <Bell size={15} /> {notifCargando ? "Activando…" : "Activar notificaciones en este celular"}
-          </button>
+        {notifAbierto && (
+          <>
+            <p className="mb-4 mt-2 text-[12px] text-[#a49c8a]">
+              Avisos en este celular cuando falte 1 hora para una cita y un resumen de las citas del día a las 8am.
+            </p>
+
+            {!notifSoportado ? (
+              <p className="text-sm text-[#a49c8a]">Tu navegador no soporta notificaciones push.</p>
+            ) : !notifStandalone ? (
+              <p className="text-sm text-[#a49c8a]">
+                Primero agrega Viña Sonrisas a tu pantalla de inicio (compartir → Agregar a inicio) y ábrela desde ahí
+                — en iPhone las notificaciones solo funcionan así.
+              </p>
+            ) : notifActiva ? (
+              <button
+                onClick={desactivarNotificaciones}
+                disabled={notifCargando}
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#8a8272] disabled:opacity-50"
+              >
+                <BellOff size={15} /> {notifCargando ? "Desactivando…" : "Notificaciones activas — desactivar"}
+              </button>
+            ) : (
+              <button
+                onClick={activarNotificaciones}
+                disabled={notifCargando}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+              >
+                <Bell size={15} /> {notifCargando ? "Activando…" : "Activar notificaciones en este celular"}
+              </button>
+            )}
+            {notifError && <p className="mt-2 text-[12px] text-[#B0503A]">{notifError}</p>}
+          </>
         )}
-        {notifError && <p className="mt-2 text-[12px] text-[#B0503A]">{notifError}</p>}
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">Usuarios</div>
-        <p className="mb-4 text-[12px] text-[#a49c8a]">
-          Quién más puede entrar al panel. Cada quien usa su propio usuario y contraseña.
-        </p>
+        <button
+          onClick={() => setUsuariosAbierto((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-[#803449]">Usuarios</div>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-[#a49c8a] transition-transform ${usuariosAbierto ? "rotate-180" : ""}`}
+          />
+        </button>
 
-        {cargandoUsuarios ? (
-          <p className="text-sm text-[#8a8272]">Cargando…</p>
-        ) : usuarios.length === 0 ? (
-          <p className="text-sm text-[#a49c8a]">Todavía no hay usuarios adicionales.</p>
-        ) : (
-          <div className="mb-4 space-y-2">
-            {usuarios.map((u) => (
-              <div
-                key={u.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-[#2b2118]">{u.nombre}</div>
-                  <div className="truncate text-xs text-[#a49c8a]">@{u.usuario}</div>
-                </div>
-                <button
-                  onClick={() => borrarUsuario(u.id)}
-                  disabled={borrandoId === u.id}
-                  aria-label="Quitar usuario"
-                  className="shrink-0 rounded-full p-2 text-[#B0503A] disabled:opacity-50"
-                >
-                  <Trash2 size={15} />
-                </button>
+        {usuariosAbierto && (
+          <>
+            <p className="mb-4 mt-2 text-[12px] text-[#a49c8a]">
+              Quién más puede entrar al panel. Cada quien usa su propio usuario y contraseña.
+            </p>
+
+            {cargandoUsuarios ? (
+              <p className="text-sm text-[#8a8272]">Cargando…</p>
+            ) : usuarios.length === 0 ? (
+              <p className="text-sm text-[#a49c8a]">Todavía no hay usuarios adicionales.</p>
+            ) : (
+              <div className="mb-4 space-y-2">
+                {usuarios.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-[#2b2118]">{u.nombre}</div>
+                      <div className="truncate text-xs text-[#a49c8a]">@{u.usuario}</div>
+                    </div>
+                    <button
+                      onClick={() => borrarUsuario(u.id)}
+                      disabled={borrandoId === u.id}
+                      aria-label="Quitar usuario"
+                      className="shrink-0 rounded-full p-2 text-[#B0503A] disabled:opacity-50"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        <form onSubmit={crearUsuario} className="space-y-3">
-          <input
-            value={nuevoNombre}
-            onChange={(e) => setNuevoNombre(e.target.value)}
-            placeholder="Nombre completo"
-            required
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-          />
-          <input
-            value={nuevoUsuario}
-            onChange={(e) => setNuevoUsuario(e.target.value)}
-            placeholder="Usuario (para iniciar sesión)"
-            required
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-          />
-          <input
-            value={nuevaContrasena}
-            onChange={(e) => setNuevaContrasena(e.target.value)}
-            placeholder="Contraseña (mínimo 6 caracteres)"
-            type="text"
-            required
-            minLength={6}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-          />
-          {errorUsuario && <p className="text-[12px] text-[#B0503A]">{errorUsuario}</p>}
-          <button
-            type="submit"
-            disabled={creandoUsuario}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
-          >
-            <UserPlus size={15} /> {creandoUsuario ? "Creando…" : "Crear usuario"}
-          </button>
-        </form>
+            <form onSubmit={crearUsuario} className="space-y-3">
+              <input
+                value={nuevoNombre}
+                onChange={(e) => setNuevoNombre(e.target.value)}
+                placeholder="Nombre completo"
+                required
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              />
+              <input
+                value={nuevoUsuario}
+                onChange={(e) => setNuevoUsuario(e.target.value)}
+                placeholder="Usuario (para iniciar sesión)"
+                required
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              />
+              <input
+                value={nuevaContrasena}
+                onChange={(e) => setNuevaContrasena(e.target.value)}
+                placeholder="Contraseña (mínimo 6 caracteres)"
+                type="text"
+                required
+                minLength={6}
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              />
+              {errorUsuario && <p className="text-[12px] text-[#B0503A]">{errorUsuario}</p>}
+              <button
+                type="submit"
+                disabled={creandoUsuario}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+              >
+                <UserPlus size={15} /> {creandoUsuario ? "Creando…" : "Crear usuario"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
 
       <button
