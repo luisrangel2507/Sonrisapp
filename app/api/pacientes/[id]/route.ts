@@ -29,6 +29,27 @@ export async function GET(
   }
 }
 
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = Number(params.id);
+    if (!Number.isInteger(id)) {
+      return NextResponse.json({ error: "id inválido" }, { status: 400 });
+    }
+
+    const { rowCount } = await query(`DELETE FROM pacientes WHERE id = $1`, [id]);
+    if (rowCount === 0) {
+      return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return errorJson(err);
+  }
+}
+
 const CAMPOS_EDITABLES = [
   "nombre",
   "telefono",

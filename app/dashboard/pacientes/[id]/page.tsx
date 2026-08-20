@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, CreditCard, ClipboardList, Plus, Save, Share2 } from "lucide-react";
+import { ChevronLeft, CreditCard, ClipboardList, Plus, Save, Share2, Trash2 } from "lucide-react";
 import type { Paciente, PacienteNota } from "@/lib/types";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
@@ -14,9 +14,11 @@ function formatearFecha(fecha: string) {
 
 export default function PacienteDetallePage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const pacienteId = Number(params.id);
 
   const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [eliminando, setEliminando] = useState(false);
   const [notas, setNotas] = useState<PacienteNota[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -126,6 +128,21 @@ export default function PacienteDetallePage() {
       }
     } finally {
       setEnviandoLink(false);
+    }
+  }
+
+  async function eliminarPaciente() {
+    if (eliminando || !paciente) return;
+    const ok = window.confirm(
+      `¿Eliminar a ${paciente.nombre}? Esto borra su ficha, citas, pagos, historial clínico y odontograma. No se puede deshacer.`
+    );
+    if (!ok) return;
+    setEliminando(true);
+    const res = await fetch(`/api/pacientes/${pacienteId}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/dashboard/pacientes");
+    } else {
+      setEliminando(false);
     }
   }
 
@@ -317,6 +334,14 @@ export default function PacienteDetallePage() {
       </div>
 
       <Odontograma paciente={paciente} />
+
+      <button
+        onClick={eliminarPaciente}
+        disabled={eliminando}
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EABDB0] bg-[#F7E5E0] py-2.5 text-[13px] font-semibold text-[#B0503A] disabled:opacity-50"
+      >
+        <Trash2 size={14} /> {eliminando ? "Eliminando…" : "Eliminar paciente"}
+      </button>
     </div>
   );
 }
