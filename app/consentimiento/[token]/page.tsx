@@ -107,10 +107,8 @@ export default function ConsentimientoPublicoPage() {
     <div className="min-h-dvh bg-[#F5F1EA]">
       <div className="mx-auto max-w-md space-y-4 px-4 pb-10 pt-6">
         <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
-          <h1 className="text-[22px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            <span className="font-bold text-[#2b2118]">Viña </span>
-            <span className="font-bold italic text-[#C96F3B]">Sonrisas</span>
-          </h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-52" />
           <div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
             Consentimiento informado
           </div>

@@ -65,16 +65,7 @@ export default function LoginPage() {
 
         <div className="flex flex-col items-center gap-2.5 px-6 pb-1 pt-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icon.png"
-            alt="Viña Sonrisas"
-            className="h-14 w-14 rounded-2xl"
-            style={{ boxShadow: "0 6px 20px -4px rgba(232,80,140,0.4)" }}
-          />
-          <h1 className="text-[20px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            <span className="font-bold text-[#2b2118]">Viña </span>
-            <span className="font-bold italic text-[#C96F3B]">Sonrisas</span>
-          </h1>
+          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-60" />
           <p className="text-[12px] text-[#a49c8a]">Inicia sesión para continuar</p>
         </div>
 
