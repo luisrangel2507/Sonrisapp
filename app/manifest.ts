@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SonrisApp",
-    short_name: "SonrisApp",
+    name: "Viña Sonrisas",
+    short_name: "Viña Sonrisas",
     description: "Panel clínico y de lealtad para tu consultorio dental.",
     start_url: "/dashboard",
     scope: "/",

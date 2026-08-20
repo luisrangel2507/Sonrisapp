@@ -32,8 +32,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Barra lateral — solo escritorio */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-[#EFE9DC] bg-white/60 px-4 py-6 md:flex">
         <h1 className="px-2 text-[24px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-          <span className="font-bold text-[#2b2118]">Sonris</span>
-          <span className="font-bold italic text-[#C96F3B]">App</span>
+          <span className="font-bold text-[#2b2118]">Viña </span>
+          <span className="font-bold italic text-[#C96F3B]">Sonrisas</span>
         </h1>
 
         <nav className="mt-8 flex flex-1 flex-col gap-1">
@@ -71,8 +71,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mx-auto max-w-md md:hidden">
           <div className="flex items-center justify-between px-5 pb-4 pt-6">
             <h1 className="text-[26px] leading-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-              <span className="font-bold text-[#2b2118]">Sonris</span>
-              <span className="font-bold italic text-[#C96F3B]">App</span>
+              <span className="font-bold text-[#2b2118]">Viña </span>
+              <span className="font-bold italic text-[#C96F3B]">Sonrisas</span>
             </h1>
             <Link
               href="/dashboard/perfil"

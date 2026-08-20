@@ -342,7 +342,7 @@ export default function PerfilPage() {
           <p className="text-sm text-[#a49c8a]">Tu navegador no soporta notificaciones push.</p>
         ) : !notifStandalone ? (
           <p className="text-sm text-[#a49c8a]">
-            Primero agrega SonrisApp a tu pantalla de inicio (compartir → Agregar a inicio) y ábrela desde ahí —
+            Primero agrega Viña Sonrisas a tu pantalla de inicio (compartir → Agregar a inicio) y ábrela desde ahí —
             en iPhone las notificaciones solo funcionan así.
           </p>
         ) : notifActiva ? (

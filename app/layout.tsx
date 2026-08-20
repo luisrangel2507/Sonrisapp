@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SonrisApp",
+  title: "Viña Sonrisas",
   description: "Panel clínico y de lealtad para tu consultorio dental.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "SonrisApp",
+    title: "Viña Sonrisas",
   },
 };
 

@@ -246,7 +246,7 @@ export default function PacienteDetallePage() {
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Historia clínica — SonrisApp", text: texto, url });
+          await navigator.share({ title: "Historia clínica — Viña Sonrisas", text: texto, url });
         } catch {
           // el usuario canceló el share, no hacer nada
         }
@@ -296,7 +296,7 @@ export default function PacienteDetallePage() {
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Consentimiento — SonrisApp", text: texto, url });
+          await navigator.share({ title: "Consentimiento — Viña Sonrisas", text: texto, url });
         } catch {
           // el usuario canceló el share, no hacer nada
         }

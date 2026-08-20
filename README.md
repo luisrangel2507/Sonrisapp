@@ -1,4 +1,4 @@
-# SonrisApp
+# Viña Sonrisas
 
 Panel clínico y de lealtad para consultorios dentales. Next.js 14 (App Router) + PostgreSQL, pensado para desplegarse en Railway.
 
