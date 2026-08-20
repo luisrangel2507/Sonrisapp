@@ -44,13 +44,8 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex min-h-dvh items-center justify-center px-5 py-10"
-      style={{
-        backgroundColor: "#3B0F1C",
-        backgroundImage: "url('/login-bg.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className="flex min-h-dvh items-center justify-center bg-cover bg-center px-5 py-10 [background-image:url('/login-bg.jpg')] md:[background-image:url('/login-bg-desktop.jpg')]"
+      style={{ backgroundColor: "#3B0F1C" }}
     >
       <div
         className="w-full max-w-sm overflow-hidden rounded-[26px] border bg-white"
