@@ -12,7 +12,7 @@ export const ESTADO_DIENTE: Record<EstadoDiente, { ring: string; glow: string; l
   caries: { ring: "#E8508C", glow: "232,80,140", label: "Caries" },
   fractura: { ring: "#F2703D", glow: "242,112,61", label: "Fractura" },
   tratado: { ring: "#5FE0A0", glow: "95,224,160", label: "Tratado" },
-  extraido: { ring: "#7A7A88", glow: "122,122,136", label: "Extraído" },
+  extraido: { ring: "#4A4558", glow: "74,69,88", label: "Extraído" },
 };
 
 // FDI ⇄ Universal (1-32) — el doctor puede alternar el sistema de numeración.

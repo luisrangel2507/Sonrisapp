@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { enviarWhatsApp, mensajeMetaAlcanzada } from "@/lib/whatsapp";
+import { enviarWhatsApp, mensajeMetaAlcanzada, mensajePostConsulta } from "@/lib/whatsapp";
 import { errorJson } from "@/lib/api-error";
 
 const PUNTOS_POR_VISITA = 50;
@@ -114,8 +114,14 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const { rows: citaRows } = await query<{ id: number; paciente_id: number; estado: string }>(
-      `SELECT id, paciente_id, estado FROM citas WHERE id = $1`,
+    const { rows: citaRows } = await query<{
+      id: number;
+      paciente_id: number;
+      estado: string;
+      tratamiento: string;
+      monto: number | null;
+    }>(
+      `SELECT id, paciente_id, estado, tratamiento, monto::float8 AS monto FROM citas WHERE id = $1`,
       [id]
     );
     const cita = citaRows[0];
@@ -151,6 +157,19 @@ export async function PATCH(req: NextRequest) {
     );
 
     const paciente = pacienteRows[0];
+
+    if (paciente.telefono) {
+      const { rows: pagoRows } = await query<{ pagado: number }>(
+        `SELECT COALESCE(SUM(monto), 0)::float8 AS pagado FROM pagos WHERE cita_id = $1`,
+        [id]
+      );
+      const pagado = pagoRows[0]?.pagado ?? 0;
+      const saldoPendiente = cita.monto != null ? Math.max(0, cita.monto - pagado) : 0;
+      await enviarWhatsApp(
+        paciente.telefono,
+        mensajePostConsulta(paciente.nombre, cita.tratamiento, saldoPendiente)
+      );
+    }
 
     const yaAlcanzoLaMeta = paciente.puntos - PUNTOS_POR_VISITA < paciente.meta_premio;
     if (yaAlcanzoLaMeta && paciente.puntos >= paciente.meta_premio) {

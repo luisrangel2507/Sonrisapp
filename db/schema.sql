@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS citas (
 );
 
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS monto NUMERIC(10,2);
+-- Evita mandar el recordatorio de "1 hora antes" más de una vez por cita.
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS recordatorio_1h_enviado BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS paciente_dientes (
   id SERIAL PRIMARY KEY,
@@ -172,6 +174,18 @@ CREATE TABLE IF NOT EXISTS usuarios (
   usuario VARCHAR(60) NOT NULL UNIQUE,
   contrasena_hash TEXT NOT NULL,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Registro de avisos automáticos por WhatsApp ya enviados (por paciente,
+-- por día, por tipo) — evita duplicar el resumen de "citas de hoy" si el
+-- cron se dispara más de una vez el mismo día.
+CREATE TABLE IF NOT EXISTS avisos_diarios (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  fecha DATE NOT NULL,
+  tipo VARCHAR(40) NOT NULL,
+  enviado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (paciente_id, fecha, tipo)
 );
 
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
