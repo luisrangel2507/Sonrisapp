@@ -159,7 +159,9 @@ export default function PerfilPage() {
     setNotifError("");
     setNotifCargando(true);
     try {
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      const vapidRes = await fetch("/api/push/vapid-publica");
+      const vapidData = await vapidRes.json().catch(() => ({}));
+      const vapidKey = vapidData?.publicKey;
       if (!vapidKey) throw new Error("Notificaciones no configuradas todavía.");
 
       const permiso = await Notification.requestPermission();
