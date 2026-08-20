@@ -68,6 +68,58 @@ const CENTRO_X_DIENTE: Record<number, number> = {
   41: 46.79, 42: 40.77, 43: 34.6, 44: 28.68, 45: 24.23, 46: 21.34, 47: 17.71, 48: 16.08,
 };
 
+// Ícono de diente (corona + raíces) para la vista de carta clínica —
+// sin foto, como el formato de ficha que usan los consultorios.
+function IconoDiente({ arriba }: { arriba: boolean }) {
+  return (
+    <svg viewBox="0 0 24 34" width="100%" height="100%" style={arriba ? undefined : { transform: "scaleY(-1)" }}>
+      <path
+        d="M12 2C7.5 2 3 4.7 3 10c0 4.6 1.7 8.2 2.8 13 .4 2 1.3 4.7 3 4.7 1.4 0 1.9-2 2.3-3.9.3-1.3.6-2.3 1-2.3s.6 1 1 2.3c.4 1.9 1 3.9 2.3 3.9 1.7 0 2.6-2.7 3-4.7C19.3 18.2 21 14.6 21 10c0-5.3-4.5-8-9-8z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CasillaCarta({
+  numero,
+  arriba,
+  estado,
+  activo,
+  onClick,
+}: {
+  numero: number;
+  arriba: boolean;
+  estado: EstadoDiente;
+  activo: boolean;
+  onClick: () => void;
+}) {
+  const est = ESTADO_DIENTE[estado];
+  const etiqueta = (
+    <span className={`text-[9px] font-semibold ${activo ? "text-white" : "text-white/50"}`}>{numero}</span>
+  );
+  return (
+    <button onClick={onClick} aria-label={`Diente ${numero}`} className="flex shrink-0 flex-col items-center gap-1">
+      {arriba && etiqueta}
+      <div
+        style={{
+          width: 17,
+          height: 26,
+          color: est.ring,
+          fill: activo ? `rgba(${est.glow},0.55)` : estado === "sano" ? "rgba(255,255,255,0.06)" : `rgba(${est.glow},0.28)`,
+          stroke: est.ring,
+          strokeWidth: activo ? 1.8 : 1,
+          filter: activo ? `drop-shadow(0 0 4px rgba(${est.glow},0.7))` : undefined,
+          transition: "filter 0.15s",
+        }}
+      >
+        <IconoDiente arriba={arriba} />
+      </div>
+      {!arriba && etiqueta}
+    </button>
+  );
+}
+
 function estiloPoligono(estado: EstadoDiente, activo: boolean): CSSProperties {
   const est = ESTADO_DIENTE[estado];
   if (activo) {
@@ -149,6 +201,7 @@ function EtiquetaDiente({
 }
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
+  const [vista, setVista] = useState<"foto" | "carta">("foto");
   const [seleccionado, setSeleccionado] = useState<number>(16);
   const [historial, setHistorial] = useState<HistorialDental>({});
   const [cargando, setCargando] = useState(true);
@@ -201,73 +254,120 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
         style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
       >
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-white/40">Odontograma clínico</div>
-          <div className="text-[13px] text-white/70">
-            {paciente.nombre} {paciente.folio ? `· ficha ${paciente.folio}` : ""}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-white/40">Odontograma clínico</div>
+            <div className="text-[13px] text-white/70">
+              {paciente.nombre} {paciente.folio ? `· ficha ${paciente.folio}` : ""}
+            </div>
+          </div>
+          <div className="flex rounded-full border border-white/15 bg-white/5 p-0.5 text-[11px]">
+            {(["foto", "carta"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVista(v)}
+                className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                  vista === v ? "bg-[#7C5CE0] text-white" : "text-white/50"
+                }`}
+              >
+                {v === "foto" ? "Foto" : "Carta clínica"}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="relative mt-4">
-          <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
-            {ARCO_SUPERIOR.map((n, i) => (
-              <EtiquetaDiente
-                key={n}
-                numero={n}
-                xPercent={CENTRO_X_DIENTE[n]}
-                nivel={(i % 2) as 0 | 1}
-                arriba
-                estado={historial[n]?.estado ?? "sano"}
-                activo={n === seleccionado}
-                onClick={() => seleccionar(n)}
-              />
-            ))}
-          </div>
-
-          <div className="relative overflow-hidden rounded-2xl border border-white/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/odontograma-hud.jpg"
-              alt="Odontograma"
-              className="block w-full select-none"
-              style={{ aspectRatio: "1300 / 799" }}
-              draggable={false}
-            />
-
-            <svg
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              className="absolute inset-0 h-full w-full"
-            >
-              {[...ARCO_SUPERIOR, ...ARCO_INFERIOR_VISUAL].map((n) => (
-                <polygon
+        {vista === "foto" ? (
+          <div className="relative mt-4">
+            <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
+              {ARCO_SUPERIOR.map((n, i) => (
+                <EtiquetaDiente
                   key={n}
-                  points={POLIGONOS_DIENTE[n]}
+                  numero={n}
+                  xPercent={CENTRO_X_DIENTE[n]}
+                  nivel={(i % 2) as 0 | 1}
+                  arriba
+                  estado={historial[n]?.estado ?? "sano"}
+                  activo={n === seleccionado}
                   onClick={() => seleccionar(n)}
-                  role="button"
-                  aria-label={`Diente ${n}`}
-                  className="cursor-pointer transition-colors"
-                  style={estiloPoligono(historial[n]?.estado ?? "sano", n === seleccionado)}
                 />
               ))}
-            </svg>
-          </div>
+            </div>
 
-          <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
-            {ARCO_INFERIOR_VISUAL.map((n, i) => (
-              <EtiquetaDiente
-                key={n}
-                numero={n}
-                xPercent={CENTRO_X_DIENTE[n]}
-                nivel={(i % 2) as 0 | 1}
-                arriba={false}
-                estado={historial[n]?.estado ?? "sano"}
-                activo={n === seleccionado}
-                onClick={() => seleccionar(n)}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/odontograma-hud.jpg"
+                alt="Odontograma"
+                className="block w-full select-none"
+                style={{ aspectRatio: "1300 / 799" }}
+                draggable={false}
               />
-            ))}
+
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="absolute inset-0 h-full w-full"
+              >
+                {[...ARCO_SUPERIOR, ...ARCO_INFERIOR_VISUAL].map((n) => (
+                  <polygon
+                    key={n}
+                    points={POLIGONOS_DIENTE[n]}
+                    onClick={() => seleccionar(n)}
+                    role="button"
+                    aria-label={`Diente ${n}`}
+                    className="cursor-pointer transition-colors"
+                    style={estiloPoligono(historial[n]?.estado ?? "sano", n === seleccionado)}
+                  />
+                ))}
+              </svg>
+            </div>
+
+            <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
+              {ARCO_INFERIOR_VISUAL.map((n, i) => (
+                <EtiquetaDiente
+                  key={n}
+                  numero={n}
+                  xPercent={CENTRO_X_DIENTE[n]}
+                  nivel={(i % 2) as 0 | 1}
+                  arriba={false}
+                  estado={historial[n]?.estado ?? "sano"}
+                  activo={n === seleccionado}
+                  onClick={() => seleccionar(n)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex w-max justify-center gap-[3px]">
+              {ARCO_SUPERIOR.map((n, i) => (
+                <div key={n} style={i === 8 ? { marginLeft: 10 } : undefined}>
+                  <CasillaCarta
+                    numero={n}
+                    arriba
+                    estado={historial[n]?.estado ?? "sano"}
+                    activo={n === seleccionado}
+                    onClick={() => seleccionar(n)}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-dashed border-white/15" />
+            <div className="flex w-max justify-center gap-[3px]">
+              {ARCO_INFERIOR_VISUAL.map((n, i) => (
+                <div key={n} style={i === 8 ? { marginLeft: 10 } : undefined}>
+                  <CasillaCarta
+                    numero={n}
+                    arriba={false}
+                    estado={historial[n]?.estado ?? "sano"}
+                    activo={n === seleccionado}
+                    onClick={() => seleccionar(n)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">
           {Object.entries(ESTADO_DIENTE).map(([key, v]) => (
