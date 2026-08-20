@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
+import { PantallaCarga } from "@/components/PantallaCarga";
+
+const DURACION_PANTALLA_CARGA_MS = 4000;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +13,7 @@ export default function LoginPage() {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [mostrarCarga, setMostrarCarga] = useState(false);
   const [next, setNext] = useState("/dashboard");
 
   useEffect(() => {
@@ -34,86 +38,96 @@ export default function LoginPage() {
         setCargando(false);
         return;
       }
-      router.push(next);
-      router.refresh();
+      setMostrarCarga(true);
+      setTimeout(() => {
+        router.push(next);
+        router.refresh();
+      }, DURACION_PANTALLA_CARGA_MS);
     } catch {
       setError("No se pudo conectar con el servidor. Intenta de nuevo.");
       setCargando(false);
     }
   }
 
+  if (mostrarCarga) {
+    return <PantallaCarga />;
+  }
+
   return (
-    <div
-      className="flex min-h-dvh items-center justify-center bg-cover bg-center px-5 py-10 [background-image:url('/login-bg.jpg')] md:[background-image:url('/login-bg-desktop.jpg')]"
-      style={{ backgroundColor: "#3B0F1C" }}
-    >
+    <div className="relative min-h-dvh">
       <div
-        className="w-full max-w-sm overflow-hidden rounded-[26px] border bg-white"
-        style={{
-          borderColor: "#EFE9DC",
-          boxShadow: "0 20px 50px -20px rgba(128,52,73,0.35)",
-        }}
-      >
-        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #B2485F 0%, #803449 100%)" }} />
+        className="fixed inset-0 -z-10 bg-cover bg-center [background-image:url('/login-bg.jpg')] md:[background-image:url('/login-bg-desktop.jpg')]"
+        style={{ backgroundColor: "#3B0F1C" }}
+      />
+      <div className="flex min-h-dvh items-center justify-center px-5 py-10">
+        <div
+          className="w-full max-w-sm overflow-hidden rounded-[26px] border bg-white"
+          style={{
+            borderColor: "#EFE9DC",
+            boxShadow: "0 20px 50px -20px rgba(128,52,73,0.35)",
+          }}
+        >
+          <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #B2485F 0%, #803449 100%)" }} />
 
-        <div className="flex items-center justify-between px-5 py-2.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#803449]">
-            Consultorio 24/7
-          </span>
-          <span className="h-1.5 w-1.5 rounded-full bg-[#B2485F] shadow-[0_0_6px_1px_rgba(178,72,95,0.5)]" />
-        </div>
-
-        <div className="flex flex-col items-center gap-2.5 px-6 pb-1 pt-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-60" />
-          <p className="text-[12px] text-[#a49c8a]">Inicia sesión para continuar</p>
-        </div>
-
-        <form onSubmit={entrar} className="space-y-4 px-6 pb-7 pt-5">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-              Usuario
-            </label>
-            <input
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              autoFocus
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              autoComplete="username"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
-              placeholder="usuario"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={contrasena}
-              onChange={(e) => setContrasena(e.target.value)}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              autoComplete="current-password"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
-              placeholder="••••••••"
-            />
+          <div className="flex items-center justify-between px-5 py-2.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#803449]">
+              Consultorio 24/7
+            </span>
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B2485F] shadow-[0_0_6px_1px_rgba(178,72,95,0.5)]" />
           </div>
 
-          {error && <p className="text-[12px] font-medium text-[#B0503A]">{error}</p>}
+          <div className="flex flex-col items-center gap-2.5 px-6 pb-1 pt-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-60" />
+            <p className="text-[12px] text-[#a49c8a]">Inicia sesión para continuar</p>
+          </div>
 
-          <button
-            type="submit"
-            disabled={cargando || !usuario || !contrasena}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #B2485F 0%, #803449 130%)" }}
-          >
-            <LogIn size={15} /> {cargando ? "Entrando…" : "Entrar"}
-          </button>
-        </form>
+          <form onSubmit={entrar} className="space-y-4 px-6 pb-7 pt-5">
+            <div>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+                Usuario
+              </label>
+              <input
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="username"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
+                placeholder="usuario"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                value={contrasena}
+                onChange={(e) => setContrasena(e.target.value)}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {error && <p className="text-[12px] font-medium text-[#B0503A]">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={cargando || !usuario || !contrasena}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #B2485F 0%, #803449 130%)" }}
+            >
+              <LogIn size={15} /> {cargando ? "Entrando…" : "Entrar"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
