@@ -396,8 +396,6 @@ export default function PacienteDetallePage() {
         </div>
       </div>
 
-      <LoyaltyCard paciente={paciente} />
-
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
           Antecedentes médicos
@@ -698,6 +696,8 @@ export default function PacienteDetallePage() {
       </div>
 
       <Odontograma paciente={paciente} />
+
+      <LoyaltyCard paciente={paciente} />
 
       <button
         onClick={eliminarPaciente}
