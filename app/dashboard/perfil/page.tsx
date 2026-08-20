@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, UserCog, UserPlus, Trash2, Bell, BellOff } from "lucide-react";
+import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff } from "lucide-react";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario } from "@/lib/types";
 
@@ -48,6 +48,7 @@ export default function PerfilPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [precios, setPrecios] = useState<Record<string, string>>({});
+  const [preciosAbierto, setPreciosAbierto] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -289,45 +290,59 @@ export default function PerfilPage() {
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
-          Precios por servicio
-        </div>
-        <p className="mb-4 text-[12px] text-[#a49c8a]">
-          Se usan para sugerir el monto al agendar una cita. Déjalo vacío si el precio varía caso por caso.
-        </p>
-
-        {cargando ? (
-          <p className="text-sm text-[#8a8272]">Cargando…</p>
-        ) : (
-          <div className="space-y-3">
-            {TRATAMIENTOS.map((servicio) => (
-              <div key={servicio} className="flex items-center justify-between gap-3">
-                <label className="text-sm text-[#2b2118]">{servicio}</label>
-                <div className="relative w-32">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#a49c8a]">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={precios[servicio] ?? ""}
-                    onChange={(e) => setPrecios((prev) => ({ ...prev, [servicio]: e.target.value }))}
-                    placeholder="—"
-                    className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-6 pr-3 text-right text-sm outline-none focus:border-[#803449]"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         <button
-          onClick={guardar}
-          disabled={cargando || guardando}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+          onClick={() => setPreciosAbierto((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
         >
-          <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar precios"}
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+            Precios por servicio
+          </div>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-[#a49c8a] transition-transform ${preciosAbierto ? "rotate-180" : ""}`}
+          />
         </button>
+
+        {preciosAbierto && (
+          <>
+            <p className="mb-4 mt-2 text-[12px] text-[#a49c8a]">
+              Se usan para sugerir el monto al agendar una cita. Déjalo vacío si el precio varía caso por caso.
+            </p>
+
+            {cargando ? (
+              <p className="text-sm text-[#8a8272]">Cargando…</p>
+            ) : (
+              <div className="space-y-3">
+                {TRATAMIENTOS.map((servicio) => (
+                  <div key={servicio} className="flex items-center justify-between gap-3">
+                    <label className="text-sm text-[#2b2118]">{servicio}</label>
+                    <div className="relative w-32">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#a49c8a]">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={precios[servicio] ?? ""}
+                        onChange={(e) => setPrecios((prev) => ({ ...prev, [servicio]: e.target.value }))}
+                        placeholder="—"
+                        className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-6 pr-3 text-right text-sm outline-none focus:border-[#803449]"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={guardar}
+              disabled={cargando || guardando}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+            >
+              <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar precios"}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
