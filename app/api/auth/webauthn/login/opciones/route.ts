@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { WEBAUTHN_COOKIE, WEBAUTHN_COOKIE_MAX_AGE } from "@/lib/webauthn-cookie";
+import { obtenerRpIdYOrigin } from "@/lib/webauthn-origin";
 import { errorJson } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 // necesitar saber de antemano cuál credencial usar.
 export async function GET(req: NextRequest) {
   try {
-    const rpID = req.nextUrl.hostname;
+    const { rpID } = obtenerRpIdYOrigin(req);
     const options = await generateAuthenticationOptions({
       rpID,
       userVerification: "preferred",
