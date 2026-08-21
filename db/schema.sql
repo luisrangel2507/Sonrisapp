@@ -219,6 +219,19 @@ CREATE TABLE IF NOT EXISTS push_subscripciones (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Passkeys (Face ID / Touch ID) registradas para entrar sin usuario y
+-- contraseña. Igual que push_subscripciones, no lleva login asociado
+-- a propósito — cualquier passkey activada desde Perfil abre la misma
+-- sesión compartida del consultorio.
+CREATE TABLE IF NOT EXISTS passkeys (
+  id SERIAL PRIMARY KEY,
+  nombre_dispositivo TEXT NOT NULL,
+  credential_id TEXT UNIQUE NOT NULL,
+  public_key TEXT NOT NULL,
+  contador BIGINT NOT NULL DEFAULT 0,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Marca que ya se mandó el push del resumen del día — evita duplicarlo
 -- si el cron de las 8am se dispara más de una vez el mismo día.
 CREATE TABLE IF NOT EXISTS avisos_push_diarios (

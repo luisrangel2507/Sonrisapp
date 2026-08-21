@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff } from "lucide-react";
+import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace } from "lucide-react";
+import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
-import type { Usuario } from "@/lib/types";
+import type { Usuario, Passkey } from "@/lib/types";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -51,6 +52,7 @@ export default function PerfilPage() {
   const [preciosAbierto, setPreciosAbierto] = useState(false);
   const [notifAbierto, setNotifAbierto] = useState(false);
   const [usuariosAbierto, setUsuariosAbierto] = useState(false);
+  const [faceIdAbierto, setFaceIdAbierto] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -74,6 +76,14 @@ export default function PerfilPage() {
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [errorUsuario, setErrorUsuario] = useState("");
   const [borrandoId, setBorrandoId] = useState<number | null>(null);
+
+  const [faceIdSoportado, setFaceIdSoportado] = useState(false);
+  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
+  const [cargandoPasskeys, setCargandoPasskeys] = useState(true);
+  const [nombreDispositivo, setNombreDispositivo] = useState("");
+  const [activandoFaceId, setActivandoFaceId] = useState(false);
+  const [errorFaceId, setErrorFaceId] = useState("");
+  const [borrandoPasskeyId, setBorrandoPasskeyId] = useState<number | null>(null);
 
   function cargarUsuarios() {
     fetch("/api/usuarios")
@@ -126,6 +136,51 @@ export default function PerfilPage() {
     router.refresh();
   }
 
+  function cargarPasskeys() {
+    fetch("/api/auth/webauthn/passkeys")
+      .then((res) => res.json())
+      .then((data) => setPasskeys(data.passkeys ?? []))
+      .finally(() => setCargandoPasskeys(false));
+  }
+
+  async function activarFaceId() {
+    if (activandoFaceId) return;
+    setErrorFaceId("");
+    setActivandoFaceId(true);
+    try {
+      const resOpciones = await fetch("/api/auth/webauthn/registro/opciones");
+      const opciones = await resOpciones.json();
+      const credencial = await startRegistration({ optionsJSON: opciones });
+
+      const resVerificar = await fetch("/api/auth/webauthn/registro/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credencial, nombreDispositivo: nombreDispositivo || "Este dispositivo" }),
+      });
+      const data = await resVerificar.json().catch(() => ({}));
+      if (!resVerificar.ok) throw new Error(data.error || "No se pudo activar Face ID.");
+
+      setNombreDispositivo("");
+      cargarPasskeys();
+    } catch (err) {
+      setErrorFaceId(err instanceof Error ? err.message : "No se pudo activar Face ID.");
+    } finally {
+      setActivandoFaceId(false);
+    }
+  }
+
+  async function borrarPasskey(id: number) {
+    if (borrandoPasskeyId) return;
+    if (!confirm("¿Quitar el acceso de este dispositivo?")) return;
+    setBorrandoPasskeyId(id);
+    try {
+      await fetch(`/api/auth/webauthn/passkeys?id=${id}`, { method: "DELETE" });
+      setPasskeys((prev) => prev.filter((p) => p.id !== id));
+    } finally {
+      setBorrandoPasskeyId(null);
+    }
+  }
+
   useEffect(() => {
     fetch("/api/precios-servicios")
       .then((res) => res.json())
@@ -143,6 +198,8 @@ export default function PerfilPage() {
       .then((data) => setFoto(data.foto ?? null));
 
     cargarUsuarios();
+    cargarPasskeys();
+    setFaceIdSoportado(browserSupportsWebAuthn());
 
     const soportado = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
     setNotifSoportado(soportado);
@@ -394,6 +451,77 @@ export default function PerfilPage() {
               </button>
             )}
             {notifError && <p className="mt-2 text-[12px] text-[#B0503A]">{notifError}</p>}
+          </>
+        )}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <button
+          onClick={() => setFaceIdAbierto((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+            <ScanFace size={13} /> Face ID
+          </div>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-[#a49c8a] transition-transform ${faceIdAbierto ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {faceIdAbierto && (
+          <>
+            <p className="mb-4 mt-2 text-[12px] text-[#a49c8a]">
+              Entra sin escribir usuario y contraseña — actívalo en cada celular donde lo quieras usar.
+            </p>
+
+            {!faceIdSoportado ? (
+              <p className="text-sm text-[#a49c8a]">Este navegador no soporta Face ID / Touch ID.</p>
+            ) : (
+              <>
+                {cargandoPasskeys ? (
+                  <p className="text-sm text-[#8a8272]">Cargando…</p>
+                ) : passkeys.length === 0 ? (
+                  <p className="mb-3 text-sm text-[#a49c8a]">Todavía no hay ningún dispositivo activado.</p>
+                ) : (
+                  <div className="mb-4 space-y-2">
+                    {passkeys.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5"
+                      >
+                        <div className="min-w-0 truncate text-sm font-medium text-[#2b2118]">
+                          {p.nombre_dispositivo}
+                        </div>
+                        <button
+                          onClick={() => borrarPasskey(p.id)}
+                          disabled={borrandoPasskeyId === p.id}
+                          aria-label="Quitar dispositivo"
+                          className="shrink-0 rounded-full p-2 text-[#B0503A] disabled:opacity-50"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  value={nombreDispositivo}
+                  onChange={(e) => setNombreDispositivo(e.target.value)}
+                  placeholder="Nombre de este dispositivo (ej. iPhone de Daniela)"
+                  className="mb-2 w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+                {errorFaceId && <p className="mb-2 text-[12px] text-[#B0503A]">{errorFaceId}</p>}
+                <button
+                  onClick={activarFaceId}
+                  disabled={activandoFaceId}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                >
+                  <ScanFace size={15} /> {activandoFaceId ? "Activando…" : "Activar Face ID en este dispositivo"}
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

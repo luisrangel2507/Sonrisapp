@@ -80,6 +80,12 @@ export interface Usuario {
   creado_en: string;
 }
 
+export interface Passkey {
+  id: number;
+  nombre_dispositivo: string;
+  creado_en: string;
+}
+
 export interface InventarioItem {
   id: number;
   nombre: string;

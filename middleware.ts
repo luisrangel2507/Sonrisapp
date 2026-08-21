@@ -14,6 +14,8 @@ export const config = {
     "/api/inventario/:path*",
     "/api/usuarios/:path*",
     "/api/push/:path*",
+    "/api/auth/webauthn/registro/:path*",
+    "/api/auth/webauthn/passkeys",
   ],
 };
 

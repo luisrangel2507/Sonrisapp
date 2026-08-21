@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn } from "lucide-react";
+import { LogIn, ScanFace } from "lucide-react";
+import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { PantallaCarga } from "@/components/PantallaCarga";
 
 const DURACION_PANTALLA_CARGA_MS = 4000;
@@ -15,11 +16,22 @@ export default function LoginPage() {
   const [cargando, setCargando] = useState(false);
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [next, setNext] = useState("/dashboard");
+  const [faceIdDisponible, setFaceIdDisponible] = useState(false);
+  const [faceIdCargando, setFaceIdCargando] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setNext(params.get("next") || "/dashboard");
+    setFaceIdDisponible(browserSupportsWebAuthn());
   }, []);
+
+  function entrarYRedirigir() {
+    setMostrarCarga(true);
+    setTimeout(() => {
+      router.push(next);
+      router.refresh();
+    }, DURACION_PANTALLA_CARGA_MS);
+  }
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
@@ -38,14 +50,34 @@ export default function LoginPage() {
         setCargando(false);
         return;
       }
-      setMostrarCarga(true);
-      setTimeout(() => {
-        router.push(next);
-        router.refresh();
-      }, DURACION_PANTALLA_CARGA_MS);
+      entrarYRedirigir();
     } catch {
       setError("No se pudo conectar con el servidor. Intenta de nuevo.");
       setCargando(false);
+    }
+  }
+
+  async function entrarConFaceId() {
+    if (faceIdCargando) return;
+    setFaceIdCargando(true);
+    setError(null);
+    try {
+      const resOpciones = await fetch("/api/auth/webauthn/login/opciones");
+      const opciones = await resOpciones.json();
+      const credencial = await startAuthentication({ optionsJSON: opciones });
+
+      const resVerificar = await fetch("/api/auth/webauthn/login/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credencial }),
+      });
+      const data = await resVerificar.json().catch(() => ({}));
+      if (!resVerificar.ok) throw new Error(data.error || "No se pudo entrar con Face ID.");
+
+      entrarYRedirigir();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo entrar con Face ID.");
+      setFaceIdCargando(false);
     }
   }
 
@@ -82,7 +114,25 @@ export default function LoginPage() {
             <p className="text-[12px] text-[#a49c8a]">Inicia sesión para continuar</p>
           </div>
 
-          <form onSubmit={entrar} className="space-y-4 px-6 pb-7 pt-5">
+          {faceIdDisponible && (
+            <div className="px-6 pb-1 pt-4">
+              <button
+                type="button"
+                onClick={entrarConFaceId}
+                disabled={faceIdCargando || cargando}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#803449] py-3 text-[14px] font-semibold text-[#803449] transition-opacity disabled:opacity-50"
+              >
+                <ScanFace size={16} /> {faceIdCargando ? "Verificando…" : "Entrar con Face ID"}
+              </button>
+              <div className="my-4 flex items-center gap-3">
+                <span className="h-px flex-1 bg-[#EFE9DC]" />
+                <span className="text-[11px] text-[#a49c8a]">o con tu usuario</span>
+                <span className="h-px flex-1 bg-[#EFE9DC]" />
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={entrar} className={`space-y-4 px-6 pb-7 ${faceIdDisponible ? "pt-0" : "pt-5"}`}>
             <div>
               <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
                 Usuario
