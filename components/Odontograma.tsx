@@ -73,23 +73,27 @@ const CENTRO_X_DIENTE: Record<number, number> = {
 // las caras del diente de un vistazo, no solo un contorno genérico.
 // La forma varía según la posición dentro del cuadrante (último dígito
 // del número FDI: 11→1 incisivo central … 18→8 tercer molar).
+// Ojo con la orientación: arriba (y≈0) va el borde incisal/oclusal —
+// donde están las cúspides y puntas —, y abajo (y≈18) va el cuello,
+// más ancho, que se une con la cara oclusal. Al revés no se parece a
+// la carta de referencia.
 const CORONA_POR_POSICION: Record<number, string> = {
-  // 1 — incisivo central: corona recta, borde incisal plano.
-  1: "M8,1 Q8,0 9,0 L15,0 Q16,0 16,1 L16,15 Q16,17.2 14,17.6 Q12,18 10,17.6 Q8,17.2 8,15 Z",
+  // 1 — incisivo central: ápice redondeado angosto, se ensancha hacia el cuello.
+  1: "M10.3,1.5 Q10.3,0.3 12,0.3 Q13.7,0.3 13.7,1.5 Q13.7,3 14.3,5 Q15,7.5 15,10 Q15,13.5 14.2,15.8 Q13.5,17.8 12,17.8 Q10.5,17.8 9.8,15.8 Q9,13.5 9,10 Q9,7.5 9.7,5 Q10.3,3 10.3,1.5 Z",
   // 2 — incisivo lateral: igual pero más angosto.
-  2: "M9,1 Q9,0 10,0 L14,0 Q15,0 15,1 L15,14 Q15,16.3 13,16.8 Q12,17 11,16.8 Q9,16.3 9,14 Z",
-  // 3 — canino: una sola cúspide puntiaguda.
-  3: "M8,1 Q8,0 9,0 L15,0 Q16,0 16,1 L16,11.5 L12,18 L8,11.5 Z",
-  // 4 — primer premolar: dos cúspides (vestibular + palatina/lingual).
-  4: "M7.5,1 Q7.5,0 8.5,0 L15.5,0 Q16.5,0 16.5,1 L16.5,10 Q16.5,13.3 14,14.4 Q12.7,15 12,13.5 Q11.3,15 10,14.4 Q7.5,13.3 7.5,10 Z",
+  2: "M10.6,1.4 Q10.6,0.3 12,0.3 Q13.4,0.3 13.4,1.4 Q13.4,2.7 13.9,4.5 Q14.4,6.8 14.4,9 Q14.4,12.3 13.7,14.5 Q13.1,16.3 12,16.3 Q10.9,16.3 10.3,14.5 Q9.6,12.3 9.6,9 Q9.6,6.8 10.1,4.5 Q10.6,2.7 10.6,1.4 Z",
+  // 3 — canino: una sola cúspide puntiaguda arriba, se abre hacia el cuello.
+  3: "M12,0 L15.3,5 Q16.3,6.8 16.5,9 L16.7,13 Q16.7,16 15,17.3 Q13.7,18 12,18 Q10.3,18 9,17.3 Q7.3,16 7.3,13 L7.5,9 Q7.7,6.8 8.7,5 Z",
+  // 4 — primer premolar: dos cúspides suaves arriba (vestibular + palatina).
+  4: "M8,3 Q8,1 9.5,0.5 Q10.8,0.1 12,1.8 Q13.2,0.1 14.5,0.5 Q16,1 16,3 L16,9 Q16,13.5 15,16 Q14,18 12,18 Q10,18 9,16 Q8,13.5 8,9 Z",
   // 5 — segundo premolar: parecido, un poco más chico.
-  5: "M8,1 Q8,0 9,0 L15,0 Q16,0 16,1 L16,9.5 Q16,12.6 13.8,13.5 Q12.6,14 12,12.7 Q11.4,14 10.2,13.5 Q8,12.6 8,9.5 Z",
-  // 6 — primer molar: corona ancha con cuatro cúspides.
-  6: "M6.5,1.5 Q6.5,0 8,0 L16,0 Q17.5,0 17.5,1.5 L17.5,8 Q17.5,10 16,10.5 Q15,10.8 14.5,9.3 Q14,10.8 12,10.6 Q10,10.8 9.5,9.3 Q9,10.8 8,10.5 Q6.5,10 6.5,8 Z",
+  5: "M8.3,2.7 Q8.3,1 9.6,0.5 Q10.8,0.1 12,1.6 Q13.2,0.1 14.4,0.5 Q15.7,1 15.7,2.7 L15.7,8 Q15.7,12 14.8,14.3 Q13.9,16.3 12,16.3 Q10.1,16.3 9.2,14.3 Q8.3,12 8.3,8 Z",
+  // 6 — primer molar: corona ancha con varias cúspides arriba (zigzag).
+  6: "M5.5,4 Q5.5,1.5 7.5,0.8 Q9,0.3 9.8,2.5 Q10.5,4.3 11,3 Q11.5,1.5 12,1.5 Q12.5,1.5 13,3 Q13.5,4.3 14.2,2.5 Q15,0.3 16.5,0.8 Q18.5,1.5 18.5,4 L18.5,9.5 Q18.5,14 17,16.5 Q15.5,18.5 12,18.5 Q8.5,18.5 7,16.5 Q5.5,14 5.5,9.5 Z",
   // 7 — segundo molar: igual que el primero, un poco más chico.
-  7: "M7,1.5 Q7,0 8.3,0 L15.7,0 Q17,0 17,1.5 L17,7.5 Q17,9.3 15.6,9.8 Q14.7,10 14.2,8.7 Q13.7,10 12,9.8 Q10.3,10 9.8,8.7 Q9.3,10 8.4,9.8 Q7,9.3 7,7.5 Z",
-  // 8 — tercer molar (cordal): compacto e irregular.
-  8: "M7.5,2 Q7.5,0.3 9,0.3 L15,0.3 Q16.5,0.3 16.5,2 L16.5,7.5 Q16.5,9 15.2,9.2 Q14.4,9.4 14,8.2 Q13.5,9.4 12,9.2 Q10.5,9.4 10,8.2 Q9.6,9.4 8.8,9.2 Q7.5,9 7.5,7.5 Z",
+  7: "M6.3,4 Q6.3,1.8 8,1.1 Q9.3,0.6 10,2.6 Q10.6,4.2 11,3 Q11.5,1.7 12,1.7 Q12.5,1.7 13,3 Q13.4,4.2 14,2.6 Q14.7,0.6 16,1.1 Q17.7,1.8 17.7,4 L17.7,9 Q17.7,13.2 16.3,15.5 Q15,17.7 12,17.7 Q9,17.7 7.7,15.5 Q6.3,13.2 6.3,9 Z",
+  // 8 — tercer molar (cordal): compacto, una cúspide dominante e irregular.
+  8: "M8,4.5 Q8,2 10,1 Q11.3,0.4 12,2.3 Q12.5,3.7 13.3,2.5 Q14.3,1 15.7,1.8 Q16.7,2.4 16.7,4.5 L16.7,8.5 Q16.7,12.5 15.5,14.7 Q14.3,17 12,17 Q9.7,17 8.5,14.7 Q7.3,12.5 7.3,8.5 Z",
 };
 
 // Raíz de cada diente — única y cónica para incisivos/caninos/premolares,
