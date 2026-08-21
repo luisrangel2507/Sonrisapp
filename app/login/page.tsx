@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogIn, ScanFace } from "lucide-react";
 import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { PantallaCarga } from "@/components/PantallaCarga";
+import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
 
 const DURACION_PANTALLA_CARGA_MS = 4000;
 
@@ -62,7 +63,11 @@ export default function LoginPage() {
     setFaceIdCargando(true);
     setError(null);
     try {
-      const resOpciones = await fetch("/api/auth/webauthn/login/opciones");
+      const credIdGuardado = localStorage.getItem(LLAVE_PASSKEY_ID);
+      const url = credIdGuardado
+        ? `/api/auth/webauthn/login/opciones?credId=${encodeURIComponent(credIdGuardado)}`
+        : "/api/auth/webauthn/login/opciones";
+      const resOpciones = await fetch(url);
       const opciones = await resOpciones.json();
       const credencial = await startAuthentication({ optionsJSON: opciones });
 
@@ -73,6 +78,12 @@ export default function LoginPage() {
       });
       const data = await resVerificar.json().catch(() => ({}));
       if (!resVerificar.ok) throw new Error(data.error || "No se pudo entrar con Face ID.");
+
+      // Recuerda con qué credencial se entró en este navegador, para
+      // que la próxima vez salte directo al Face ID sin el selector.
+      try {
+        localStorage.setItem(LLAVE_PASSKEY_ID, credencial.id);
+      } catch {}
 
       entrarYRedirigir();
     } catch (err) {

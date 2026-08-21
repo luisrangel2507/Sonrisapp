@@ -6,6 +6,7 @@ import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, Bel
 import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario, Passkey } from "@/lib/types";
+import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -159,6 +160,12 @@ export default function PerfilPage() {
       });
       const data = await resVerificar.json().catch(() => ({}));
       if (!resVerificar.ok) throw new Error(data.error || "No se pudo activar Face ID.");
+
+      // Recuerda esta credencial en el navegador para que el login la
+      // pida directamente y no muestre el selector de cuenta de Safari.
+      try {
+        localStorage.setItem(LLAVE_PASSKEY_ID, credencial.id);
+      } catch {}
 
       setNombreDispositivo("");
       cargarPasskeys();
