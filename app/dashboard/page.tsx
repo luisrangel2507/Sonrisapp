@@ -59,7 +59,7 @@ export default function PanelPage() {
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             Bienvenida, {NOMBRE_CORTO_DOCTORA}
           </h2>
-          <p className="mt-1 text-sm text-[#8a8272]">Tu clínica no descansa ni cuando tú duermes.</p>
+          <p className="mt-1 text-sm text-[#8a8272]">We&apos;ll be glowing in the dark ✨</p>
         </div>
         <div className="shrink-0 text-right">
           <div className="text-[11px] uppercase tracking-wide text-[#a49c8a]">Citas hoy</div>
