@@ -19,6 +19,7 @@ import type { Consentimiento, Paciente, PacienteNota } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
+import { TRATAMIENTOS } from "@/lib/panel-data";
 
 function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
@@ -91,6 +92,8 @@ export default function PacienteDetallePage() {
   const [formNotaAbierto, setFormNotaAbierto] = useState(false);
   const [tipoNota, setTipoNota] = useState("");
   const [textoNota, setTextoNota] = useState("");
+  const [tratamientoNota, setTratamientoNota] = useState("");
+  const [duracionNota, setDuracionNota] = useState("");
   const [guardandoNota, setGuardandoNota] = useState(false);
   const [archivoNota, setArchivoNota] = useState<string | null>(null);
   const [archivoNotaNombre, setArchivoNotaNombre] = useState<string | null>(null);
@@ -208,6 +211,8 @@ export default function PacienteDetallePage() {
       body: JSON.stringify({
         tipo: tipoNota,
         nota: textoNota || null,
+        tratamiento: tratamientoNota || null,
+        duracion: duracionNota || null,
         archivo: archivoNota,
         archivo_nombre: archivoNotaNombre,
         archivo_tipo: archivoNotaTipo,
@@ -215,6 +220,8 @@ export default function PacienteDetallePage() {
     });
     setTipoNota("");
     setTextoNota("");
+    setTratamientoNota("");
+    setDuracionNota("");
     quitarArchivoNota();
     setFormNotaAbierto(false);
     setGuardandoNota(false);
@@ -473,6 +480,20 @@ export default function PacienteDetallePage() {
                     <Trash2 size={13} />
                   </button>
                 </div>
+                {(n.tratamiento || n.duracion) && (
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {n.tratamiento && (
+                      <span className="rounded-full bg-[#F5E7E9] px-2 py-0.5 text-[11px] font-medium text-[#803449]">
+                        {n.tratamiento}
+                      </span>
+                    )}
+                    {n.duracion && (
+                      <span className="rounded-full bg-[#F5F1EA] px-2 py-0.5 text-[11px] font-medium text-[#8a8272]">
+                        {n.duracion}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {n.nota && <p className="mt-0.5 text-[13px] text-[#8a8272]">{n.nota}</p>}
                 {n.archivo && n.archivo_tipo?.startsWith("image/") ? (
                   <a href={n.archivo} target="_blank" rel="noreferrer" className="mt-2 inline-block">
@@ -505,6 +526,26 @@ export default function PacienteDetallePage() {
               placeholder="Tipo (ej. Consulta, Diagnóstico)"
               className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
+            <div className="flex gap-2">
+              <select
+                value={tratamientoNota}
+                onChange={(e) => setTratamientoNota(e.target.value)}
+                className="w-full flex-1 rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              >
+                <option value="">Tratamiento (opcional)</option>
+                {TRATAMIENTOS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={duracionNota}
+                onChange={(e) => setDuracionNota(e.target.value)}
+                placeholder="Duración (ej. 45 min)"
+                className="w-32 shrink-0 rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+              />
+            </div>
             <textarea
               value={textoNota}
               onChange={(e) => setTextoNota(e.target.value)}

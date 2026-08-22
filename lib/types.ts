@@ -21,6 +21,8 @@ export interface PacienteNota {
   fecha: string;
   tipo: string;
   nota: string | null;
+  tratamiento: string | null;
+  duracion: string | null;
   archivo: string | null;
   archivo_nombre: string | null;
   archivo_tipo: string | null;

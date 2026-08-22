@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS paciente_notas (
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo TEXT;
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo_nombre VARCHAR(200);
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo_tipo VARCHAR(80);
+-- Qué tratamiento se hizo y cuánto duró, para las entradas del
+-- historial clínico general (ej. "Endodoncia" · "45 min").
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS tratamiento VARCHAR(120);
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS duracion VARCHAR(60);
 
 -- Pagos — uno o varios por cita (permite abonos parciales).
 CREATE TABLE IF NOT EXISTS pagos (

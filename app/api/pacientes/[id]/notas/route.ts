@@ -18,7 +18,8 @@ export async function GET(
     }
 
     const { rows } = await query(
-      `SELECT id, fecha, tipo, nota, archivo, archivo_nombre, archivo_tipo FROM paciente_notas
+      `SELECT id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo
+       FROM paciente_notas
        WHERE paciente_id = $1 ORDER BY fecha DESC, id DESC`,
       [pacienteId]
     );
@@ -40,7 +41,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { tipo, nota, creado_por, archivo, archivo_nombre, archivo_tipo } = body ?? {};
+    const { tipo, nota, tratamiento, duracion, creado_por, archivo, archivo_nombre, archivo_tipo } = body ?? {};
 
     if (!tipo || typeof tipo !== "string") {
       return NextResponse.json({ error: "tipo es requerido" }, { status: 400 });
@@ -56,13 +57,15 @@ export async function POST(
     }
 
     const { rows } = await query(
-      `INSERT INTO paciente_notas (paciente_id, tipo, nota, creado_por, archivo, archivo_nombre, archivo_tipo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, fecha, tipo, nota, archivo, archivo_nombre, archivo_tipo`,
+      `INSERT INTO paciente_notas (paciente_id, tipo, nota, tratamiento, duracion, creado_por, archivo, archivo_nombre, archivo_tipo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo`,
       [
         pacienteId,
         tipo,
         nota ?? null,
+        tratamiento ?? null,
+        duracion ?? null,
         creado_por ?? null,
         archivo ?? null,
         archivo_nombre ?? null,
