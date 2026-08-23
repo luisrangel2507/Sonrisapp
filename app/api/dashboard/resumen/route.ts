@@ -10,12 +10,21 @@ export async function GET() {
     // en el del servidor (Railway/Neon corren en UTC) — si no, una cita
     // de las 7pm ya cuenta como "mañana" en la BD aunque en la app (que
     // agrupa con la hora local del celular) siga apareciendo como hoy.
+    //
+    // La semana empieza en domingo (igual que el selector de semana de
+    // la pestaña Citas, que usa Date.getDay() en JS) — date_trunc('week', …)
+    // de Postgres arranca en lunes, y esa diferencia hacía que "Citas
+    // esta semana" del Panel no coincidiera con lo que se ve en Citas.
     const { rows } = await query(`
-      WITH limites AS (
+      WITH hoy AS (
+        SELECT (now() AT TIME ZONE 'America/Mexico_City')::date AS d
+      ),
+      limites AS (
         SELECT
-          date_trunc('day', now() AT TIME ZONE 'America/Mexico_City') AT TIME ZONE 'America/Mexico_City' AS hoy_inicio,
-          date_trunc('week', now() AT TIME ZONE 'America/Mexico_City') AT TIME ZONE 'America/Mexico_City' AS semana_inicio,
-          date_trunc('month', now() AT TIME ZONE 'America/Mexico_City') AT TIME ZONE 'America/Mexico_City' AS mes_inicio
+          (d AT TIME ZONE 'America/Mexico_City') AS hoy_inicio,
+          ((d - EXTRACT(DOW FROM d)::int) AT TIME ZONE 'America/Mexico_City') AS semana_inicio,
+          (date_trunc('month', d)::date AT TIME ZONE 'America/Mexico_City') AS mes_inicio
+        FROM hoy
       ),
       pagos_por_cita AS (
         SELECT cita_id, COALESCE(SUM(monto), 0) AS pagado
