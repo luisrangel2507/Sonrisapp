@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Check, X, DollarSign, UserPlus, ChevronLeft, ChevronRight, Pencil, RotateCcw } from "lucide-react";
+import {
+  Plus,
+  Check,
+  X,
+  DollarSign,
+  UserPlus,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  RotateCcw,
+  AlertTriangle,
+} from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
+import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 
 const NUEVO_PACIENTE = "__nuevo__";
@@ -316,6 +328,7 @@ function CitaTimelineItem({
 }) {
   const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
   const progresoPago = cita.monto ? Math.min(100, (cita.pagado / cita.monto) * 100) : 0;
+  const vencida = citaVencidaSinCompletar(cita);
 
   return (
     <div className={esUltimo ? "" : "pb-4"}>
@@ -335,9 +348,15 @@ function CitaTimelineItem({
                 <div className="text-sm font-semibold leading-snug text-[#2b2118]">{cita.paciente_nombre}</div>
                 <div className="text-xs text-[#a49c8a]">{cita.tratamiento}</div>
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[cita.estado]}`}>
-                {cita.estado}
-              </span>
+              {vencida ? (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#B0503A] px-2.5 py-1 text-[11px] font-semibold text-white">
+                  <AlertTriangle size={11} /> Vencida
+                </span>
+              ) : (
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[cita.estado]}`}>
+                  {cita.estado}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -714,6 +733,11 @@ export default function CitasPage() {
       .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
   }, [citas, diaSeleccionado]);
 
+  const citasVencidas = useMemo(
+    () => (citas ?? []).filter(citaVencidaSinCompletar).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora)),
+    [citas]
+  );
+
   const diasDeLaSemana = useMemo(() => {
     const inicio = inicioDeSemana(diaSeleccionado);
     return Array.from({ length: 7 }, (_, i) => new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i));
@@ -768,6 +792,21 @@ export default function CitasPage() {
         <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
           {error}
         </div>
+      )}
+      {citasVencidas.length > 0 && (
+        <button
+          onClick={() => seleccionarDia(inicioDelDia(new Date(citasVencidas[0].fecha_hora)))}
+          className="flex w-full items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-left text-[13px] text-[#B0503A]"
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <strong>
+              {citasVencidas.length} cita{citasVencidas.length === 1 ? "" : "s"} sin marcar como completada
+              {citasVencidas.length === 1 ? "" : "s"}
+            </strong>{" "}
+            — ya pasaron más de 2 horas. Tócalo para ir a la más antigua.
+          </span>
+        </button>
       )}
       {!formAbierto ? (
         <button

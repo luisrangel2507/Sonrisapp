@@ -25,6 +25,16 @@ export function esFechaFutura(fechaISO: string): boolean {
   return fechaISO.slice(0, 10) > new Date().toISOString().slice(0, 10);
 }
 
+// Cuántas horas después de la hora de la cita se considera "vencida"
+// si sigue agendada — tiempo suficiente para que la doctora la marque
+// como completada sin que se dispare la alerta de inmediato.
+const HORAS_PARA_VENCIDA = 2;
+
+export function citaVencidaSinCompletar(cita: { estado: string; fecha_hora: string }): boolean {
+  if (cita.estado !== "agendada") return false;
+  return new Date(cita.fecha_hora).getTime() + HORAS_PARA_VENCIDA * 60 * 60 * 1000 < Date.now();
+}
+
 export function proximoCumpleanos(fechaNacimiento: string | null) {
   if (!fechaNacimiento) return null;
   const hoy = new Date();

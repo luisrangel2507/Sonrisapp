@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, MessageCircle, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, Calendar, MessageCircle, TrendingUp, Wallet } from "lucide-react";
 import { Hero } from "@/components/Hero";
 import { Pill } from "@/components/Pill";
 import { StatCard } from "@/components/StatCard";
 import { BotChat } from "@/components/BotChat";
 import { formatearDinero } from "@/lib/dinero";
+import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { DOCTORA } from "@/lib/panel-data";
 import type { Cita, ResumenDashboard } from "@/lib/types";
 
@@ -23,6 +24,7 @@ export default function PanelPage() {
   const [showChat, setShowChat] = useState(false);
   const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
   const [citasHoy, setCitasHoy] = useState<Cita[] | null>(null);
+  const [citasVencidas, setCitasVencidas] = useState<Cita[]>([]);
   const [errorResumen, setErrorResumen] = useState<string | null>(null);
   const [errorCitas, setErrorCitas] = useState<string | null>(null);
   const [nombreBienvenida, setNombreBienvenida] = useState(NOMBRE_CORTO_DOCTORA);
@@ -56,6 +58,9 @@ export default function PanelPage() {
             .filter((c) => c.estado !== "cancelada" && new Date(c.fecha_hora).toDateString() === hoy)
             .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
         );
+        setCitasVencidas(
+          citas.filter(citaVencidaSinCompletar).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
+        );
       })
       .catch((err) => setErrorCitas(`No se pudieron cargar las citas: ${err.message}`));
   }, []);
@@ -74,6 +79,22 @@ export default function PanelPage() {
           <div className="text-2xl font-bold text-[#3F6B33]">{resumen?.citas_hoy ?? "…"}</div>
         </div>
       </div>
+
+      {citasVencidas.length > 0 && (
+        <Link
+          href="/dashboard/citas"
+          className="mx-4 mt-4 flex items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]"
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <strong>
+              {citasVencidas.length} cita{citasVencidas.length === 1 ? "" : "s"} sin marcar como completada
+              {citasVencidas.length === 1 ? "" : "s"}
+            </strong>{" "}
+            — ya pasaron más de 2 horas. Tócalo para revisarlas.
+          </span>
+        </Link>
+      )}
 
       {(errorResumen || errorCitas) && (
         <div className="mx-4 mt-4 space-y-2">
