@@ -175,6 +175,12 @@ CREATE TABLE IF NOT EXISTS perfil_dentista (
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Nombre corto que se usa en el saludo del Panel ("Bienvenida, X") —
+-- separado del nombre legal completo (DOCTORA.nombre) que sí debe
+-- mantenerse fijo en documentos formales (consentimientos, historia
+-- clínica). Editable desde Perfil.
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS nombre_bienvenida VARCHAR(60);
+
 -- Inventario de insumos del consultorio (materiales, anestésicos,
 -- guantes, etc.) — cantidad_minima define cuándo se marca "bajo stock".
 CREATE TABLE IF NOT EXISTS inventario (

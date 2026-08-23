@@ -25,8 +25,16 @@ export default function PanelPage() {
   const [citasHoy, setCitasHoy] = useState<Cita[] | null>(null);
   const [errorResumen, setErrorResumen] = useState<string | null>(null);
   const [errorCitas, setErrorCitas] = useState<string | null>(null);
+  const [nombreBienvenida, setNombreBienvenida] = useState(NOMBRE_CORTO_DOCTORA);
 
   useEffect(() => {
+    fetch("/api/perfil")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.nombre_bienvenida) setNombreBienvenida(data.nombre_bienvenida);
+      })
+      .catch(() => {});
+
     fetch("/api/dashboard/resumen")
       .then(async (res) => {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
@@ -57,7 +65,7 @@ export default function PanelPage() {
       <div className="flex items-start justify-between border-y border-[#EFE9DC] px-5 py-4">
         <div>
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Bienvenida, {NOMBRE_CORTO_DOCTORA}
+            Bienvenida, {nombreBienvenida}
           </h2>
           <p className="mt-1 text-sm text-[#8a8272]">We&apos;ll be glowing in the dark ✨</p>
         </div>

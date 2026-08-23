@@ -63,6 +63,13 @@ export default function PerfilPage() {
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [errorFoto, setErrorFoto] = useState("");
 
+  const [nombreBienvenida, setNombreBienvenida] = useState("");
+  const [guardandoNombre, setGuardandoNombre] = useState(false);
+  const [nombreGuardado, setNombreGuardado] = useState(false);
+  // Evita que la respuesta del fetch inicial (que puede tardar) borre
+  // lo que el usuario ya empezó a escribir antes de que llegara.
+  const nombreTocadoRef = useRef(false);
+
   const [notifSoportado, setNotifSoportado] = useState(false);
   const [notifStandalone, setNotifStandalone] = useState(true);
   const [notifActiva, setNotifActiva] = useState(false);
@@ -202,7 +209,10 @@ export default function PerfilPage() {
 
     fetch("/api/perfil")
       .then((res) => res.json())
-      .then((data) => setFoto(data.foto ?? null));
+      .then((data) => {
+        setFoto(data.foto ?? null);
+        if (!nombreTocadoRef.current) setNombreBienvenida(data.nombre_bienvenida ?? "");
+      });
 
     cargarUsuarios();
     cargarPasskeys();
@@ -318,6 +328,23 @@ export default function PerfilPage() {
     }
   }
 
+  async function guardarNombreBienvenida() {
+    if (guardandoNombre) return;
+    setGuardandoNombre(true);
+    setNombreGuardado(false);
+    try {
+      await fetch("/api/perfil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre_bienvenida: nombreBienvenida.trim() || null }),
+      });
+      setNombreGuardado(true);
+      setTimeout(() => setNombreGuardado(false), 2000);
+    } finally {
+      setGuardandoNombre(false);
+    }
+  }
+
   return (
     <div className="mx-4 mt-2 space-y-4 pb-10">
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
@@ -355,6 +382,34 @@ export default function PerfilPage() {
         </div>
         <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
         <div className="text-xs text-[#a49c8a]">Cédula profesional: {DOCTORA.cedula}</div>
+
+        <div className="mt-4 border-t border-[#EFE9DC] pt-4 text-left">
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            Nombre en el saludo del Panel
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={nombreBienvenida}
+              onChange={(e) => {
+                nombreTocadoRef.current = true;
+                setNombreBienvenida(e.target.value);
+              }}
+              placeholder="ej. Dra. Daniela"
+              maxLength={60}
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+            />
+            <button
+              onClick={guardarNombreBienvenida}
+              disabled={guardandoNombre}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#2b2118] px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+            >
+              <Save size={14} /> {guardandoNombre ? "…" : nombreGuardado ? "✓" : "Guardar"}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[11px] text-[#a49c8a]">
+            Se usa solo en &quot;Bienvenida, …&quot; del Panel — no cambia tu nombre en documentos oficiales.
+          </p>
+        </div>
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
