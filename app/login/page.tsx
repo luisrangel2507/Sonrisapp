@@ -30,7 +30,6 @@ export default function LoginPage() {
     setMostrarCarga(true);
     setTimeout(() => {
       router.push(next);
-      router.refresh();
     }, DURACION_PANTALLA_CARGA_MS);
   }
 
