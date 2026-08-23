@@ -12,7 +12,7 @@ const TIEMPO_INACTIVIDAD_MS = 5 * 60 * 1000;
 const TABS = [
   { href: "/dashboard", label: "Panel", icon: Activity },
   { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
-  { href: "/dashboard/citas", label: "Citas", icon: Calendar },
+  { href: "/dashboard/citas", label: "Agenda", icon: Calendar },
   { href: "/dashboard/inventario", label: "Inventario", icon: Package },
 ];
 

@@ -17,6 +17,14 @@ function formatearHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 }
 
+// "YYYY-MM-DD" en horario local — para mandar a Citas el día exacto
+// que debe abrir (?ir=), sin desfasarse por la zona horaria.
+function claveDiaLocal(fechaHora: string) {
+  const d = new Date(fechaHora);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
 
 export default function PanelPage() {
@@ -82,7 +90,7 @@ export default function PanelPage() {
 
       {citasVencidas.length > 0 && (
         <Link
-          href="/dashboard/citas"
+          href={`/dashboard/citas?ir=${claveDiaLocal(citasVencidas[0].fecha_hora)}`}
           className="mx-4 mt-4 flex items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]"
         >
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
@@ -91,7 +99,7 @@ export default function PanelPage() {
               {citasVencidas.length} cita{citasVencidas.length === 1 ? "" : "s"} sin marcar como completada
               {citasVencidas.length === 1 ? "" : "s"}
             </strong>{" "}
-            — ya pasaron más de 2 horas. Tócalo para revisarlas.
+            — ya pasaron más de 2 horas. Tócalo para ir a la más antigua.
           </span>
         </Link>
       )}

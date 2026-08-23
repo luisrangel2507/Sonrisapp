@@ -577,10 +577,18 @@ export default function CitasPage() {
 
   useEffect(() => {
     cargar();
-    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("nuevo") === "1") {
       setFormAbierto(true);
       window.history.replaceState(null, "", window.location.pathname);
     }
+    const ir = params.get("ir");
+    if (ir) {
+      const [y, m, d] = ir.split("-").map(Number);
+      if (y && m && d) seleccionarDia(new Date(y, m - 1, d));
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function elegirTratamiento(valor: string) {
