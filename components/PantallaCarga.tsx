@@ -9,7 +9,7 @@ function IconoDienteCarga({ delay }: { delay: string }) {
 export function PantallaCarga() {
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-end bg-cover bg-center px-6 pb-16"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-end bg-cover bg-center px-6 pb-16 md:bg-contain md:bg-no-repeat"
       style={{ backgroundColor: "#160a10", backgroundImage: "url('/loading-bg.jpg')" }}
     >
       <div className="flex flex-col items-center gap-3 rounded-full bg-black/30 px-7 py-4 backdrop-blur-sm">
