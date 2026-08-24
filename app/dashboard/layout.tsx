@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserCog, Activity, Users, Calendar, Package } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package, BarChart3 } from "lucide-react";
 
 // Cierra la sesión sola después de 5 minutos sin tocar la pantalla —
 // pensado para un dispositivo compartido del consultorio.
@@ -14,6 +14,7 @@ const TABS = [
   { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
   { href: "/dashboard/citas", label: "Agenda", icon: Calendar },
   { href: "/dashboard/inventario", label: "Inventario", icon: Package },
+  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

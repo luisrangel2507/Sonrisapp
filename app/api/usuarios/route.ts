@@ -3,10 +3,12 @@ import { query } from "@/lib/db";
 import { hashContrasena } from "@/lib/auth";
 import { errorJson } from "@/lib/api-error";
 
+const ROLES_VALIDOS = ["admin", "asistente"];
+
 export async function GET() {
   try {
     const { rows } = await query(
-      `SELECT id, nombre, usuario, creado_en FROM usuarios ORDER BY creado_en ASC`
+      `SELECT id, nombre, usuario, rol, creado_en FROM usuarios ORDER BY creado_en ASC`
     );
     return NextResponse.json({ usuarios: rows });
   } catch (err) {
@@ -20,6 +22,7 @@ export async function POST(req: NextRequest) {
     const nombre = typeof body?.nombre === "string" ? body.nombre.trim() : "";
     const usuario = typeof body?.usuario === "string" ? body.usuario.trim() : "";
     const contrasena = typeof body?.contrasena === "string" ? body.contrasena : "";
+    const rol = ROLES_VALIDOS.includes(body?.rol) ? body.rol : "admin";
 
     if (!nombre || !usuario || !contrasena) {
       return NextResponse.json({ error: "nombre, usuario y contraseña son requeridos" }, { status: 400 });
@@ -31,9 +34,9 @@ export async function POST(req: NextRequest) {
     const contrasenaHash = await hashContrasena(contrasena);
 
     const { rows } = await query(
-      `INSERT INTO usuarios (nombre, usuario, contrasena_hash) VALUES ($1, $2, $3)
-       RETURNING id, nombre, usuario, creado_en`,
-      [nombre, usuario, contrasenaHash]
+      `INSERT INTO usuarios (nombre, usuario, contrasena_hash, rol) VALUES ($1, $2, $3, $4)
+       RETURNING id, nombre, usuario, rol, creado_en`,
+      [nombre, usuario, contrasenaHash, rol]
     );
 
     return NextResponse.json({ usuario: rows[0] }, { status: 201 });

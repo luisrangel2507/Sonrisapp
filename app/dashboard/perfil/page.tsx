@@ -81,6 +81,7 @@ export default function PerfilPage() {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoUsuario, setNuevoUsuario] = useState("");
   const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [nuevoRol, setNuevoRol] = useState<"admin" | "asistente">("admin");
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [errorUsuario, setErrorUsuario] = useState("");
   const [borrandoId, setBorrandoId] = useState<number | null>(null);
@@ -109,13 +110,14 @@ export default function PerfilPage() {
       const res = await fetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nuevoNombre, usuario: nuevoUsuario, contrasena: nuevaContrasena }),
+        body: JSON.stringify({ nombre: nuevoNombre, usuario: nuevoUsuario, contrasena: nuevaContrasena, rol: nuevoRol }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "no se pudo crear el usuario");
       setNuevoNombre("");
       setNuevoUsuario("");
       setNuevaContrasena("");
+      setNuevoRol("admin");
       cargarUsuarios();
     } catch (err) {
       setErrorUsuario(err instanceof Error ? err.message : "no se pudo crear el usuario");
@@ -618,7 +620,16 @@ export default function PerfilPage() {
                     className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5"
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-[#2b2118]">{u.nombre}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="truncate text-sm font-medium text-[#2b2118]">{u.nombre}</div>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            u.rol === "admin" ? "bg-[#F7E5E0] text-[#803449]" : "bg-[#E8F0E3] text-[#3F6B33]"
+                          }`}
+                        >
+                          {u.rol === "admin" ? "Admin" : "Asistente"}
+                        </span>
+                      </div>
                       <div className="truncate text-xs text-[#a49c8a]">@{u.usuario}</div>
                     </div>
                     <button
@@ -658,6 +669,14 @@ export default function PerfilPage() {
                 minLength={6}
                 className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
               />
+              <select
+                value={nuevoRol}
+                onChange={(e) => setNuevoRol(e.target.value as "admin" | "asistente")}
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              >
+                <option value="admin">Admin — acceso completo</option>
+                <option value="asistente">Asistente</option>
+              </select>
               {errorUsuario && <p className="text-[12px] text-[#B0503A]">{errorUsuario}</p>}
               <button
                 type="submit"

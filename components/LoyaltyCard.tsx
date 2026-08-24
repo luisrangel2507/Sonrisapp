@@ -2,7 +2,12 @@ import { CreditCard, Gift, Cake } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 import { proximoCumpleanos } from "@/lib/fechas";
 
-export function LoyaltyCard({ paciente }: { paciente: Paciente }) {
+type PacienteLealtad = Pick<
+  Paciente,
+  "nombre" | "puntos" | "meta_premio" | "premio_actual" | "fecha_nacimiento" | "creado_en" | "folio" | "visitas_totales"
+>;
+
+export function LoyaltyCard({ paciente }: { paciente: PacienteLealtad }) {
   const progreso = Math.min(100, Math.round((paciente.puntos / (paciente.meta_premio || 1)) * 100));
   const cumple = proximoCumpleanos(paciente.fecha_nacimiento);
   const desde = new Date(paciente.creado_en).toLocaleDateString("es-MX", { month: "short", year: "numeric" });

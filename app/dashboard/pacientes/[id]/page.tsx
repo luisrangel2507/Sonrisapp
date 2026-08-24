@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   ChevronLeft,
   ClipboardList,
+  ExternalLink,
+  FileDown,
   FileSignature,
   FileText,
   Paperclip,
@@ -104,6 +106,8 @@ export default function PacienteDetallePage() {
 
   const [enviandoLink, setEnviandoLink] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [enviandoPortal, setEnviandoPortal] = useState(false);
+  const [portalCopiado, setPortalCopiado] = useState(false);
 
   const [consentimientos, setConsentimientos] = useState<Consentimiento[]>([]);
   const [formConsentAbierto, setFormConsentAbierto] = useState(false);
@@ -267,6 +271,33 @@ export default function PacienteDetallePage() {
     }
   }
 
+  async function compartirPortal() {
+    if (enviandoPortal || !paciente) return;
+    setEnviandoPortal(true);
+    try {
+      const res = await fetch(`/api/pacientes/${pacienteId}/historial-token`);
+      const data = await res.json();
+      if (!data.token) return;
+
+      const url = `${window.location.origin}/portal/${data.token}`;
+      const texto = `Hola ${paciente.nombre.split(" ")[0]}, aquí puedes ver tus citas y tu historial: ${url}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "Tu portal — Viña Sonrisas", text: texto, url });
+        } catch {
+          // el usuario canceló el share, no hacer nada
+        }
+      } else {
+        await navigator.clipboard.writeText(texto);
+        setPortalCopiado(true);
+        setTimeout(() => setPortalCopiado(false), 2500);
+      }
+    } finally {
+      setEnviandoPortal(false);
+    }
+  }
+
   async function crearConsentimiento() {
     if (!tituloConsent.trim() || !contenidoConsent.trim() || creandoConsent) return;
     setCreandoConsent(true);
@@ -362,6 +393,21 @@ export default function PacienteDetallePage() {
             className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118] disabled:opacity-50"
           >
             <Share2 size={13} /> {linkCopiado ? "Link copiado ✓" : "Enviar link para llenar historial"}
+          </button>
+          <a
+            href={`/api/pacientes/${paciente.id}/reporte`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+          >
+            <FileDown size={13} /> Descargar reporte
+          </a>
+          <button
+            onClick={compartirPortal}
+            disabled={enviandoPortal}
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118] disabled:opacity-50"
+          >
+            <ExternalLink size={13} /> {portalCopiado ? "Link copiado ✓" : "Copiar link del portal"}
           </button>
         </div>
 

@@ -12,6 +12,7 @@ import {
   Pencil,
   RotateCcw,
   AlertTriangle,
+  FileDown,
 } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
@@ -403,13 +404,23 @@ function CitaTimelineItem({
             <Pencil size={12} /> Editar
           </button>
           {cita.pagado > 0 && (
-            <button
-              onClick={onDeshacerPago}
-              disabled={deshaciendoPago}
-              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
-            >
-              <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
-            </button>
+            <>
+              <a
+                href={`/api/citas/${cita.id}/recibo`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+              >
+                <FileDown size={12} /> Recibo
+              </a>
+              <button
+                onClick={onDeshacerPago}
+                disabled={deshaciendoPago}
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+              >
+                <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
+              </button>
+            </>
           )}
         </div>
 

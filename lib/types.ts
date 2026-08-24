@@ -79,6 +79,7 @@ export interface Usuario {
   id: number;
   nombre: string;
   usuario: string;
+  rol: "admin" | "asistente";
   creado_en: string;
 }
 

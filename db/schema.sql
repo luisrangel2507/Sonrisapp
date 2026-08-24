@@ -202,8 +202,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nombre VARCHAR(160) NOT NULL,
   usuario VARCHAR(60) NOT NULL UNIQUE,
   contrasena_hash TEXT NOT NULL,
+  rol VARCHAR(20) NOT NULL DEFAULT 'admin', -- 'admin' | 'asistente'
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) NOT NULL DEFAULT 'admin';
 
 -- Registro de avisos automáticos por WhatsApp ya enviados (por paciente,
 -- por día, por tipo) — evita duplicar el resumen de "citas de hoy" si el
