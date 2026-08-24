@@ -24,6 +24,7 @@ export const FDI_A_UNIVERSAL: Record<number, number> = {
 };
 
 export interface HistorialEntrada {
+  id: number;
   fecha: string;
   tipo: string;
   nota: string | null;

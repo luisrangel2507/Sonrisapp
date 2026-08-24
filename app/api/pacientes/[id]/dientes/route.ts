@@ -23,12 +23,13 @@ export async function GET(
     );
 
     const { rows: entradas } = await query<{
+      id: number;
       paciente_diente_id: number;
       fecha: string;
       tipo: string;
       nota: string | null;
     }>(
-      `SELECT h.paciente_diente_id, h.fecha, h.tipo, h.nota
+      `SELECT h.id, h.paciente_diente_id, h.fecha, h.tipo, h.nota
        FROM diente_historial h
        JOIN paciente_dientes d ON d.id = h.paciente_diente_id
        WHERE d.paciente_id = $1
@@ -44,6 +45,7 @@ export async function GET(
       const diente = dientes.find((d) => d.id === e.paciente_diente_id);
       if (!diente) continue;
       historial[diente.numero_fdi].entradas.push({
+        id: e.id,
         fecha: e.fecha,
         tipo: e.tipo,
         nota: e.nota,

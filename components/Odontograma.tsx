@@ -8,6 +8,7 @@ import {
   ESTADO_DIENTE,
   type EstadoDiente,
   type HistorialDental,
+  type HistorialEntrada,
 } from "@/lib/dental";
 import type { Paciente } from "@/lib/types";
 import { fechaSoloDia } from "@/lib/fechas";
@@ -351,6 +352,11 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [nota, setNota] = useState("");
   const [estadoNuevo, setEstadoNuevo] = useState<EstadoDiente | "">("");
   const [guardando, setGuardando] = useState(false);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [tipoEdit, setTipoEdit] = useState("");
+  const [notaEdit, setNotaEdit] = useState("");
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
 
   async function cargarHistorial() {
     setCargando(true);
@@ -387,6 +393,38 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   function seleccionar(n: number) {
     setSeleccionado(n);
     setFormAbierto(false);
+    setEditandoId(null);
+  }
+
+  function abrirEdicion(e: HistorialEntrada) {
+    setFormAbierto(false);
+    setEditandoId(e.id);
+    setTipoEdit(e.tipo);
+    setNotaEdit(e.nota ?? "");
+  }
+
+  async function guardarEdicion() {
+    if (!tipoEdit.trim() || guardandoEdit || editandoId == null) return;
+    setGuardandoEdit(true);
+    await fetch(`/api/pacientes/${paciente.id}/dientes/${seleccionado}/${editandoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo: tipoEdit, nota: notaEdit || null }),
+    });
+    setEditandoId(null);
+    setGuardandoEdit(false);
+    await cargarHistorial();
+  }
+
+  async function eliminarEntrada(id: number) {
+    if (eliminandoId) return;
+    const ok = window.confirm("¿Eliminar este registro del historial? No se puede deshacer.");
+    if (!ok) return;
+    setEliminandoId(id);
+    await fetch(`/api/pacientes/${paciente.id}/dientes/${seleccionado}/${id}`, { method: "DELETE" });
+    setEditandoId(null);
+    setEliminandoId(null);
+    await cargarHistorial();
   }
 
   return (
@@ -516,15 +554,59 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           {cargando ? (
             <p className="text-sm text-white/50">Cargando historial…</p>
           ) : info?.entradas?.length ? (
-            info.entradas.map((e, i) => (
-              <div key={i} className="border-l-2 border-white/10 pl-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white/90">{e.tipo}</span>
-                  <span className="text-[11px] text-white/40">{formatearFecha(e.fecha)}</span>
+            info.entradas.map((e) =>
+              editandoId === e.id ? (
+                <div key={e.id} className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <input
+                    value={tipoEdit}
+                    onChange={(ev) => setTipoEdit(ev.target.value)}
+                    placeholder="Tipo de tratamiento"
+                    className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
+                  />
+                  <textarea
+                    value={notaEdit}
+                    onChange={(ev) => setNotaEdit(ev.target.value)}
+                    placeholder="Nota (opcional)"
+                    rows={2}
+                    className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={guardarEdicion}
+                      disabled={!tipoEdit.trim() || guardandoEdit}
+                      className="flex-1 rounded-full bg-[#7C5CE0] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                    >
+                      {guardandoEdit ? "Guardando…" : "Guardar"}
+                    </button>
+                    <button
+                      onClick={() => eliminarEntrada(e.id)}
+                      disabled={eliminandoId === e.id}
+                      className="rounded-full border border-[#E8508C]/50 px-4 py-2 text-[13px] font-medium text-[#E8508C] disabled:opacity-50"
+                    >
+                      {eliminandoId === e.id ? "Eliminando…" : "Eliminar"}
+                    </button>
+                    <button
+                      onClick={() => setEditandoId(null)}
+                      className="rounded-full border border-white/15 px-4 py-2 text-[13px] font-medium text-white/70"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-                {e.nota && <p className="mt-0.5 text-[13px] text-white/50">{e.nota}</p>}
-              </div>
-            ))
+              ) : (
+                <button
+                  key={e.id}
+                  onClick={() => abrirEdicion(e)}
+                  className="block w-full border-l-2 border-white/10 pl-3 text-left transition-colors hover:border-white/30"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-white/90">{e.tipo}</span>
+                    <span className="text-[11px] text-white/40">{formatearFecha(e.fecha)}</span>
+                  </div>
+                  {e.nota && <p className="mt-0.5 text-[13px] text-white/50">{e.nota}</p>}
+                </button>
+              )
+            )
           ) : (
             <p className="text-sm text-white/50">Sin historial registrado — diente sano.</p>
           )}
@@ -575,7 +657,10 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         ) : (
           <button
-            onClick={() => setFormAbierto(true)}
+            onClick={() => {
+              setFormAbierto(true);
+              setEditandoId(null);
+            }}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 py-2.5 text-[13px] font-semibold text-white/90"
           >
             <Plus size={14} /> Agregar registro a este diente
