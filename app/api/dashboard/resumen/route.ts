@@ -15,15 +15,21 @@ export async function GET() {
     // la pestaña Citas, que usa Date.getDay() en JS) — date_trunc('week', …)
     // de Postgres arranca en lunes, y esa diferencia hacía que "Citas
     // esta semana" del Panel no coincidiera con lo que se ve en Citas.
+    //
+    // ::timestamp antes de AT TIME ZONE es obligatorio: aplicado
+    // directamente sobre un `date`, Postgres resuelve al overload de
+    // timestamptz (usa la zona del servidor, no la de México) y da un
+    // resultado corrido 12 horas — eso hacía que "Ingresos del mes" no
+    // cuadrara con los pagos reales cerca del cambio de día/mes.
     const { rows } = await query(`
       WITH hoy AS (
         SELECT (now() AT TIME ZONE 'America/Mexico_City')::date AS d
       ),
       limites AS (
         SELECT
-          (d AT TIME ZONE 'America/Mexico_City') AS hoy_inicio,
-          ((d - EXTRACT(DOW FROM d)::int) AT TIME ZONE 'America/Mexico_City') AS semana_inicio,
-          (date_trunc('month', d)::date AT TIME ZONE 'America/Mexico_City') AS mes_inicio
+          (d::timestamp AT TIME ZONE 'America/Mexico_City') AS hoy_inicio,
+          ((d - EXTRACT(DOW FROM d)::int)::timestamp AT TIME ZONE 'America/Mexico_City') AS semana_inicio,
+          (date_trunc('month', d)::timestamp AT TIME ZONE 'America/Mexico_City') AS mes_inicio
         FROM hoy
       ),
       pagos_por_cita AS (
