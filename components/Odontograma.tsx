@@ -217,7 +217,7 @@ function estiloPoligono(estado: EstadoDiente, activo: boolean): CSSProperties {
   if (estado === "sano") {
     return { fill: "transparent", stroke: "transparent", strokeWidth: 0 };
   }
-  if (estado === "extraido") {
+  if (estado === "ausente") {
     // Negro sólido tipo "hueco" con contorno bien definido, para que se
     // note a propósito que ahí falta un diente y no se confunda con una
     // sombra de la foto.
