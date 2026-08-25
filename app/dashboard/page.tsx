@@ -35,15 +35,18 @@ export default function PanelPage() {
   const [citasVencidas, setCitasVencidas] = useState<Cita[]>([]);
   const [errorResumen, setErrorResumen] = useState<string | null>(null);
   const [errorCitas, setErrorCitas] = useState<string | null>(null);
-  const [nombreBienvenida, setNombreBienvenida] = useState(NOMBRE_CORTO_DOCTORA);
+  // Empieza en null (sin nombre) en vez de adivinar uno — mostrar un
+  // nombre "de relleno" y luego cambiarlo al real cuando llega la
+  // respuesta de /api/perfil es justo el parpadeo que se reportó.
+  const [nombreBienvenida, setNombreBienvenida] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/perfil")
       .then((res) => res.json())
       .then((data) => {
-        if (data?.nombre_bienvenida) setNombreBienvenida(data.nombre_bienvenida);
+        setNombreBienvenida(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
       })
-      .catch(() => {});
+      .catch(() => setNombreBienvenida(NOMBRE_CORTO_DOCTORA));
 
     fetch("/api/dashboard/resumen")
       .then(async (res) => {
@@ -78,7 +81,7 @@ export default function PanelPage() {
       <div className="flex items-start justify-between border-y border-[#EFE9DC] px-5 py-4">
         <div>
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Bienvenida, {nombreBienvenida}
+            {nombreBienvenida ? `Bienvenida, ${nombreBienvenida}` : "Bienvenida"}
           </h2>
           <p className="mt-1 text-sm text-[#8a8272]">We&apos;ll be glowing in the dark ✨</p>
         </div>
