@@ -374,6 +374,15 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   const info = historial[seleccionado];
   const estado = ESTADO_DIENTE[info?.estado ?? "sano"];
 
+  // Solo las condiciones que de verdad tiene marcadas este paciente —
+  // mostrar las 15 posibles siempre hacía el legend enorme y difícil
+  // de leer. "sano" no cuenta: no se pinta de color en la foto.
+  const estadosPresentes = new Set<EstadoDiente>(
+    Object.values(historial)
+      .map((d) => d.estado)
+      .filter((e) => e !== "sano")
+  );
+
   async function agregarRegistro() {
     if (!tipo.trim() || guardando) return;
     setGuardando(true);
@@ -522,14 +531,22 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         )}
 
-        <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">
-          {Object.entries(ESTADO_DIENTE).map(([key, v]) => (
-            <div key={key} className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: v.ring }} />
-              <span className="text-[11px] text-white/50">{v.label}</span>
-            </div>
-          ))}
-        </div>
+        {estadosPresentes.size > 0 ? (
+          <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">
+            {Object.entries(ESTADO_DIENTE)
+              .filter(([key]) => estadosPresentes.has(key as EstadoDiente))
+              .map(([key, v]) => (
+                <div key={key} className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: v.ring }} />
+                  <span className="text-[11px] text-white/50">{v.label}</span>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <p className="mt-5 border-t border-white/10 pt-4 text-center text-[11px] text-white/30">
+            Sin afectaciones registradas — todos los dientes sanos.
+          </p>
+        )}
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-[#15101f] p-5">
@@ -628,14 +645,13 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
             />
             <select
-              value={estadoNuevo}
-              onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente | "")}
+              value={estadoNuevo || info?.estado || "sano"}
+              onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente)}
               className="w-full rounded-xl border border-white/15 bg-[#15101f] px-3 py-2 text-sm text-white outline-none"
             >
-              <option value="">Mantener estado actual</option>
               {Object.entries(ESTADO_DIENTE).map(([key, v]) => (
                 <option key={key} value={key}>
-                  Cambiar a: {v.label}
+                  {v.label}
                 </option>
               ))}
             </select>
@@ -660,6 +676,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             onClick={() => {
               setFormAbierto(true);
               setEditandoId(null);
+              setEstadoNuevo(info?.estado ?? "sano");
             }}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 py-2.5 text-[13px] font-semibold text-white/90"
           >
