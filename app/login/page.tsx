@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, ScanFace } from "lucide-react";
+import { Eye, EyeOff, LogIn, ScanFace } from "lucide-react";
 import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { PantallaCarga } from "@/components/PantallaCarga";
 import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [mostrarCarga, setMostrarCarga] = useState(false);
@@ -163,17 +164,27 @@ export default function LoginPage() {
               <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
                 Contraseña
               </label>
-              <input
-                type="password"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                autoComplete="current-password"
-                className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={mostrarContrasena ? "text" : "password"}
+                  value={contrasena}
+                  onChange={(e) => setContrasena(e.target.value)}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoComplete="current-password"
+                  className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 pr-10 text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a] focus:border-[#803449]"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarContrasena((v) => !v)}
+                  aria-label={mostrarContrasena ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-[#a49c8a]"
+                >
+                  {mostrarContrasena ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-[12px] font-medium text-[#B0503A]">{error}</p>}
