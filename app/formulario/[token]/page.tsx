@@ -2,13 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Save, CheckCircle2 } from "lucide-react";
-import { DOCTORA } from "@/lib/panel-data";
-import {
-  CamposHistoriaClinica,
-  HISTORIA_CLINICA_VACIA,
-  type FormStateHistoriaClinica,
-} from "@/components/HistoriaClinicaFormulario";
+import { CheckCircle2 } from "lucide-react";
+import { HISTORIA_CLINICA_VACIA, type FormStateHistoriaClinica } from "@/components/HistoriaClinicaFormulario";
+import { HistoriaClinicaWizard } from "@/components/HistoriaClinicaWizard";
 
 interface PacientePublico {
   id: number;
@@ -117,35 +113,16 @@ export default function FormularioPublicoPage() {
 
   return (
     <div className="min-h-dvh bg-[#F5F1EA]">
-      <div className="mx-auto max-w-md space-y-4 px-4 pb-10 pt-6">
-        <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-52" />
-          <div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Historia clínica</div>
-          <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
-          <p className="mt-3 text-sm text-[#8a8272]">
-            Hola {paciente.nombre.split(" ")[0]}, completa tu ficha antes de tu cita — nos ayuda a atenderte mejor.
-          </p>
-        </div>
-
-        <CamposHistoriaClinica
-          form={form}
-          set={set}
-          pacienteNombre={paciente.nombre}
-          pacienteFechaNacimiento={paciente.fecha_nacimiento}
-          pacienteTelefono={paciente.telefono}
-        />
-
-        {error && <p className="text-center text-sm text-[#B0503A]">{error}</p>}
-
-        <button
-          onClick={enviar}
-          disabled={guardando}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
-        >
-          <Save size={15} /> {guardando ? "Enviando…" : "Enviar mi información"}
-        </button>
-      </div>
+      <HistoriaClinicaWizard
+        form={form}
+        set={set}
+        pacienteNombre={paciente.nombre}
+        pacienteFechaNacimiento={paciente.fecha_nacimiento}
+        pacienteTelefono={paciente.telefono}
+        onEnviar={enviar}
+        guardando={guardando}
+        error={error}
+      />
     </div>
   );
 }
