@@ -148,7 +148,8 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   -- Antecedentes personales
   enfermedad_actual BOOLEAN,
   enfermedad_actual_cual TEXT,
-  toma_medicamento TEXT,
+  toma_medicamento BOOLEAN,
+  toma_medicamento_cual TEXT,
   alergico_medicamento BOOLEAN,
   alergico_medicamento_cual TEXT,
   alergico_anestesico BOOLEAN,
@@ -183,6 +184,22 @@ BEGIN
   END IF;
 END $$;
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS enfermedad_actual BOOLEAN;
+
+-- Mismo caso que enfermedad_actual: toma_medicamento era texto libre,
+-- se separa en Sí/No + "cuál".
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'historia_clinica' AND column_name = 'toma_medicamento' AND data_type = 'text'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'historia_clinica' AND column_name = 'toma_medicamento_cual'
+  ) THEN
+    ALTER TABLE historia_clinica RENAME COLUMN toma_medicamento TO toma_medicamento_cual;
+  END IF;
+END $$;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS toma_medicamento BOOLEAN;
 
 -- Consentimientos informados con firma digital. El paciente entra con
 -- el link público (token) igual que con la historia clínica, lee el

@@ -116,7 +116,8 @@ export interface HistoriaClinica {
   fam_enfermedad_cual: string | null;
   enfermedad_actual: boolean | null;
   enfermedad_actual_cual: string | null;
-  toma_medicamento: string | null;
+  toma_medicamento: boolean | null;
+  toma_medicamento_cual: string | null;
   alergico_medicamento: boolean | null;
   alergico_medicamento_cual: string | null;
   alergico_anestesico: boolean | null;

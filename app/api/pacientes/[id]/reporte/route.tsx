@@ -146,7 +146,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
                 )}
                 {(paciente.medicamentos || historia?.toma_medicamento) && (
                   <Text style={estilosPdf.parrafo}>
-                    • Medicamentos actuales: {paciente.medicamentos || historia?.toma_medicamento || "—"}
+                    • Medicamentos actuales: {paciente.medicamentos || "—"}
+                    {historia?.toma_medicamento ? ` · Toma medicamento: ${historia.toma_medicamento_cual || SI}` : ""}
                   </Text>
                 )}
                 {(paciente.antecedentes_medicos || historia?.enfermedad_actual) && (

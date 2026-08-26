@@ -17,6 +17,7 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
   enfermedad_actual: null,
   enfermedad_actual_cual: null,
   toma_medicamento: null,
+  toma_medicamento_cual: null,
   alergico_medicamento: null,
   alergico_medicamento_cual: null,
   alergico_anestesico: null,
@@ -239,12 +240,17 @@ export function CamposHistoriaClinica({
           </Campo>
         )}
         <Campo label="¿Toma algún medicamento?">
-          <input
-            value={form.toma_medicamento ?? ""}
-            onChange={(e) => set("toma_medicamento", e.target.value || null)}
-            className={inputClase}
-          />
+          <SiNo valor={form.toma_medicamento} onChange={(v) => set("toma_medicamento", v)} />
         </Campo>
+        {form.toma_medicamento === true && (
+          <Campo label="¿Cuál?">
+            <input
+              value={form.toma_medicamento_cual ?? ""}
+              onChange={(e) => set("toma_medicamento_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
         <Campo label="¿Alérgico a algún medicamento?">
           <SiNo valor={form.alergico_medicamento} onChange={(v) => set("alergico_medicamento", v)} />
         </Campo>

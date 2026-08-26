@@ -111,9 +111,16 @@ const PASOS: Paso[] = [
   },
   {
     key: "toma_medicamento",
-    tipo: "texto",
+    tipo: "bool",
     pregunta: "¿Tomas algún medicamento?",
     seccion: "Antecedentes personales",
+  },
+  {
+    key: "toma_medicamento_cual",
+    tipo: "texto",
+    pregunta: "¿Cuál?",
+    seccion: "Antecedentes personales",
+    mostrarSi: (f) => f.toma_medicamento === true,
   },
   {
     key: "alergico_medicamento",
