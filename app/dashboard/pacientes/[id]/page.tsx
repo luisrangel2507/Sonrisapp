@@ -87,9 +87,6 @@ export default function PacienteDetallePage() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
-  const [alergias, setAlergias] = useState("");
-  const [medicamentos, setMedicamentos] = useState("");
-  const [antecedentes, setAntecedentes] = useState("");
 
   const [formNotaAbierto, setFormNotaAbierto] = useState(false);
   const [tipoNota, setTipoNota] = useState("");
@@ -134,9 +131,6 @@ export default function PacienteDetallePage() {
     setTelefono(p.telefono ?? "");
     setEmail(p.email ?? "");
     setFechaNacimiento(p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "");
-    setAlergias(p.alergias ?? "");
-    setMedicamentos(p.medicamentos ?? "");
-    setAntecedentes(p.antecedentes_medicos ?? "");
     setNotas(dataNotas.notas ?? []);
     setConsentimientos(dataConsent.consentimientos ?? []);
     setCargando(false);
@@ -158,9 +152,6 @@ export default function PacienteDetallePage() {
         telefono: telefono || null,
         email: email || null,
         fecha_nacimiento: fechaNacimiento || null,
-        alergias: alergias || null,
-        medicamentos: medicamentos || null,
-        antecedentes_medicos: antecedentes || null,
       }),
     });
     setGuardando(false);
@@ -453,43 +444,6 @@ export default function PacienteDetallePage() {
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-          Antecedentes médicos
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-[11px] font-medium text-[#a49c8a]">Alergias</label>
-            <textarea
-              value={alergias}
-              onChange={(e) => setAlergias(e.target.value)}
-              rows={2}
-              placeholder="Ej. penicilina, látex…"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-medium text-[#a49c8a]">Medicamentos actuales</label>
-            <textarea
-              value={medicamentos}
-              onChange={(e) => setMedicamentos(e.target.value)}
-              rows={2}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-medium text-[#a49c8a]">Otros antecedentes</label>
-            <textarea
-              value={antecedentes}
-              onChange={(e) => setAntecedentes(e.target.value)}
-              rows={2}
-              placeholder="Diabetes, hipertensión, embarazo, etc."
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>

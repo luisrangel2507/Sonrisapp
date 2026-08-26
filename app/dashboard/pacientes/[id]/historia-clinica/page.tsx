@@ -18,6 +18,9 @@ export default function HistoriaClinicaPage() {
 
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [form, setForm] = useState<FormStateHistoriaClinica>(HISTORIA_CLINICA_VACIA);
+  const [alergias, setAlergias] = useState("");
+  const [medicamentos, setMedicamentos] = useState("");
+  const [antecedentes, setAntecedentes] = useState("");
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -32,7 +35,11 @@ export default function HistoriaClinicaPage() {
       fetch(`/api/pacientes/${pacienteId}`).then((r) => r.json()),
       fetch(`/api/pacientes/${pacienteId}/historia-clinica`).then((r) => r.json()),
     ]).then(([dataPaciente, dataHc]) => {
-      setPaciente(dataPaciente.paciente ?? null);
+      const p: Paciente | null = dataPaciente.paciente ?? null;
+      setPaciente(p);
+      setAlergias(p?.alergias ?? "");
+      setMedicamentos(p?.medicamentos ?? "");
+      setAntecedentes(p?.antecedentes_medicos ?? "");
       if (dataHc.historiaClinica) {
         setForm({ ...HISTORIA_CLINICA_VACIA, ...dataHc.historiaClinica, fecha: dataHc.historiaClinica.fecha.slice(0, 10) });
       }
@@ -44,11 +51,22 @@ export default function HistoriaClinicaPage() {
   async function guardar() {
     setGuardando(true);
     setGuardado(false);
-    await fetch(`/api/pacientes/${pacienteId}/historia-clinica`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    await Promise.all([
+      fetch(`/api/pacientes/${pacienteId}/historia-clinica`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      }),
+      fetch(`/api/pacientes/${pacienteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alergias: alergias || null,
+          medicamentos: medicamentos || null,
+          antecedentes_medicos: antecedentes || null,
+        }),
+      }),
+    ]);
     setGuardando(false);
     setGuardado(true);
     setTimeout(() => setGuardado(false), 2000);
@@ -80,6 +98,43 @@ export default function HistoriaClinicaPage() {
         pacienteFechaNacimiento={paciente.fecha_nacimiento}
         pacienteTelefono={paciente.telefono}
       />
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+          Antecedentes médicos
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">Alergias</label>
+            <textarea
+              value={alergias}
+              onChange={(e) => setAlergias(e.target.value)}
+              rows={2}
+              placeholder="Ej. penicilina, látex…"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">Medicamentos actuales</label>
+            <textarea
+              value={medicamentos}
+              onChange={(e) => setMedicamentos(e.target.value)}
+              rows={2}
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">Otros antecedentes</label>
+            <textarea
+              value={antecedentes}
+              onChange={(e) => setAntecedentes(e.target.value)}
+              rows={2}
+              placeholder="Diabetes, hipertensión, embarazo, etc."
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+            />
+          </div>
+        </div>
+      </div>
 
       <button
         onClick={guardar}
