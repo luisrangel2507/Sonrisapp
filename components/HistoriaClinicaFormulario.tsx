@@ -80,7 +80,7 @@ const inputClase =
 const soloLecturaClase =
   "w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3 py-2 text-sm text-[#2b2118]";
 
-function SiNo({
+export function SiNo({
   valor,
   onChange,
 }: {

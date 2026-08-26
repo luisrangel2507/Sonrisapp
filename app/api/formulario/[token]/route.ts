@@ -21,6 +21,10 @@ interface PacientePublico {
   nombre: string;
   fecha_nacimiento: string | null;
   telefono: string | null;
+  alergias: boolean | null;
+  alergias_cual: string | null;
+  antecedentes_medicos: boolean | null;
+  antecedentes_medicos_cual: string | null;
 }
 
 export async function GET(
@@ -29,7 +33,9 @@ export async function GET(
 ) {
   try {
     const { rows: pacienteRows } = await query<PacientePublico>(
-      `SELECT id, nombre, fecha_nacimiento, telefono FROM pacientes WHERE historial_token = $1`,
+      `SELECT id, nombre, fecha_nacimiento, telefono,
+              alergias, alergias_cual, antecedentes_medicos, antecedentes_medicos_cual
+       FROM pacientes WHERE historial_token = $1`,
       [params.token]
     );
 
@@ -63,8 +69,21 @@ export async function PUT(
     const pacienteId = pacienteRows[0].id;
     const body = await req.json().catch(() => ({}));
 
+    const pacienteCampos: string[] = [];
+    const pacienteValores: unknown[] = [];
     if (typeof body.fecha_nacimiento === "string" && body.fecha_nacimiento && !esFechaFutura(body.fecha_nacimiento)) {
-      await query(`UPDATE pacientes SET fecha_nacimiento = $1 WHERE id = $2`, [body.fecha_nacimiento, pacienteId]);
+      pacienteCampos.push("fecha_nacimiento");
+      pacienteValores.push(body.fecha_nacimiento);
+    }
+    for (const campo of ["alergias", "alergias_cual", "antecedentes_medicos", "antecedentes_medicos_cual"] as const) {
+      if (campo in body) {
+        pacienteCampos.push(campo);
+        pacienteValores.push(body[campo] ?? null);
+      }
+    }
+    if (pacienteCampos.length > 0) {
+      const asignaciones = pacienteCampos.map((campo, i) => `${campo} = $${i + 2}`).join(", ");
+      await query(`UPDATE pacientes SET ${asignaciones} WHERE id = $1`, [pacienteId, ...pacienteValores]);
     }
 
     const historiaClinica = await guardarHistoriaClinica(pacienteId, body, IDENTIDAD_FORMULARIO_PUBLICO);

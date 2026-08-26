@@ -10,60 +10,88 @@ type Seccion =
   | "Ficha de identificación"
   | "Antecedentes heredofamiliares"
   | "Antecedentes personales"
-  | "Antecedentes personales no patológicos";
+  | "Antecedentes personales no patológicos"
+  | "Antecedentes médicos";
+
+// Alergias/antecedentes médicos generales viven en la tabla pacientes
+// (no en historia_clinica), así que no forman parte de
+// FormStateHistoriaClinica — el wizard los maneja aparte, igual que ya
+// hace con fecha_nacimiento.
+export interface DatosPacienteWizard {
+  alergias: boolean | null;
+  alergias_cual: string | null;
+  antecedentes_medicos: boolean | null;
+  antecedentes_medicos_cual: string | null;
+}
 
 // mostrarSi recibe también la edad calculada de la fecha de nacimiento
-// (aparte, no vive en FormStateHistoriaClinica) — la usa el paso de
-// "nombre del padre o tutor" para solo aparecer si es menor de edad.
+// y los datos del paciente de arriba (ninguno vive en
+// FormStateHistoriaClinica) — la usa el paso de "nombre del padre o
+// tutor" para solo aparecer si es menor de edad, y los pasos "¿cuál?"
+// de alergias/antecedentes para solo aparecer si contestó que sí.
 type Paso =
   | {
       key: keyof FormStateHistoriaClinica;
       tipo: "texto";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
       key: keyof FormStateHistoriaClinica;
       tipo: "bool";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
       key: "sexo";
       tipo: "sexo";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
       key: "fecha_nacimiento";
       tipo: "fecha_nacimiento";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
       key: "emergencia";
       tipo: "emergencia";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
       key: "domicilio";
       tipo: "domicilio";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
       key: keyof FormStateHistoriaClinica;
       tipo: "frecuencia";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
+    }
+  | {
+      key: keyof DatosPacienteWizard;
+      tipo: "paciente_bool";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
+    }
+  | {
+      key: keyof DatosPacienteWizard;
+      tipo: "paciente_texto";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     };
 
 const PASOS: Paso[] = [
@@ -220,6 +248,32 @@ const PASOS: Paso[] = [
     seccion: "Antecedentes personales no patológicos",
     mostrarSi: (f) => f.ets === true,
   },
+  {
+    key: "alergias",
+    tipo: "paciente_bool",
+    pregunta: "¿Tienes alguna alergia?",
+    seccion: "Antecedentes médicos",
+  },
+  {
+    key: "alergias_cual",
+    tipo: "paciente_texto",
+    pregunta: "¿Cuál?",
+    seccion: "Antecedentes médicos",
+    mostrarSi: (_f, _edad, dp) => dp.alergias === true,
+  },
+  {
+    key: "antecedentes_medicos",
+    tipo: "paciente_bool",
+    pregunta: "¿Otro antecedente que guste declarar?",
+    seccion: "Antecedentes médicos",
+  },
+  {
+    key: "antecedentes_medicos_cual",
+    tipo: "paciente_texto",
+    pregunta: "¿Cuál?",
+    seccion: "Antecedentes médicos",
+    mostrarSi: (_f, _edad, dp) => dp.antecedentes_medicos === true,
+  },
 ];
 
 const SECCIONES: Seccion[] = [
@@ -227,6 +281,7 @@ const SECCIONES: Seccion[] = [
   "Antecedentes heredofamiliares",
   "Antecedentes personales",
   "Antecedentes personales no patológicos",
+  "Antecedentes médicos",
 ];
 
 function EtiquetaPregunta({ pregunta }: { pregunta: string }) {
@@ -286,7 +341,7 @@ function BotonSiAVecesNo({ valor, onChange }: { valor: FrecuenciaConsumo | null;
   );
 }
 
-function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
+function valorLegible(paso: Paso, form: FormStateHistoriaClinica, datosPaciente: DatosPacienteWizard): string {
   if (paso.tipo === "fecha_nacimiento") return "—";
   if (paso.tipo === "emergencia") {
     const partes = [form.emergencia_nombre, form.emergencia_telefono, form.emergencia_parentesco].filter(Boolean);
@@ -299,6 +354,13 @@ function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
   if (paso.tipo === "frecuencia") {
     const v = form[paso.key];
     return v === "si" ? "Sí" : v === "a_veces" ? "A veces" : v === "no" ? "No" : "—";
+  }
+  if (paso.tipo === "paciente_bool") {
+    const v = datosPaciente[paso.key];
+    return v === true ? "Sí" : v === false ? "No" : "—";
+  }
+  if (paso.tipo === "paciente_texto") {
+    return (datosPaciente[paso.key] as string | null) || "—";
   }
   const v = form[paso.key];
   if (paso.tipo === "sexo") return v === "F" ? "Femenino" : v === "M" ? "Masculino" : "—";
@@ -313,6 +375,8 @@ export function HistoriaClinicaWizard({
   pacienteFechaNacimiento,
   onChangeFechaNacimiento,
   pacienteTelefono,
+  datosPaciente,
+  onChangeDatosPaciente,
   onEnviar,
   guardando,
   error,
@@ -323,6 +387,8 @@ export function HistoriaClinicaWizard({
   pacienteFechaNacimiento: string | null;
   onChangeFechaNacimiento: (v: string | null) => void;
   pacienteTelefono: string | null;
+  datosPaciente: DatosPacienteWizard;
+  onChangeDatosPaciente: <K extends keyof DatosPacienteWizard>(campo: K, valor: DatosPacienteWizard[K]) => void;
   onEnviar: () => void;
   guardando: boolean;
   error: string;
@@ -334,7 +400,7 @@ export function HistoriaClinicaWizard({
   const [pasoIndex, setPasoIndex] = useState(0);
 
   const edad = calcularEdad(pacienteFechaNacimiento);
-  const pasosVisibles = PASOS.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad));
+  const pasosVisibles = PASOS.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad, datosPaciente));
 
   function irASiguiente() {
     if (pasoIndex + 1 >= pasosVisibles.length) {
@@ -436,7 +502,7 @@ export function HistoriaClinicaWizard({
                   {pasosSeccion.map((p) => (
                     <div key={p.key}>
                       <div className="text-[11px] text-[#a49c8a]">{p.pregunta}</div>
-                      <div className="text-sm text-[#2b2118]">{valorLegible(p, form)}</div>
+                      <div className="text-sm text-[#2b2118]">{valorLegible(p, form, datosPaciente)}</div>
                     </div>
                   ))}
                 </div>
@@ -516,6 +582,19 @@ export function HistoriaClinicaWizard({
             <BotonSiAVecesNo
               valor={form[paso.key] as FrecuenciaConsumo | null}
               onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+            />
+          ) : paso.tipo === "paciente_bool" ? (
+            <BotonSiNo
+              valor={datosPaciente[paso.key] as boolean | null}
+              onChange={(v) => onChangeDatosPaciente(paso.key, v as DatosPacienteWizard[typeof paso.key])}
+            />
+          ) : paso.tipo === "paciente_texto" ? (
+            <input
+              autoFocus
+              value={(datosPaciente[paso.key] as string | null) ?? ""}
+              onChange={(e) => onChangeDatosPaciente(paso.key, (e.target.value || null) as DatosPacienteWizard[typeof paso.key])}
+              placeholder="Escribe tu respuesta…"
+              className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
             />
           ) : paso.tipo === "fecha_nacimiento" ? (
             <input

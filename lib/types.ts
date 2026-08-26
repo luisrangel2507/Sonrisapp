@@ -10,9 +10,11 @@ export interface Paciente {
   fecha_nacimiento: string | null;
   visitas_totales: number;
   creado_en: string;
-  alergias: string | null;
+  alergias: boolean | null;
+  alergias_cual: string | null;
   medicamentos: string | null;
-  antecedentes_medicos: string | null;
+  antecedentes_medicos: boolean | null;
+  antecedentes_medicos_cual: string | null;
   historial_token: string | null;
 }
 

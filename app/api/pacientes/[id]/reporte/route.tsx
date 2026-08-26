@@ -31,11 +31,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       folio: string | null;
       fecha_nacimiento: string | null;
       creado_en: string;
-      alergias: string | null;
+      alergias: boolean | null;
+      alergias_cual: string | null;
       medicamentos: string | null;
-      antecedentes_medicos: string | null;
+      antecedentes_medicos: boolean | null;
+      antecedentes_medicos_cual: string | null;
     }>(
-      `SELECT id, nombre, telefono, email, folio, fecha_nacimiento, creado_en, alergias, medicamentos, antecedentes_medicos
+      `SELECT id, nombre, telefono, email, folio, fecha_nacimiento, creado_en,
+              alergias, alergias_cual, medicamentos, antecedentes_medicos, antecedentes_medicos_cual
        FROM pacientes WHERE id = $1`,
       [pacienteId]
     );
@@ -45,7 +48,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     const paciente = pacienteRows[0];
 
     const { rows: historiaRows } = await query(
-      `SELECT ${HISTORIA_CLINICA_COLUMNAS} FROM historia_clinica WHERE paciente_id = $1`,
+      `SELECT ${HISTORIA_CLINICA_COLUMNAS} FROM historia_clinica WHERE paciente_id = $1 AND vigente = true`,
       [pacienteId]
     );
     const historia = historiaRows[0] ?? null;
@@ -139,7 +142,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
               <View>
                 {(paciente.alergias || historia?.alergico_medicamento || historia?.alergico_anestesico) && (
                   <Text style={estilosPdf.parrafo}>
-                    • Alergias: {paciente.alergias || "—"}
+                    • Alergias: {paciente.alergias ? paciente.alergias_cual || SI : "—"}
                     {historia?.alergico_medicamento ? ` · Alérgico a medicamento: ${historia.alergico_medicamento_cual || SI}` : ""}
                     {historia?.alergico_anestesico ? ` · Alérgico a anestésico: ${historia.alergico_anestesico_cual || SI}` : ""}
                   </Text>
@@ -152,7 +155,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
                 )}
                 {(paciente.antecedentes_medicos || historia?.enfermedad_actual) && (
                   <Text style={estilosPdf.parrafo}>
-                    • Antecedentes: {paciente.antecedentes_medicos || "—"}
+                    • Antecedentes: {paciente.antecedentes_medicos ? paciente.antecedentes_medicos_cual || SI : "—"}
                     {historia?.enfermedad_actual ? ` · Enfermedad actual: ${historia.enfermedad_actual_cual || SI}` : ""}
                   </Text>
                 )}

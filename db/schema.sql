@@ -20,9 +20,11 @@ CREATE TABLE IF NOT EXISTS pacientes (
   ultima_felicitacion_anio INTEGER,
   ultimo_aviso_meta_en TIMESTAMPTZ,
   -- Historial clínico general
-  alergias TEXT,
+  alergias BOOLEAN,
+  alergias_cual TEXT,
   medicamentos TEXT,
-  antecedentes_medicos TEXT,
+  antecedentes_medicos BOOLEAN,
+  antecedentes_medicos_cual TEXT,
   -- Token para el link público donde el paciente llena su propia
   -- historia clínica (ver /formulario/[token]).
   historial_token VARCHAR(40) UNIQUE
@@ -34,6 +36,38 @@ ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS alergias TEXT;
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS medicamentos TEXT;
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS antecedentes_medicos TEXT;
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historial_token VARCHAR(40) UNIQUE;
+
+-- alergias/antecedentes_medicos empezaron como texto libre; se separan
+-- en Sí/No + "cuál" (mismo patrón que enfermedad_actual en historia_clinica)
+-- — se renombra la columna vieja a _cual para no perder lo ya
+-- capturado, y se agrega la columna booleana nueva.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'pacientes' AND column_name = 'alergias' AND data_type = 'text'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'pacientes' AND column_name = 'alergias_cual'
+  ) THEN
+    ALTER TABLE pacientes RENAME COLUMN alergias TO alergias_cual;
+  END IF;
+END $$;
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS alergias BOOLEAN;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'pacientes' AND column_name = 'antecedentes_medicos' AND data_type = 'text'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'pacientes' AND column_name = 'antecedentes_medicos_cual'
+  ) THEN
+    ALTER TABLE pacientes RENAME COLUMN antecedentes_medicos TO antecedentes_medicos_cual;
+  END IF;
+END $$;
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS antecedentes_medicos BOOLEAN;
 
 CREATE TABLE IF NOT EXISTS citas (
   id SERIAL PRIMARY KEY,

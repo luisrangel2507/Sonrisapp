@@ -9,6 +9,7 @@ import { DOCTORA } from "@/lib/panel-data";
 import {
   CamposHistoriaClinica,
   HISTORIA_CLINICA_VACIA,
+  SiNo,
   type FormStateHistoriaClinica,
 } from "@/components/HistoriaClinicaFormulario";
 
@@ -18,9 +19,10 @@ export default function HistoriaClinicaPage() {
 
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [form, setForm] = useState<FormStateHistoriaClinica>(HISTORIA_CLINICA_VACIA);
-  const [alergias, setAlergias] = useState("");
-  const [medicamentos, setMedicamentos] = useState("");
-  const [antecedentes, setAntecedentes] = useState("");
+  const [alergias, setAlergias] = useState<boolean | null>(null);
+  const [alergiasCual, setAlergiasCual] = useState("");
+  const [antecedentes, setAntecedentes] = useState<boolean | null>(null);
+  const [antecedentesCual, setAntecedentesCual] = useState("");
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -37,9 +39,10 @@ export default function HistoriaClinicaPage() {
     ]).then(([dataPaciente, dataHc]) => {
       const p: Paciente | null = dataPaciente.paciente ?? null;
       setPaciente(p);
-      setAlergias(p?.alergias ?? "");
-      setMedicamentos(p?.medicamentos ?? "");
-      setAntecedentes(p?.antecedentes_medicos ?? "");
+      setAlergias(p?.alergias ?? null);
+      setAlergiasCual(p?.alergias_cual ?? "");
+      setAntecedentes(p?.antecedentes_medicos ?? null);
+      setAntecedentesCual(p?.antecedentes_medicos_cual ?? "");
       if (dataHc.historiaClinica) {
         setForm({ ...HISTORIA_CLINICA_VACIA, ...dataHc.historiaClinica, fecha: dataHc.historiaClinica.fecha.slice(0, 10) });
       }
@@ -61,9 +64,10 @@ export default function HistoriaClinicaPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          alergias: alergias || null,
-          medicamentos: medicamentos || null,
-          antecedentes_medicos: antecedentes || null,
+          alergias,
+          alergias_cual: alergias ? alergiasCual || null : null,
+          antecedentes_medicos: antecedentes,
+          antecedentes_medicos_cual: antecedentes ? antecedentesCual || null : null,
         }),
       }),
     ]);
@@ -105,34 +109,39 @@ export default function HistoriaClinicaPage() {
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">Alergias</label>
-            <textarea
-              value={alergias}
-              onChange={(e) => setAlergias(e.target.value)}
-              rows={2}
-              placeholder="Ej. penicilina, látex…"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-            />
+            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">¿Tiene alguna alergia?</label>
+            <SiNo valor={alergias} onChange={setAlergias} />
           </div>
+          {alergias === true && (
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">¿Cuál?</label>
+              <textarea
+                value={alergiasCual}
+                onChange={(e) => setAlergiasCual(e.target.value)}
+                rows={2}
+                placeholder="Ej. penicilina, látex…"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              />
+            </div>
+          )}
           <div>
-            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">Medicamentos actuales</label>
-            <textarea
-              value={medicamentos}
-              onChange={(e) => setMedicamentos(e.target.value)}
-              rows={2}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-            />
+            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">
+              ¿Otro antecedente que guste declarar?
+            </label>
+            <SiNo valor={antecedentes} onChange={setAntecedentes} />
           </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">Otros antecedentes</label>
-            <textarea
-              value={antecedentes}
-              onChange={(e) => setAntecedentes(e.target.value)}
-              rows={2}
-              placeholder="Diabetes, hipertensión, embarazo, etc."
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-            />
-          </div>
+          {antecedentes === true && (
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">¿Cuál?</label>
+              <textarea
+                value={antecedentesCual}
+                onChange={(e) => setAntecedentesCual(e.target.value)}
+                rows={2}
+                placeholder="Diabetes, hipertensión, embarazo, etc."
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              />
+            </div>
+          )}
         </div>
       </div>
 

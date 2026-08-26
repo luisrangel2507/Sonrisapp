@@ -56,8 +56,10 @@ const CAMPOS_EDITABLES = [
   "email",
   "fecha_nacimiento",
   "alergias",
+  "alergias_cual",
   "medicamentos",
   "antecedentes_medicos",
+  "antecedentes_medicos_cual",
 ] as const;
 
 export async function PATCH(
