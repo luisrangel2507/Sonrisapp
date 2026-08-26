@@ -281,7 +281,7 @@ export default function PacienteDetallePage() {
       if (!data.token) return;
 
       const url = `${window.location.origin}/portal/${data.token}`;
-      const texto = `Hola ${paciente.nombre.split(" ")[0]}, aquí puedes ver tus citas y tu historial: ${url}`;
+      const texto = `Hola ${paciente.nombre.split(" ")[0]}, aquí puedes ver tu historial de actividad: ${url}`;
 
       if (navigator.share) {
         try {
