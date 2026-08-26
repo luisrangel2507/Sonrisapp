@@ -130,10 +130,18 @@ CREATE TABLE IF NOT EXISTS pagos (
 );
 
 -- Historia clínica — formulario de ficha de identificación y
--- antecedentes que se llena una vez por paciente (editable después).
+-- antecedentes. Trazabilidad tipo NOM-024: "guardar" nunca sobrescribe
+-- la fila anterior — inserta una versión nueva (reemplaza_a apunta a
+-- la anterior) y la marca vigente=false. Por eso paciente_id ya NO es
+-- UNIQUE (puede haber varias versiones); el índice único parcial de
+-- abajo garantiza que solo una esté vigente a la vez por paciente.
 CREATE TABLE IF NOT EXISTS historia_clinica (
   id SERIAL PRIMARY KEY,
-  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE UNIQUE,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  creado_por INTEGER,
+  creado_por_nombre VARCHAR(160),
+  vigente BOOLEAN NOT NULL DEFAULT true,
+  reemplaza_a INTEGER REFERENCES historia_clinica(id),
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   sexo VARCHAR(1), -- 'F' | 'M'
   nombre_padre_tutor VARCHAR(160),
@@ -166,6 +174,19 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   ets_cual TEXT,
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Trazabilidad de historia_clinica (ver comentario arriba de la
+-- tabla): quita el UNIQUE viejo de una sola fila por paciente y agrega
+-- las columnas de auditoría/versión.
+ALTER TABLE historia_clinica DROP CONSTRAINT IF EXISTS historia_clinica_paciente_id_key;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS creado_por INTEGER;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS creado_por_nombre VARCHAR(160);
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS vigente BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS reemplaza_a INTEGER REFERENCES historia_clinica(id);
+-- Garantiza que solo una versión esté "vigente" (la actual) por
+-- paciente a la vez — las versiones anteriores siguen en la tabla
+-- para auditoría, pero dejan de contar para esta unicidad.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_historia_clinica_vigente_unica ON historia_clinica (paciente_id) WHERE vigente = true;
 
 -- enfermedad_actual empezó como texto libre; se separa en Sí/No + "cuál"
 -- (mismo patrón que fam_enfermedad_sistemica/_cual) — se renombra la

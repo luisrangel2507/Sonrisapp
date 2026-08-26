@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
-import { HISTORIA_CLINICA_CAMPOS as CAMPOS, HISTORIA_CLINICA_COLUMNAS as COLUMNAS } from "@/lib/historia-clinica-campos";
+import { guardarHistoriaClinica, obtenerHistoriaClinicaVigente } from "@/lib/historia-clinica";
+
+// Quién queda registrado en creado_por_nombre cuando el paciente llena
+// su propia historia clínica desde este link público (sin sesión de
+// consultorio) — distinto del genérico "Equipo del consultorio" que
+// usan las rutas internas, para no mezclar auto-reporte del paciente
+// con acciones del personal en la auditoría.
+const IDENTIDAD_FORMULARIO_PUBLICO = { usuarioId: null, nombre: "Paciente (formulario en línea)" };
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra
 // con el link que le comparte la clínica y llena su propia historia
@@ -31,12 +38,9 @@ export async function GET(
     }
 
     const paciente = pacienteRows[0];
-    const { rows: hcRows } = await query(
-      `SELECT ${COLUMNAS} FROM historia_clinica WHERE paciente_id = $1`,
-      [paciente.id]
-    );
+    const historiaClinica = await obtenerHistoriaClinicaVigente(paciente.id);
 
-    return NextResponse.json({ paciente, historiaClinica: hcRows[0] ?? null });
+    return NextResponse.json({ paciente, historiaClinica });
   } catch (err) {
     return errorJson(err);
   }
@@ -63,19 +67,9 @@ export async function PUT(
       await query(`UPDATE pacientes SET fecha_nacimiento = $1 WHERE id = $2`, [body.fecha_nacimiento, pacienteId]);
     }
 
-    const valores = CAMPOS.map((campo) => body[campo] ?? null);
-    const placeholders = CAMPOS.map((_, i) => `$${i + 2}`).join(", ");
-    const actualizaciones = CAMPOS.map((campo, i) => `${campo} = $${i + 2}`).join(", ");
+    const historiaClinica = await guardarHistoriaClinica(pacienteId, body, IDENTIDAD_FORMULARIO_PUBLICO);
 
-    const { rows } = await query(
-      `INSERT INTO historia_clinica (paciente_id, ${CAMPOS.join(", ")})
-       VALUES ($1, ${placeholders})
-       ON CONFLICT (paciente_id) DO UPDATE SET ${actualizaciones}, actualizado_en = now()
-       RETURNING ${COLUMNAS}`,
-      [pacienteId, ...valores]
-    );
-
-    return NextResponse.json({ historiaClinica: rows[0] });
+    return NextResponse.json({ historiaClinica });
   } catch (err) {
     return errorJson(err);
   }
