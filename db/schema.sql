@@ -145,7 +145,11 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   sexo VARCHAR(1), -- 'F' | 'M'
   nombre_padre_tutor VARCHAR(160),
-  domicilio VARCHAR(255),
+  domicilio VARCHAR(255), -- calle y número
+  codigo_postal VARCHAR(10),
+  ciudad VARCHAR(120),
+  estado VARCHAR(120),
+  pais VARCHAR(120),
   ocupacion VARCHAR(120),
   emergencia_nombre VARCHAR(160),
   emergencia_telefono VARCHAR(20),
@@ -187,6 +191,13 @@ ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS reemplaza_a INTEGER REFERE
 -- paciente a la vez — las versiones anteriores siguen en la tabla
 -- para auditoría, pero dejan de contar para esta unicidad.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_historia_clinica_vigente_unica ON historia_clinica (paciente_id) WHERE vigente = true;
+
+-- El domicilio se separa en líneas: domicilio queda solo como calle y
+-- número, y código postal/ciudad/estado/país son columnas aparte.
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS codigo_postal VARCHAR(10);
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ciudad VARCHAR(120);
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS estado VARCHAR(120);
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS pais VARCHAR(120);
 
 -- enfermedad_actual empezó como texto libre; se separa en Sí/No + "cuál"
 -- (mismo patrón que fam_enfermedad_sistemica/_cual) — se renombra la

@@ -8,6 +8,10 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
   sexo: null,
   nombre_padre_tutor: null,
   domicilio: null,
+  codigo_postal: null,
+  ciudad: null,
+  estado: null,
+  pais: "México",
   ocupacion: null,
   emergencia_nombre: null,
   emergencia_telefono: null,
@@ -210,13 +214,43 @@ export function CamposHistoriaClinica({
             className={inputClase}
           />
         </Campo>
-        <Campo label="Domicilio">
+        <Campo label="Calle y número">
           <input
             value={form.domicilio ?? ""}
             onChange={(e) => set("domicilio", e.target.value || null)}
             className={inputClase}
           />
         </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Código postal">
+            <input
+              value={form.codigo_postal ?? ""}
+              onChange={(e) => set("codigo_postal", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+          <Campo label="Ciudad">
+            <input
+              value={form.ciudad ?? ""}
+              onChange={(e) => set("ciudad", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+          <Campo label="Estado">
+            <input
+              value={form.estado ?? ""}
+              onChange={(e) => set("estado", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+          <Campo label="País">
+            <input
+              value={form.pais ?? ""}
+              onChange={(e) => set("pais", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        </div>
         <Campo label="Ocupación">
           <input
             value={form.ocupacion ?? ""}

@@ -108,6 +108,10 @@ export interface HistoriaClinica {
   sexo: "F" | "M" | null;
   nombre_padre_tutor: string | null;
   domicilio: string | null;
+  codigo_postal: string | null;
+  ciudad: string | null;
+  estado: string | null;
+  pais: string | null;
   ocupacion: string | null;
   emergencia_nombre: string | null;
   emergencia_telefono: string | null;

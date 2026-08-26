@@ -52,6 +52,13 @@ type Paso =
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
     }
   | {
+      key: "domicilio";
+      tipo: "domicilio";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+    }
+  | {
       key: keyof FormStateHistoriaClinica;
       tipo: "frecuencia";
       pregunta: string;
@@ -76,7 +83,7 @@ const PASOS: Paso[] = [
     // contestó la fecha de nacimiento), se asume que no aplica.
     mostrarSi: (_f, edad) => edad !== null && edad < 18,
   },
-  { key: "domicilio", tipo: "texto", pregunta: "¿Cuál es tu domicilio?", seccion: "Ficha de identificación" },
+  { key: "domicilio", tipo: "domicilio", pregunta: "¿Cuál es tu domicilio?", seccion: "Ficha de identificación" },
   { key: "ocupacion", tipo: "texto", pregunta: "¿Cuál es tu ocupación?", seccion: "Ficha de identificación" },
   {
     key: "emergencia",
@@ -284,6 +291,10 @@ function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
   if (paso.tipo === "emergencia") {
     const partes = [form.emergencia_nombre, form.emergencia_telefono].filter(Boolean);
     return partes.length ? partes.join(" · ") : "—";
+  }
+  if (paso.tipo === "domicilio") {
+    const partes = [form.domicilio, form.codigo_postal, form.ciudad, form.estado, form.pais].filter(Boolean);
+    return partes.length ? partes.join(", ") : "—";
   }
   if (paso.tipo === "frecuencia") {
     const v = form[paso.key];
@@ -536,6 +547,52 @@ export function HistoriaClinicaWizard({
                   placeholder="Número de contacto"
                   className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
                 />
+              </div>
+            </div>
+          ) : paso.tipo === "domicilio" ? (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Calle y número</label>
+                <input
+                  autoFocus
+                  value={form.domicilio ?? ""}
+                  onChange={(e) => set("domicilio", e.target.value || null)}
+                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Código postal</label>
+                  <input
+                    value={form.codigo_postal ?? ""}
+                    onChange={(e) => set("codigo_postal", e.target.value || null)}
+                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Ciudad</label>
+                  <input
+                    value={form.ciudad ?? ""}
+                    onChange={(e) => set("ciudad", e.target.value || null)}
+                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Estado</label>
+                  <input
+                    value={form.estado ?? ""}
+                    onChange={(e) => set("estado", e.target.value || null)}
+                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">País</label>
+                  <input
+                    value={form.pais ?? ""}
+                    onChange={(e) => set("pais", e.target.value || null)}
+                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                  />
+                </div>
               </div>
             </div>
           ) : (
