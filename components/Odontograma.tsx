@@ -631,6 +631,17 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
 
         {formAbierto ? (
           <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <select
+              value={estadoNuevo || info?.estado || "sano"}
+              onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente)}
+              className="w-full rounded-xl border border-white/15 bg-[#15101f] px-3 py-2 text-sm text-white outline-none"
+            >
+              {Object.entries(ESTADO_DIENTE).map(([key, v]) => (
+                <option key={key} value={key}>
+                  {v.label}
+                </option>
+              ))}
+            </select>
             <input
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
@@ -644,17 +655,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               rows={2}
               className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
             />
-            <select
-              value={estadoNuevo || info?.estado || "sano"}
-              onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente)}
-              className="w-full rounded-xl border border-white/15 bg-[#15101f] px-3 py-2 text-sm text-white outline-none"
-            >
-              {Object.entries(ESTADO_DIENTE).map(([key, v]) => (
-                <option key={key} value={key}>
-                  {v.label}
-                </option>
-              ))}
-            </select>
             <div className="flex gap-2 pt-1">
               <button
                 onClick={agregarRegistro}
