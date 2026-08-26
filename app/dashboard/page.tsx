@@ -212,13 +212,21 @@ export default function PanelPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <div className="text-sm font-semibold text-[#2b2118]">{formatearHora(c.fecha_hora)}</div>
-                    {c.estado === "agendada" && (
+                    {c.estado === "agendada" ? (
                       <button
                         onClick={() => (completandoId === c.id ? setCompletandoId(null) : abrirCompletar(c))}
                         className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]"
                       >
                         <Check size={11} /> Completada
                       </button>
+                    ) : c.estado === "completada" ? (
+                      <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]">
+                        <Check size={11} /> Completada
+                      </span>
+                    ) : (
+                      <span className="whitespace-nowrap rounded-full bg-[#EFE9DC] px-2.5 py-1 text-[11px] font-semibold text-[#a49c8a]">
+                        Cancelada
+                      </span>
                     )}
                   </div>
                 </div>
