@@ -211,8 +211,19 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   consume_tabaco VARCHAR(10), -- 'si' | 'no' | 'a_veces'
   ets BOOLEAN,
   ets_cual TEXT,
-  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Cuando el paciente llena su historial desde el link público, queda
+  -- sin confirmar hasta que la doctora lo revise (ver comentario más
+  -- abajo). Si lo llena/corrige la doctora desde el dashboard, se
+  -- marca confirmado de una vez — ella misma lo está capturando.
+  confirmado BOOLEAN NOT NULL DEFAULT true,
+  confirmado_por_nombre VARCHAR(160),
+  confirmado_en TIMESTAMPTZ
 );
+
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS confirmado BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS confirmado_por_nombre VARCHAR(160);
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS confirmado_en TIMESTAMPTZ;
 
 -- Trazabilidad de historia_clinica (ver comentario arriba de la
 -- tabla): quita el UNIQUE viejo de una sola fila por paciente y agrega

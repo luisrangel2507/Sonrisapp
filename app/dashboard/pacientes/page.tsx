@@ -88,6 +88,11 @@ export default function PacientesPage() {
     [pacientes]
   );
 
+  const pendientesDeConfirmar = useMemo(
+    () => (pacientes ?? []).filter((p) => p.historial_pendiente).length,
+    [pacientes]
+  );
+
   return (
     <>
       <div className="mx-4 mt-2 space-y-3">
@@ -142,6 +147,17 @@ export default function PacientesPage() {
         )}
       </div>
 
+      {pendientesDeConfirmar > 0 && (
+        <div className="mx-4 mt-3 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+          🚨 <strong>
+            {pendientesDeConfirmar} paciente{pendientesDeConfirmar === 1 ? "" : "s"} con historial clínico sin
+            confirmar
+          </strong>{" "}
+          — lo llenaron desde su link, pero aún falta que revises y confirmes la información. Entra a su historia
+          clínica para confirmarla o corregirla.
+        </div>
+      )}
+
       <div className="mx-4 mt-4">
         {pacientes === null ? (
           <p className="text-sm text-[#8a8272]">Cargando…</p>
@@ -165,7 +181,9 @@ export default function PacientesPage() {
                     {iniciales(p.nombre)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-[#2b2118]">{p.nombre}</div>
+                    <div className="truncate text-sm font-semibold text-[#2b2118]">
+                      {p.nombre} {p.historial_pendiente && "🚨"}
+                    </div>
                     <div className="truncate text-xs text-[#a49c8a]">
                       {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
                     </div>

@@ -16,14 +16,29 @@ export async function GET(req: NextRequest) {
   try {
     const q = req.nextUrl.searchParams.get("q")?.trim();
 
+    // El historial sin confirmar (llenado por el paciente, aún no
+    // revisado por la doctora) solo aplica si hay una versión vigente
+    // de historia_clinica — si nunca la llenó, no hay nada que alertar.
+    // Subconsulta correlacionada (en vez de JOIN) para que
+    // historia_clinica no entre al FROM de la consulta principal — así
+    // el "id" sin calificar de PACIENTE_COLUMNAS no queda ambiguo.
+    const SELECT_PACIENTES = `
+      SELECT ${PACIENTE_COLUMNAS},
+        EXISTS (
+          SELECT 1 FROM historia_clinica hc
+          WHERE hc.paciente_id = pacientes.id AND hc.vigente = true AND hc.confirmado = false
+        ) AS historial_pendiente
+      FROM pacientes
+    `;
+
     const { rows } = q
       ? await query(
-          `SELECT ${PACIENTE_COLUMNAS} FROM pacientes
-           WHERE nombre ILIKE $1 OR folio ILIKE $1 OR telefono ILIKE $1
-           ORDER BY id DESC`,
+          `${SELECT_PACIENTES}
+           WHERE pacientes.nombre ILIKE $1 OR pacientes.folio ILIKE $1 OR pacientes.telefono ILIKE $1
+           ORDER BY pacientes.id DESC`,
           [`%${q}%`]
         )
-      : await query(`SELECT ${PACIENTE_COLUMNAS} FROM pacientes ORDER BY id DESC`);
+      : await query(`${SELECT_PACIENTES} ORDER BY pacientes.id DESC`);
 
     const pacientes = rows.map((fila) => {
       const copia = { ...fila };

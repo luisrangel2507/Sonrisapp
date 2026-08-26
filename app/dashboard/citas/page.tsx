@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Plus,
   Check,
@@ -396,6 +397,15 @@ function CitaTimelineItem({
             </div>
           </div>
         </div>
+
+        {cita.historial_pendiente && (
+          <Link
+            href={`/dashboard/pacientes/${cita.paciente_id}/historia-clinica`}
+            className="mt-2.5 flex items-center gap-1.5 rounded-xl bg-[#F7E5E0] px-3 py-2 text-[12px] font-semibold text-[#B0503A]"
+          >
+            🚨 Historial sin confirmar — tócalo para revisarlo
+          </Link>
+        )}
 
         {cita.monto != null && (
           <div className="mt-2.5">

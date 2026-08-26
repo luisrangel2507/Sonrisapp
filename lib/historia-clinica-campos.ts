@@ -36,7 +36,9 @@ export const HISTORIA_CLINICA_CAMPOS = [
   "ets_cual",
 ] as const;
 
-export const HISTORIA_CLINICA_COLUMNAS = `${HISTORIA_CLINICA_CAMPOS.join(", ")}, actualizado_en`;
+export const HISTORIA_CLINICA_COLUMNAS = `${HISTORIA_CLINICA_CAMPOS.join(
+  ", "
+)}, actualizado_en, confirmado, confirmado_por_nombre, confirmado_en`;
 
 // Campos de texto libre/identificables que se cifran en reposo
 // (NOM-024-SSA3-2012) — se excluyen los booleanos (fam_enfermedad_sistemica,

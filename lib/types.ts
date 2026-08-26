@@ -16,6 +16,11 @@ export interface Paciente {
   antecedentes_medicos: boolean | null;
   antecedentes_medicos_cual: string | null;
   historial_token: string | null;
+  // true si el paciente llenó/actualizó su historial desde el link
+  // público y la doctora todavía no lo revisó. Ausente en el GET de un
+  // solo paciente (solo se calcula en la lista) — el objeto Paciente
+  // ahí no lo incluye, pero se agrega vía intersección donde se usa.
+  historial_pendiente?: boolean;
 }
 
 export interface PacienteNota {
@@ -60,6 +65,7 @@ export interface Cita {
   estado: EstadoCita;
   monto: number | null;
   pagado: number;
+  historial_pendiente: boolean;
 }
 
 export type MetodoPago = "efectivo" | "tarjeta" | "transferencia";

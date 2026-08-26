@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Save } from "lucide-react";
+import { ChevronLeft, Save, ShieldCheck } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 import { DOCTORA } from "@/lib/panel-data";
 import {
@@ -26,6 +26,9 @@ export default function HistoriaClinicaPage() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  const [confirmado, setConfirmado] = useState(true);
+  const [confirmando, setConfirmando] = useState(false);
+  const [hayHistoria, setHayHistoria] = useState(false);
 
   function set<K extends keyof FormStateHistoriaClinica>(campo: K, valor: FormStateHistoriaClinica[K]) {
     setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -45,6 +48,8 @@ export default function HistoriaClinicaPage() {
       setAntecedentesCual(p?.antecedentes_medicos_cual ?? "");
       if (dataHc.historiaClinica) {
         setForm({ ...HISTORIA_CLINICA_VACIA, ...dataHc.historiaClinica, fecha: dataHc.historiaClinica.fecha.slice(0, 10) });
+        setHayHistoria(true);
+        setConfirmado(dataHc.historiaClinica.confirmado ?? true);
       }
       setCargando(false);
     });
@@ -73,7 +78,18 @@ export default function HistoriaClinicaPage() {
     ]);
     setGuardando(false);
     setGuardado(true);
+    // Guardar desde aquí es la doctora revisando/corrigiendo — cuenta
+    // como confirmación, igual que hace el backend al guardar.
+    setConfirmado(true);
     setTimeout(() => setGuardado(false), 2000);
+  }
+
+  async function confirmarInformacion() {
+    if (confirmando) return;
+    setConfirmando(true);
+    const res = await fetch(`/api/pacientes/${pacienteId}/historia-clinica/confirmar`, { method: "POST" });
+    if (res.ok) setConfirmado(true);
+    setConfirmando(false);
   }
 
   if (cargando || !paciente) {
@@ -94,6 +110,22 @@ export default function HistoriaClinicaPage() {
         <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
         <div className="text-xs text-[#a49c8a]">Cédula profesional: {DOCTORA.cedula}</div>
       </div>
+
+      {hayHistoria && !confirmado && (
+        <div className="space-y-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] p-4">
+          <p className="text-[13px] text-[#B0503A]">
+            🚨 <strong>Sin confirmar</strong> — esta información la llenó el paciente desde su link. Revísala y, si
+            todo está correcto, confírmala. Si algo está mal, corrígelo abajo y guarda — eso también la confirma.
+          </p>
+          <button
+            onClick={confirmarInformacion}
+            disabled={confirmando}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#B0503A] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+          >
+            <ShieldCheck size={15} /> {confirmando ? "Confirmando…" : "Todo correcto, confirmar información"}
+          </button>
+        </div>
+      )}
 
       <CamposHistoriaClinica
         form={form}

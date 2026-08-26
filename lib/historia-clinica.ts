@@ -31,10 +31,16 @@ export async function obtenerHistoriaClinicaVigente(pacienteId: number) {
   return rows[0] ? descifrarFila(rows[0]) : null;
 }
 
+// Cuando el paciente llena/actualiza su historial desde el link
+// público, la nueva versión queda sin confirmar hasta que la doctora
+// la revise (ver /historia-clinica/confirmar). Cuando la captura o
+// corrige la doctora desde el dashboard, queda confirmada de una vez
+// — ella misma la está revisando en ese momento.
 export async function guardarHistoriaClinica(
   pacienteId: number,
   body: Record<string, unknown>,
-  identidad: { usuarioId: number | null; nombre: string }
+  identidad: { usuarioId: number | null; nombre: string },
+  opts: { esPublico?: boolean } = {}
 ) {
   const { rows: vigenteRows } = await query<{ id: number }>(
     `SELECT id FROM historia_clinica WHERE paciente_id = $1 AND vigente = true`,
@@ -50,18 +56,43 @@ export async function guardarHistoriaClinica(
     await query(`UPDATE historia_clinica SET vigente = false WHERE id = $1`, [anteriorId]);
   }
 
+  const confirmado = !opts.esPublico;
+
   const valores = CAMPOS.map((campo) => {
     const valor = (body[campo] as string | null | undefined) ?? null;
     return CIFRABLES.has(campo) ? cifrar(valor) : valor;
   });
-  const placeholders = CAMPOS.map((_, i) => `$${i + 5}`).join(", ");
+  const placeholders = CAMPOS.map((_, i) => `$${i + 8}`).join(", ");
 
   const { rows } = await query(
-    `INSERT INTO historia_clinica (paciente_id, creado_por, creado_por_nombre, reemplaza_a, ${CAMPOS.join(", ")})
-     VALUES ($1, $2, $3, $4, ${placeholders})
+    `INSERT INTO historia_clinica (paciente_id, creado_por, creado_por_nombre, reemplaza_a, confirmado, confirmado_por_nombre, confirmado_en, ${CAMPOS.join(", ")})
+     VALUES ($1, $2, $3, $4, $5, $6, $7, ${placeholders})
      RETURNING ${COLUMNAS}`,
-    [pacienteId, identidad.usuarioId, identidad.nombre, anteriorId, ...valores]
+    [
+      pacienteId,
+      identidad.usuarioId,
+      identidad.nombre,
+      anteriorId,
+      confirmado,
+      confirmado ? identidad.nombre : null,
+      confirmado ? new Date() : null,
+      ...valores,
+    ]
   );
 
   return descifrarFila(rows[0]);
+}
+
+// Marca la versión vigente como confirmada por la doctora sin cambiar
+// el contenido — para cuando revisó el historial y está todo
+// correcto tal como lo llenó el paciente.
+export async function confirmarHistoriaClinica(pacienteId: number, identidad: { nombre: string }) {
+  const { rows } = await query(
+    `UPDATE historia_clinica
+     SET confirmado = true, confirmado_por_nombre = $2, confirmado_en = now()
+     WHERE paciente_id = $1 AND vigente = true
+     RETURNING ${COLUMNAS}`,
+    [pacienteId, identidad.nombre]
+  );
+  return rows[0] ? descifrarFila(rows[0]) : null;
 }

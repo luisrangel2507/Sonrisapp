@@ -104,7 +104,9 @@ export async function PUT(
       await query(`UPDATE pacientes SET ${asignaciones} WHERE id = $1`, [pacienteId, ...pacienteValores]);
     }
 
-    const historiaClinica = await guardarHistoriaClinica(pacienteId, body, IDENTIDAD_FORMULARIO_PUBLICO);
+    const historiaClinica = await guardarHistoriaClinica(pacienteId, body, IDENTIDAD_FORMULARIO_PUBLICO, {
+      esPublico: true,
+    });
 
     return NextResponse.json({ historiaClinica });
   } catch (err) {

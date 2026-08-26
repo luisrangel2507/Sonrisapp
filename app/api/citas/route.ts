@@ -8,12 +8,14 @@ const PUNTOS_POR_VISITA = 50;
 const CITAS_SELECT = `
   SELECT c.id, c.paciente_id, p.nombre AS paciente_nombre, c.tratamiento,
          c.fecha_hora, c.estado, c.monto::float8 AS monto,
-         COALESCE(pg.pagado, 0)::float8 AS pagado
+         COALESCE(pg.pagado, 0)::float8 AS pagado,
+         (hc.confirmado IS FALSE) AS historial_pendiente
   FROM citas c
   JOIN pacientes p ON p.id = c.paciente_id
   LEFT JOIN (
     SELECT cita_id, SUM(monto) AS pagado FROM pagos GROUP BY cita_id
   ) pg ON pg.cita_id = c.id
+  LEFT JOIN historia_clinica hc ON hc.paciente_id = c.paciente_id AND hc.vigente = true
 `;
 
 export async function GET(req: NextRequest) {
