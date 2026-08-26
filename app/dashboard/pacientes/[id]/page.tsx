@@ -559,7 +559,7 @@ export default function PacienteDetallePage() {
             ) : (
               <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#EFE9DC] bg-[#FBF8F2] py-2.5 text-[12px] font-medium text-[#8a8272]">
                 <Paperclip size={13} />
-                {procesandoArchivo ? "Procesando…" : "Adjuntar radiografía, foto o PDF"}
+                {procesandoArchivo ? "Procesando…" : "Adjuntar documentos"}
                 <input
                   type="file"
                   accept="image/*,application/pdf"
