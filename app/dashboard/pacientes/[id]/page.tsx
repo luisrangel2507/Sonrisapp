@@ -87,7 +87,6 @@ export default function PacienteDetallePage() {
   const [email, setEmail] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
 
-  const [formNotaAbierto, setFormNotaAbierto] = useState(false);
   const [guardandoNota, setGuardandoNota] = useState(false);
   const [archivoNota, setArchivoNota] = useState<string | null>(null);
   const [archivoNotaNombre, setArchivoNotaNombre] = useState<string | null>(null);
@@ -206,7 +205,6 @@ export default function PacienteDetallePage() {
       }),
     });
     quitarArchivoNota();
-    setFormNotaAbierto(false);
     setGuardandoNota(false);
     const res = await fetch(`/api/pacientes/${pacienteId}/notas`);
     const data = await res.json();
@@ -449,7 +447,7 @@ export default function PacienteDetallePage() {
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-            Historial clínico general
+            Estudios de laboratorio
           </div>
           <span className="text-[11px] text-[#a49c8a]">
             {(() => {
@@ -542,62 +540,42 @@ export default function PacienteDetallePage() {
           )}
         </div>
 
-        {formNotaAbierto ? (
-          <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-            {archivoNota ? (
-              <div className="flex items-center gap-2 rounded-xl border border-[#EFE9DC] bg-[#FBF8F2] px-3 py-2">
-                {archivoNotaTipo?.startsWith("image/") ? (
-                  <img src={archivoNota} alt="" className="h-10 w-10 rounded-lg object-cover" />
-                ) : (
-                  <FileText size={16} className="text-[#8a8272]" />
-                )}
-                <span className="flex-1 truncate text-[12px] text-[#2b2118]">{archivoNotaNombre}</span>
-                <button onClick={quitarArchivoNota} className="text-[#a49c8a]" aria-label="Quitar archivo">
-                  <X size={15} />
-                </button>
-              </div>
-            ) : (
-              <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#EFE9DC] bg-[#FBF8F2] py-2.5 text-[12px] font-medium text-[#8a8272]">
-                <Paperclip size={13} />
-                {procesandoArchivo ? "Procesando…" : "Adjuntar documentos"}
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={elegirArchivoNota}
-                  disabled={procesandoArchivo}
-                  className="hidden"
-                />
-              </label>
-            )}
-            {errorArchivo && <p className="text-[11px] text-[#B0503A]">{errorArchivo}</p>}
-
-            <div className="flex gap-2">
-              <button
-                onClick={agregarNota}
-                disabled={!archivoNota || guardandoNota || procesandoArchivo}
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-              >
-                {guardandoNota ? "Guardando…" : "Guardar"}
-              </button>
-              <button
-                onClick={() => {
-                  setFormNotaAbierto(false);
-                  quitarArchivoNota();
-                }}
-                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
-              >
-                Cancelar
+        <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+          {archivoNota ? (
+            <div className="flex items-center gap-2 rounded-xl border border-[#EFE9DC] bg-[#FBF8F2] px-3 py-2">
+              {archivoNotaTipo?.startsWith("image/") ? (
+                <img src={archivoNota} alt="" className="h-10 w-10 rounded-lg object-cover" />
+              ) : (
+                <FileText size={16} className="text-[#8a8272]" />
+              )}
+              <span className="flex-1 truncate text-[12px] text-[#2b2118]">{archivoNotaNombre}</span>
+              <button onClick={quitarArchivoNota} className="text-[#a49c8a]" aria-label="Quitar archivo">
+                <X size={15} />
               </button>
             </div>
-          </div>
-        ) : (
+          ) : (
+            <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#EFE9DC] bg-[#FBF8F2] py-2.5 text-[12px] font-medium text-[#8a8272]">
+              <Paperclip size={13} />
+              {procesandoArchivo ? "Procesando…" : "Adjuntar documentos"}
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={elegirArchivoNota}
+                disabled={procesandoArchivo}
+                className="hidden"
+              />
+            </label>
+          )}
+          {errorArchivo && <p className="text-[11px] text-[#B0503A]">{errorArchivo}</p>}
+
           <button
-            onClick={() => setFormNotaAbierto(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+            onClick={agregarNota}
+            disabled={!archivoNota || guardandoNota || procesandoArchivo}
+            className="w-full rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
           >
-            <Plus size={14} /> Agregar entrada al historial
+            {guardandoNota ? "Guardando…" : "Guardar"}
           </button>
-        )}
+        </div>
       </div>
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
