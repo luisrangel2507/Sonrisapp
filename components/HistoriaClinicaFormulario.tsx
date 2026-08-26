@@ -15,6 +15,7 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
   ocupacion: null,
   emergencia_nombre: null,
   emergencia_telefono: null,
+  emergencia_parentesco: null,
   motivo_consulta: null,
   fam_enfermedad_sistemica: null,
   fam_enfermedad_cual: null,
@@ -270,6 +271,14 @@ export function CamposHistoriaClinica({
             <input
               value={form.emergencia_telefono ?? ""}
               onChange={(e) => set("emergencia_telefono", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+          <Campo label="Parentesco">
+            <input
+              value={form.emergencia_parentesco ?? ""}
+              onChange={(e) => set("emergencia_parentesco", e.target.value || null)}
+              placeholder="Ej. mamá, esposo…"
               className={inputClase}
             />
           </Campo>

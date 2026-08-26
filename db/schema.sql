@@ -153,6 +153,7 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   ocupacion VARCHAR(120),
   emergencia_nombre VARCHAR(160),
   emergencia_telefono VARCHAR(20),
+  emergencia_parentesco VARCHAR(60),
   motivo_consulta TEXT,
   -- Antecedentes heredofamiliares
   fam_enfermedad_sistemica BOOLEAN,
@@ -198,6 +199,7 @@ ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS codigo_postal VARCHAR(10);
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ciudad VARCHAR(120);
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS estado VARCHAR(120);
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS pais VARCHAR(120);
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS emergencia_parentesco VARCHAR(60);
 
 -- enfermedad_actual empezó como texto libre; se separa en Sí/No + "cuál"
 -- (mismo patrón que fam_enfermedad_sistemica/_cual) — se renombra la

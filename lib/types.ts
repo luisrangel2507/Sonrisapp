@@ -115,6 +115,7 @@ export interface HistoriaClinica {
   ocupacion: string | null;
   emergencia_nombre: string | null;
   emergencia_telefono: string | null;
+  emergencia_parentesco: string | null;
   motivo_consulta: string | null;
   fam_enfermedad_sistemica: boolean | null;
   fam_enfermedad_cual: string | null;

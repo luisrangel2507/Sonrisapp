@@ -289,7 +289,7 @@ function BotonSiAVecesNo({ valor, onChange }: { valor: FrecuenciaConsumo | null;
 function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
   if (paso.tipo === "fecha_nacimiento") return "—";
   if (paso.tipo === "emergencia") {
-    const partes = [form.emergencia_nombre, form.emergencia_telefono].filter(Boolean);
+    const partes = [form.emergencia_nombre, form.emergencia_telefono, form.emergencia_parentesco].filter(Boolean);
     return partes.length ? partes.join(" · ") : "—";
   }
   if (paso.tipo === "domicilio") {
@@ -545,6 +545,15 @@ export function HistoriaClinicaWizard({
                   value={form.emergencia_telefono ?? ""}
                   onChange={(e) => set("emergencia_telefono", e.target.value || null)}
                   placeholder="Número de contacto"
+                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Parentesco</label>
+                <input
+                  value={form.emergencia_parentesco ?? ""}
+                  onChange={(e) => set("emergencia_parentesco", e.target.value || null)}
+                  placeholder="Ej. mamá, esposo…"
                   className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
                 />
               </div>

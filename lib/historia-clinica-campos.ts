@@ -13,6 +13,7 @@ export const HISTORIA_CLINICA_CAMPOS = [
   "ocupacion",
   "emergencia_nombre",
   "emergencia_telefono",
+  "emergencia_parentesco",
   "motivo_consulta",
   "fam_enfermedad_sistemica",
   "fam_enfermedad_cual",
