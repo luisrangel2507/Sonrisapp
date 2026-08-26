@@ -43,6 +43,13 @@ type Paso =
       pregunta: string;
       seccion: Seccion;
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+    }
+  | {
+      key: "emergencia";
+      tipo: "emergencia";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
     };
 
 const PASOS: Paso[] = [
@@ -65,15 +72,9 @@ const PASOS: Paso[] = [
   { key: "domicilio", tipo: "texto", pregunta: "¿Cuál es tu domicilio?", seccion: "Ficha de identificación" },
   { key: "ocupacion", tipo: "texto", pregunta: "¿Cuál es tu ocupación?", seccion: "Ficha de identificación" },
   {
-    key: "emergencia_nombre",
-    tipo: "texto",
+    key: "emergencia",
+    tipo: "emergencia",
     pregunta: "En caso de emergencia, ¿a quién llamamos?",
-    seccion: "Ficha de identificación",
-  },
-  {
-    key: "emergencia_telefono",
-    tipo: "texto",
-    pregunta: "¿Cuál es su teléfono?",
     seccion: "Ficha de identificación",
   },
   {
@@ -235,6 +236,10 @@ function BotonSiNo({ valor, onChange }: { valor: boolean | null; onChange: (v: b
 
 function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
   if (paso.tipo === "fecha_nacimiento") return "—";
+  if (paso.tipo === "emergencia") {
+    const partes = [form.emergencia_nombre, form.emergencia_telefono].filter(Boolean);
+    return partes.length ? partes.join(" · ") : "—";
+  }
   const v = form[paso.key];
   if (paso.tipo === "sexo") return v === "F" ? "Femenino" : v === "M" ? "Masculino" : "—";
   if (paso.tipo === "bool") return v === true ? "Sí" : v === false ? "No" : "—";
@@ -456,6 +461,29 @@ export function HistoriaClinicaWizard({
               onChange={(e) => onChangeFechaNacimiento(e.target.value || null)}
               className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
             />
+          ) : paso.tipo === "emergencia" ? (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Nombre</label>
+                <input
+                  autoFocus
+                  value={form.emergencia_nombre ?? ""}
+                  onChange={(e) => set("emergencia_nombre", e.target.value || null)}
+                  placeholder="Nombre de la persona"
+                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Número telefónico</label>
+                <input
+                  type="tel"
+                  value={form.emergencia_telefono ?? ""}
+                  onChange={(e) => set("emergencia_telefono", e.target.value || null)}
+                  placeholder="Número de contacto"
+                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+              </div>
+            </div>
           ) : (
             <input
               autoFocus
