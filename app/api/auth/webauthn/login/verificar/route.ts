@@ -5,6 +5,7 @@ import { obtenerPasskeyPorCredentialId, actualizarContadorPasskey } from "@/lib/
 import { WEBAUTHN_COOKIE } from "@/lib/webauthn-cookie";
 import { obtenerRpIdYOrigin } from "@/lib/webauthn-origin";
 import { COOKIE_SESION, SESION_MAX_AGE_SEGUNDOS, crearSesionToken } from "@/lib/auth";
+import { DOCTORA } from "@/lib/panel-data";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,14 @@ export async function POST(req: NextRequest) {
 
     await actualizarContadorPasskey(passkey.id, verificacion.authenticationInfo.newCounter);
 
-    const token = await crearSesionToken();
+    // Face ID no está ligado a una fila de `usuarios` (es la sesión
+    // compartida del consultorio) — se registra con el nombre del
+    // dispositivo para poder rastrear cuál celular la usó.
+    const token = await crearSesionToken({
+      usuarioId: null,
+      nombre: `${DOCTORA.nombre} · Face ID (${passkey.nombre_dispositivo})`,
+      rol: "admin",
+    });
     const res = NextResponse.json({ ok: true });
     res.cookies.set(COOKIE_SESION, token, {
       httpOnly: true,

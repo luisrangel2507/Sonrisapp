@@ -427,10 +427,18 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
 
   async function eliminarEntrada(id: number) {
     if (eliminandoId) return;
-    const ok = window.confirm("¿Eliminar este registro del historial? No se puede deshacer.");
-    if (!ok) return;
+    // NOM-024: nada se borra de verdad — "eliminar" anula el registro
+    // con un motivo, pero se sigue viendo (marcado) en el historial.
+    const motivo = window.prompt(
+      "Motivo de la anulación (el registro no se borra, queda marcado como anulado en el historial):"
+    );
+    if (!motivo || !motivo.trim()) return;
     setEliminandoId(id);
-    await fetch(`/api/pacientes/${paciente.id}/dientes/${seleccionado}/${id}`, { method: "DELETE" });
+    await fetch(`/api/pacientes/${paciente.id}/dientes/${seleccionado}/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
     setEditandoId(null);
     setEliminandoId(null);
     await cargarHistorial();
@@ -563,7 +571,12 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             className="rounded-full px-3 py-1 text-[11px] font-semibold text-white"
             style={{ backgroundColor: `rgba(${estado.glow},0.25)`, border: `1px solid ${estado.ring}` }}
           >
-            {cargando ? "…" : `${info?.entradas.length || 0} registro${info?.entradas.length === 1 ? "" : "s"}`}
+            {cargando
+              ? "…"
+              : (() => {
+                  const n = info?.entradas.filter((e) => e.vigente).length || 0;
+                  return `${n} registro${n === 1 ? "" : "s"}`;
+                })()}
           </span>
         </div>
 
@@ -574,6 +587,9 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             info.entradas.map((e) =>
               editandoId === e.id ? (
                 <div key={e.id} className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-[11px] text-white/40">
+                    Guardar crea una corrección nueva y conserva el registro original; anular no lo borra, solo lo marca.
+                  </p>
                   <input
                     value={tipoEdit}
                     onChange={(ev) => setTipoEdit(ev.target.value)}
@@ -593,7 +609,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                       disabled={!tipoEdit.trim() || guardandoEdit}
                       className="flex-1 rounded-full bg-[#7C5CE0] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
                     >
-                      {guardandoEdit ? "Guardando…" : "Guardar"}
+                      {guardandoEdit ? "Guardando…" : "Guardar corrección"}
                     </button>
                     <button
                       onClick={() => eliminarEntrada(e.id)}
@@ -611,17 +627,51 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                   </div>
                 </div>
               ) : (
-                <button
-                  key={e.id}
-                  onClick={() => abrirEdicion(e)}
-                  className="block w-full border-l-2 border-white/10 pl-3 text-left transition-colors hover:border-white/30"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white/90">{e.tipo}</span>
-                    <span className="text-[11px] text-white/40">{formatearFecha(e.fecha)}</span>
-                  </div>
-                  {e.nota && <p className="mt-0.5 text-[13px] text-white/50">{e.nota}</p>}
-                </button>
+                (() => {
+                  const anulado = !e.vigente && !!e.motivo_anulacion;
+                  const corregido = !e.vigente && !e.motivo_anulacion;
+                  const contenido = (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-sm font-medium ${e.vigente ? "text-white/90" : "text-white/40 line-through"}`}>
+                          {e.tipo}
+                        </span>
+                        <span className="shrink-0 text-[11px] text-white/40">{formatearFecha(e.fecha)}</span>
+                      </div>
+                      {e.nota && (
+                        <p className={`mt-0.5 text-[13px] ${e.vigente ? "text-white/50" : "text-white/30 line-through"}`}>
+                          {e.nota}
+                        </p>
+                      )}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-white/30">
+                        {e.creado_por_nombre && <span>Registrado por {e.creado_por_nombre}</span>}
+                        {e.vigente && e.reemplaza_a != null && <span className="text-[#5FE0A0]">Corrección de un registro anterior</span>}
+                        {anulado && (
+                          <span className="text-[#E8508C]">
+                            Anulado por {e.anulado_por_nombre}: {e.motivo_anulacion}
+                          </span>
+                        )}
+                        {corregido && <span>Corregido — reemplazado por un registro nuevo</span>}
+                      </div>
+                    </>
+                  );
+                  if (!e.vigente) {
+                    return (
+                      <div key={e.id} className="block w-full border-l-2 border-white/5 pl-3 opacity-70">
+                        {contenido}
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={e.id}
+                      onClick={() => abrirEdicion(e)}
+                      className="block w-full border-l-2 border-white/10 pl-3 text-left transition-colors hover:border-white/30"
+                    >
+                      {contenido}
+                    </button>
+                  );
+                })()
               )
             )
           ) : (

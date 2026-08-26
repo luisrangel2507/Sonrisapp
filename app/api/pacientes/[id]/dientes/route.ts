@@ -28,8 +28,15 @@ export async function GET(
       fecha: string;
       tipo: string;
       nota: string | null;
+      creado_por_nombre: string | null;
+      vigente: boolean;
+      reemplaza_a: number | null;
+      motivo_anulacion: string | null;
+      anulado_por_nombre: string | null;
     }>(
-      `SELECT h.id, h.paciente_diente_id, h.fecha, h.tipo, h.nota
+      `SELECT h.id, h.paciente_diente_id, h.fecha, h.tipo, h.nota,
+              h.creado_por_nombre, h.vigente, h.reemplaza_a,
+              h.motivo_anulacion, h.anulado_por_nombre
        FROM diente_historial h
        JOIN paciente_dientes d ON d.id = h.paciente_diente_id
        WHERE d.paciente_id = $1
@@ -49,6 +56,11 @@ export async function GET(
         fecha: e.fecha,
         tipo: e.tipo,
         nota: e.nota,
+        creado_por_nombre: e.creado_por_nombre,
+        vigente: e.vigente,
+        reemplaza_a: e.reemplaza_a,
+        motivo_anulacion: e.motivo_anulacion,
+        anulado_por_nombre: e.anulado_por_nombre,
       });
     }
 

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_SESION, SESION_MAX_AGE_SEGUNDOS, compararSeguro, crearSesionToken, verificarContrasena } from "@/lib/auth";
+import {
+  COOKIE_SESION,
+  SESION_MAX_AGE_SEGUNDOS,
+  compararSeguro,
+  crearSesionToken,
+  verificarContrasena,
+  type IdentidadSesion,
+} from "@/lib/auth";
 import { query } from "@/lib/db";
+import { DOCTORA } from "@/lib/panel-data";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -15,32 +23,34 @@ export async function POST(req: NextRequest) {
   // autocapitalización del teclado en celular); la contraseña sí.
   const usuarioNorm = usuario.trim().toLowerCase();
 
-  let ok = false;
+  let identidad: IdentidadSesion | null = null;
 
   // Cuenta admin original por variables de entorno — se mantiene por
-  // compatibilidad con lo ya configurado en Railway.
+  // compatibilidad con lo ya configurado en Railway. No está ligada a
+  // una fila de `usuarios`, así que queda registrada con el nombre de
+  // la doctora y rol admin.
   const usuarioEnv = process.env.APP_LOGIN_USER;
   const passEnv = process.env.APP_LOGIN_PASSWORD;
-  if (usuarioEnv && passEnv) {
-    ok = compararSeguro(usuarioNorm, usuarioEnv.trim().toLowerCase()) && compararSeguro(contrasena, passEnv);
+  if (usuarioEnv && passEnv && compararSeguro(usuarioNorm, usuarioEnv.trim().toLowerCase()) && compararSeguro(contrasena, passEnv)) {
+    identidad = { usuarioId: null, nombre: DOCTORA.nombre, rol: "admin" };
   }
 
   // Cuentas creadas desde Perfil → Usuarios (tabla `usuarios`).
-  if (!ok) {
-    const { rows } = await query<{ contrasena_hash: string }>(
-      `SELECT contrasena_hash FROM usuarios WHERE lower(usuario) = $1`,
+  if (!identidad) {
+    const { rows } = await query<{ id: number; nombre: string; contrasena_hash: string; rol: "admin" | "asistente" }>(
+      `SELECT id, nombre, contrasena_hash, rol FROM usuarios WHERE lower(usuario) = $1`,
       [usuarioNorm]
     );
-    if (rows.length > 0) {
-      ok = await verificarContrasena(contrasena, rows[0].contrasena_hash);
+    if (rows.length > 0 && (await verificarContrasena(contrasena, rows[0].contrasena_hash))) {
+      identidad = { usuarioId: rows[0].id, nombre: rows[0].nombre, rol: rows[0].rol };
     }
   }
 
-  if (!ok) {
+  if (!identidad) {
     return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
   }
 
-  const token = await crearSesionToken();
+  const token = await crearSesionToken(identidad);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(COOKIE_SESION, token, {
     httpOnly: true,

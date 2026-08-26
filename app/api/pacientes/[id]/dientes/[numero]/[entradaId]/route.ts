@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { identidadDesdeRequest } from "@/lib/auth";
 
+// "Editar" no sobrescribe el registro original (NOM-024: nada se borra
+// ni se altera de verdad) — inserta una fila nueva con la corrección,
+// ligada a la anterior por reemplaza_a, y marca la vieja vigente=false.
+// Las dos quedan visibles: la app solo usa la vigente como "el dato
+// actual".
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string; numero: string; entradaId: string } }
@@ -22,30 +28,41 @@ export async function PATCH(
       return NextResponse.json({ error: "tipo es requerido" }, { status: 400 });
     }
 
-    const { rows } = await query(
-      `UPDATE diente_historial h
-       SET tipo = $1, nota = $2
-       FROM paciente_dientes d
-       WHERE h.id = $3
-         AND h.paciente_diente_id = d.id
-         AND d.paciente_id = $4
-         AND d.numero_fdi = $5
-       RETURNING h.id, h.fecha, h.tipo, h.nota`,
-      [tipo, nota ?? null, entradaId, pacienteId, numeroFdi]
+    const identidad = await identidadDesdeRequest(req);
+
+    const { rows: originalRows } = await query<{ id: number; paciente_diente_id: number }>(
+      `SELECT h.id, h.paciente_diente_id
+       FROM diente_historial h
+       JOIN paciente_dientes d ON d.id = h.paciente_diente_id
+       WHERE h.id = $1 AND d.paciente_id = $2 AND d.numero_fdi = $3 AND h.vigente = true`,
+      [entradaId, pacienteId, numeroFdi]
     );
 
-    if (rows.length === 0) {
+    if (originalRows.length === 0) {
       return NextResponse.json({ error: "registro no encontrado" }, { status: 404 });
     }
+    const dienteId = originalRows[0].paciente_diente_id;
 
-    return NextResponse.json({ entrada: rows[0] });
+    const { rows: nuevaRows } = await query(
+      `INSERT INTO diente_historial (paciente_diente_id, tipo, nota, creado_por, creado_por_nombre, reemplaza_a)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, fecha, tipo, nota`,
+      [dienteId, tipo, nota ?? null, identidad.usuarioId, identidad.nombre, entradaId]
+    );
+
+    await query(`UPDATE diente_historial SET vigente = false WHERE id = $1`, [entradaId]);
+
+    return NextResponse.json({ entrada: nuevaRows[0] });
   } catch (err) {
     return errorJson(err);
   }
 }
 
+// "Eliminar" tampoco borra — marca el registro vigente=false con el
+// motivo y quién lo anuló, y se sigue mostrando (marcado) en el
+// historial.
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string; numero: string; entradaId: string } }
 ) {
   try {
@@ -57,15 +74,25 @@ export async function DELETE(
       return NextResponse.json({ error: "parámetros inválidos" }, { status: 400 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const motivo = typeof body?.motivo === "string" ? body.motivo.trim() : "";
+    if (!motivo) {
+      return NextResponse.json({ error: "motivo es requerido" }, { status: 400 });
+    }
+
+    const identidad = await identidadDesdeRequest(req);
+
     const { rows } = await query<{ id: number }>(
-      `DELETE FROM diente_historial h
-       USING paciente_dientes d
-       WHERE h.id = $1
+      `UPDATE diente_historial h
+       SET vigente = false, motivo_anulacion = $1, anulado_por_nombre = $2, anulado_en = now()
+       FROM paciente_dientes d
+       WHERE h.id = $3
          AND h.paciente_diente_id = d.id
-         AND d.paciente_id = $2
-         AND d.numero_fdi = $3
+         AND d.paciente_id = $4
+         AND d.numero_fdi = $5
+         AND h.vigente = true
        RETURNING h.id`,
-      [entradaId, pacienteId, numeroFdi]
+      [motivo, identidad.nombre, entradaId, pacienteId, numeroFdi]
     );
 
     if (rows.length === 0) {

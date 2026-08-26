@@ -1,3 +1,5 @@
+import type { NextRequest } from "next/server";
+
 // Sesión firmada sin dependencias externas (Web Crypto — funciona tanto
 // en middleware/Edge como en route handlers/Node). Un único usuario
 // admin (consultorio), no hay tabla de usuarios: las credenciales
@@ -34,29 +36,64 @@ function deBase64Url(b64url: string) {
   return bytes;
 }
 
-export async function crearSesionToken() {
+// Quién abrió la sesión — se embebe firmado en el propio token para
+// poder registrar "quién hizo qué" (NOM-024) sin una tabla de sesiones
+// aparte. usuarioId es null para el admin de variables de entorno y
+// para Face ID (no están ligados a una fila de `usuarios`); en esos
+// casos `nombre` es la etiqueta genérica del consultorio.
+export interface IdentidadSesion {
+  usuarioId: number | null;
+  nombre: string;
+  rol: "admin" | "asistente";
+}
+
+export async function crearSesionToken(identidad: IdentidadSesion) {
   const exp = Date.now() + SESION_MAX_AGE_SEGUNDOS * 1000;
-  const payloadBytes = new TextEncoder().encode(String(exp));
+  const payloadBytes = new TextEncoder().encode(JSON.stringify({ exp, identidad }));
   const clave = await getClaveSecreta();
   const firma = await crypto.subtle.sign("HMAC", clave, payloadBytes);
   return `${aBase64Url(payloadBytes.buffer as ArrayBuffer)}.${aBase64Url(firma)}`;
 }
 
-export async function verificarSesionToken(token: string | undefined | null) {
-  if (!token) return false;
+async function decodificarSesionToken(
+  token: string | undefined | null
+): Promise<{ exp: number; identidad: IdentidadSesion } | null> {
+  if (!token) return null;
   const [payloadB64, firmaB64] = token.split(".");
-  if (!payloadB64 || !firmaB64) return false;
+  if (!payloadB64 || !firmaB64) return null;
   try {
     const clave = await getClaveSecreta();
     const payloadBytes = deBase64Url(payloadB64);
     const firmaBytes = deBase64Url(firmaB64);
     const valido = await crypto.subtle.verify("HMAC", clave, firmaBytes, payloadBytes);
-    if (!valido) return false;
-    const exp = Number(new TextDecoder().decode(payloadBytes));
-    return Number.isFinite(exp) && exp > Date.now();
+    if (!valido) return null;
+    const payload = JSON.parse(new TextDecoder().decode(payloadBytes));
+    if (!Number.isFinite(payload?.exp) || payload.exp <= Date.now()) return null;
+    return payload;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function verificarSesionToken(token: string | undefined | null) {
+  return (await decodificarSesionToken(token)) !== null;
+}
+
+// Para las rutas que necesitan saber quién hizo la acción (auditoría).
+export async function identidadDeSesion(token: string | undefined | null): Promise<IdentidadSesion | null> {
+  const payload = await decodificarSesionToken(token);
+  return payload?.identidad ?? null;
+}
+
+const NOMBRE_SIN_IDENTIDAD = "Equipo del consultorio";
+
+// Atajo para las rutas API: lee la cookie de sesión de la petición y
+// regresa la identidad de quien la hizo. Siempre da un nombre usable
+// (aunque sea el genérico) para que los campos "creado_por_nombre" /
+// "anulado_por_nombre" nunca queden vacíos.
+export async function identidadDesdeRequest(req: NextRequest): Promise<IdentidadSesion> {
+  const identidad = await identidadDeSesion(req.cookies.get(COOKIE_SESION)?.value);
+  return identidad ?? { usuarioId: null, nombre: NOMBRE_SIN_IDENTIDAD, rol: "admin" };
 }
 
 // Comparación en tiempo aproximadamente constante — evita que un

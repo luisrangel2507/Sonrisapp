@@ -26,6 +26,10 @@ export interface PacienteNota {
   archivo: string | null;
   archivo_nombre: string | null;
   archivo_tipo: string | null;
+  creado_por_nombre: string | null;
+  vigente: boolean;
+  motivo_anulacion: string | null;
+  anulado_por_nombre: string | null;
 }
 
 export type EstadoConsentimiento = "pendiente" | "firmado";

@@ -60,6 +60,11 @@ export interface HistorialEntrada {
   fecha: string;
   tipo: string;
   nota: string | null;
+  creado_por_nombre: string | null;
+  vigente: boolean;
+  reemplaza_a: number | null;
+  motivo_anulacion: string | null;
+  anulado_por_nombre: string | null;
 }
 
 export interface HistorialDiente {

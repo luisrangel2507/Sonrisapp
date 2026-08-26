@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { identidadDesdeRequest } from "@/lib/auth";
 
 // Límite generoso para el archivo ya comprimido/codificado en el
 // cliente (data URL base64) — evita que alguien mande algo enorme.
@@ -18,7 +19,8 @@ export async function GET(
     }
 
     const { rows } = await query(
-      `SELECT id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo
+      `SELECT id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo,
+              creado_por_nombre, vigente, motivo_anulacion, anulado_por_nombre
        FROM paciente_notas
        WHERE paciente_id = $1 ORDER BY fecha DESC, id DESC`,
       [pacienteId]
@@ -41,7 +43,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { tipo, nota, tratamiento, duracion, creado_por, archivo, archivo_nombre, archivo_tipo } = body ?? {};
+    const { tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo } = body ?? {};
 
     if (!tipo || typeof tipo !== "string") {
       return NextResponse.json({ error: "tipo es requerido" }, { status: 400 });
@@ -56,17 +58,20 @@ export async function POST(
       }
     }
 
+    const identidad = await identidadDesdeRequest(req);
+
     const { rows } = await query(
-      `INSERT INTO paciente_notas (paciente_id, tipo, nota, tratamiento, duracion, creado_por, archivo, archivo_nombre, archivo_tipo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo`,
+      `INSERT INTO paciente_notas (paciente_id, tipo, nota, tratamiento, duracion, creado_por, creado_por_nombre, archivo, archivo_nombre, archivo_tipo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo, creado_por_nombre, vigente`,
       [
         pacienteId,
         tipo,
         nota ?? null,
         tratamiento ?? null,
         duracion ?? null,
-        creado_por ?? null,
+        identidad.usuarioId,
+        identidad.nombre,
         archivo ?? null,
         archivo_nombre ?? null,
         archivo_tipo ?? null,

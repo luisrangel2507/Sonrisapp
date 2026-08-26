@@ -63,7 +63,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       `SELECT h.paciente_diente_id, h.fecha, h.tipo, h.nota
        FROM diente_historial h
        JOIN paciente_dientes d ON d.id = h.paciente_diente_id
-       WHERE d.paciente_id = $1
+       WHERE d.paciente_id = $1 AND h.vigente = true
        ORDER BY d.numero_fdi, h.fecha ASC`,
       [pacienteId]
     );
@@ -76,7 +76,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       duracion: string | null;
       nota: string | null;
     }>(
-      `SELECT id, fecha, tipo, tratamiento, duracion, nota FROM paciente_notas WHERE paciente_id = $1 ORDER BY fecha DESC, id DESC`,
+      `SELECT id, fecha, tipo, tratamiento, duracion, nota FROM paciente_notas WHERE paciente_id = $1 AND vigente = true ORDER BY fecha DESC, id DESC`,
       [pacienteId]
     );
 

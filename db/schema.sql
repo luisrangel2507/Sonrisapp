@@ -59,14 +59,32 @@ CREATE TABLE IF NOT EXISTS paciente_dientes (
   UNIQUE (paciente_id, numero_fdi)
 );
 
+-- Trazabilidad tipo NOM-024: nada se borra de verdad. "Editar" inserta
+-- una fila nueva (con reemplaza_a apuntando a la anterior) y marca la
+-- vieja vigente=false; "eliminar" solo marca vigente=false con un
+-- motivo — el registro original queda intacto y visible para
+-- auditoría, la app solo deja de mostrarlo como el dato "actual".
 CREATE TABLE IF NOT EXISTS diente_historial (
   id SERIAL PRIMARY KEY,
   paciente_diente_id INTEGER REFERENCES paciente_dientes(id) ON DELETE CASCADE,
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   tipo VARCHAR(80) NOT NULL, -- 'Resina', 'Limpieza', 'Endodoncia'...
   nota TEXT,
-  creado_por INTEGER -- id del doctor
+  creado_por INTEGER, -- id de usuarios, cuando aplica
+  creado_por_nombre VARCHAR(160),
+  vigente BOOLEAN NOT NULL DEFAULT true,
+  reemplaza_a INTEGER REFERENCES diente_historial(id),
+  motivo_anulacion TEXT,
+  anulado_por_nombre VARCHAR(160),
+  anulado_en TIMESTAMPTZ
 );
+
+ALTER TABLE diente_historial ADD COLUMN IF NOT EXISTS creado_por_nombre VARCHAR(160);
+ALTER TABLE diente_historial ADD COLUMN IF NOT EXISTS vigente BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE diente_historial ADD COLUMN IF NOT EXISTS reemplaza_a INTEGER REFERENCES diente_historial(id);
+ALTER TABLE diente_historial ADD COLUMN IF NOT EXISTS motivo_anulacion TEXT;
+ALTER TABLE diente_historial ADD COLUMN IF NOT EXISTS anulado_por_nombre VARCHAR(160);
+ALTER TABLE diente_historial ADD COLUMN IF NOT EXISTS anulado_en TIMESTAMPTZ;
 
 -- Historial clínico general del paciente (consultas, diagnósticos, notas)
 -- — separado del historial por diente en diente_historial.
@@ -91,6 +109,13 @@ ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS archivo_tipo VARCHAR(80);
 -- historial clínico general (ej. "Endodoncia" · "45 min").
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS tratamiento VARCHAR(120);
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS duracion VARCHAR(60);
+-- Trazabilidad tipo NOM-024 (igual que en diente_historial): "eliminar"
+-- una nota solo la marca vigente=false con un motivo, nunca la borra.
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS creado_por_nombre VARCHAR(160);
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS vigente BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS motivo_anulacion TEXT;
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS anulado_por_nombre VARCHAR(160);
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS anulado_en TIMESTAMPTZ;
 
 -- Pagos — uno o varios por cita (permite abonos parciales).
 CREATE TABLE IF NOT EXISTS pagos (

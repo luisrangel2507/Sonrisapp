@@ -236,11 +236,21 @@ export default function PacienteDetallePage() {
 
   async function eliminarNota(notaId: number) {
     if (eliminandoNotaId) return;
-    const ok = window.confirm("¿Eliminar esta entrada del historial?");
-    if (!ok) return;
+    // NOM-024: nada se borra de verdad — "eliminar" anula la entrada con
+    // un motivo, pero se sigue viendo (marcada) en el historial.
+    const motivo = window.prompt(
+      "Motivo de la anulación (la entrada no se borra, queda marcada como anulada en el historial):"
+    );
+    if (!motivo || !motivo.trim()) return;
     setEliminandoNotaId(notaId);
-    await fetch(`/api/pacientes/${pacienteId}/notas/${notaId}`, { method: "DELETE" });
-    setNotas((prev) => prev.filter((n) => n.id !== notaId));
+    await fetch(`/api/pacientes/${pacienteId}/notas/${notaId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
+    const res = await fetch(`/api/pacientes/${pacienteId}/notas`);
+    const data = await res.json();
+    setNotas(data.notas ?? []);
     setEliminandoNotaId(null);
   }
 
@@ -499,7 +509,12 @@ export default function PacienteDetallePage() {
           <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
             Historial clínico general
           </div>
-          <span className="text-[11px] text-[#a49c8a]">{notas.length} entrada{notas.length === 1 ? "" : "s"}</span>
+          <span className="text-[11px] text-[#a49c8a]">
+            {(() => {
+              const n = notas.filter((x) => x.vigente).length;
+              return `${n} entrada${n === 1 ? "" : "s"}`;
+            })()}
+          </span>
         </div>
 
         <div className="relative">
@@ -511,21 +526,38 @@ export default function PacienteDetallePage() {
                 {i < notas.length - 1 && (
                   <span className="absolute left-[5px] top-3 h-full w-px bg-[#EFE9DC]" />
                 )}
-                <span className="absolute left-0 top-1 h-[11px] w-[11px] rounded-full border-2 border-white bg-[#803449] shadow-sm" />
+                <span
+                  className="absolute left-0 top-1 h-[11px] w-[11px] rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: n.vigente ? "#803449" : "#c9a99a" }}
+                />
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-sm font-medium text-[#2b2118]">{n.tipo}</span>
+                    <span className={`text-sm font-medium ${n.vigente ? "text-[#2b2118]" : "text-[#a49c8a] line-through"}`}>
+                      {n.tipo}
+                    </span>
                     <span className="ml-2 text-[11px] text-[#a49c8a]">{formatearFecha(n.fecha)}</span>
                   </div>
-                  <button
-                    onClick={() => eliminarNota(n.id)}
-                    disabled={eliminandoNotaId === n.id}
-                    className="shrink-0 text-[#c9a99a] disabled:opacity-50"
-                    aria-label="Eliminar entrada"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {n.vigente && (
+                    <button
+                      onClick={() => eliminarNota(n.id)}
+                      disabled={eliminandoNotaId === n.id}
+                      className="shrink-0 text-[#c9a99a] disabled:opacity-50"
+                      aria-label="Eliminar entrada"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
+                {(n.creado_por_nombre || !n.vigente) && (
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[#a49c8a]">
+                    {n.creado_por_nombre && <span>Registrado por {n.creado_por_nombre}</span>}
+                    {!n.vigente && (
+                      <span className="text-[#b23a5a]">
+                        Anulado por {n.anulado_por_nombre}: {n.motivo_anulacion}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {(n.tratamiento || n.duracion) && (
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {n.tratamiento && (
@@ -540,7 +572,11 @@ export default function PacienteDetallePage() {
                     )}
                   </div>
                 )}
-                {n.nota && <p className="mt-0.5 text-[13px] text-[#8a8272]">{n.nota}</p>}
+                {n.nota && (
+                  <p className={`mt-0.5 text-[13px] text-[#8a8272] ${n.vigente ? "" : "line-through opacity-70"}`}>
+                    {n.nota}
+                  </p>
+                )}
                 {n.archivo && n.archivo_tipo?.startsWith("image/") ? (
                   <a href={n.archivo} target="_blank" rel="noreferrer" className="mt-2 inline-block">
                     <img
