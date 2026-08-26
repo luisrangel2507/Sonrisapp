@@ -114,7 +114,8 @@ export interface HistoriaClinica {
   motivo_consulta: string | null;
   fam_enfermedad_sistemica: boolean | null;
   fam_enfermedad_cual: string | null;
-  enfermedad_actual: string | null;
+  enfermedad_actual: boolean | null;
+  enfermedad_actual_cual: string | null;
   toma_medicamento: string | null;
   alergico_medicamento: boolean | null;
   alergico_medicamento_cual: string | null;

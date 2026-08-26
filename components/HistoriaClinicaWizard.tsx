@@ -98,9 +98,16 @@ const PASOS: Paso[] = [
   },
   {
     key: "enfermedad_actual",
-    tipo: "texto",
+    tipo: "bool",
     pregunta: "¿Tienes alguna enfermedad actual?",
     seccion: "Antecedentes personales",
+  },
+  {
+    key: "enfermedad_actual_cual",
+    tipo: "texto",
+    pregunta: "¿Cuál?",
+    seccion: "Antecedentes personales",
+    mostrarSi: (f) => f.enfermedad_actual === true,
   },
   {
     key: "toma_medicamento",

@@ -15,6 +15,7 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
   fam_enfermedad_sistemica: null,
   fam_enfermedad_cual: null,
   enfermedad_actual: null,
+  enfermedad_actual_cual: null,
   toma_medicamento: null,
   alergico_medicamento: null,
   alergico_medicamento_cual: null,
@@ -226,12 +227,17 @@ export function CamposHistoriaClinica({
 
       <Seccion titulo="Antecedentes personales">
         <Campo label="¿Enfermedad actual presente?">
-          <input
-            value={form.enfermedad_actual ?? ""}
-            onChange={(e) => set("enfermedad_actual", e.target.value || null)}
-            className={inputClase}
-          />
+          <SiNo valor={form.enfermedad_actual} onChange={(v) => set("enfermedad_actual", v)} />
         </Campo>
+        {form.enfermedad_actual === true && (
+          <Campo label="¿Cuál?">
+            <input
+              value={form.enfermedad_actual_cual ?? ""}
+              onChange={(e) => set("enfermedad_actual_cual", e.target.value || null)}
+              className={inputClase}
+            />
+          </Campo>
+        )}
         <Campo label="¿Toma algún medicamento?">
           <input
             value={form.toma_medicamento ?? ""}

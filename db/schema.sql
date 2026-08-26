@@ -146,7 +146,8 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   fam_enfermedad_sistemica BOOLEAN,
   fam_enfermedad_cual TEXT,
   -- Antecedentes personales
-  enfermedad_actual TEXT,
+  enfermedad_actual BOOLEAN,
+  enfermedad_actual_cual TEXT,
   toma_medicamento TEXT,
   alergico_medicamento BOOLEAN,
   alergico_medicamento_cual TEXT,
@@ -164,6 +165,24 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   ets_cual TEXT,
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- enfermedad_actual empezó como texto libre; se separa en Sí/No + "cuál"
+-- (mismo patrón que fam_enfermedad_sistemica/_cual) — se renombra la
+-- columna vieja a _cual para no perder las respuestas ya capturadas, y
+-- se agrega la columna booleana nueva.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'historia_clinica' AND column_name = 'enfermedad_actual' AND data_type = 'text'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'historia_clinica' AND column_name = 'enfermedad_actual_cual'
+  ) THEN
+    ALTER TABLE historia_clinica RENAME COLUMN enfermedad_actual TO enfermedad_actual_cual;
+  END IF;
+END $$;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS enfermedad_actual BOOLEAN;
 
 -- Consentimientos informados con firma digital. El paciente entra con
 -- el link público (token) igual que con la historia clínica, lee el

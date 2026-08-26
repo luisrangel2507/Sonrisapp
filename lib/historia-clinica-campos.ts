@@ -13,6 +13,7 @@ export const HISTORIA_CLINICA_CAMPOS = [
   "fam_enfermedad_sistemica",
   "fam_enfermedad_cual",
   "enfermedad_actual",
+  "enfermedad_actual_cual",
   "toma_medicamento",
   "alergico_medicamento",
   "alergico_medicamento_cual",
