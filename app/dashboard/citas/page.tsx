@@ -290,6 +290,7 @@ function CitaTimelineItem({
   onCerrarEdicion,
   onGuardarEdicion,
   pagando,
+  completarTrasPago,
   montoPago,
   setMontoPago,
   metodoPago,
@@ -300,6 +301,7 @@ function CitaTimelineItem({
   onGuardarPago,
   deshaciendoPago,
   onCambiarEstado,
+  onCompletar,
   onDeshacerPago,
 }: {
   cita: Cita;
@@ -316,6 +318,7 @@ function CitaTimelineItem({
   onCerrarEdicion: () => void;
   onGuardarEdicion: () => void;
   pagando: boolean;
+  completarTrasPago: boolean;
   montoPago: string;
   setMontoPago: (v: string) => void;
   metodoPago: string;
@@ -326,6 +329,7 @@ function CitaTimelineItem({
   onGuardarPago: () => void;
   deshaciendoPago: boolean;
   onCambiarEstado: (estado: "completada" | "cancelada") => void;
+  onCompletar: () => void;
   onDeshacerPago: () => void;
 }) {
   const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
@@ -414,7 +418,7 @@ function CitaTimelineItem({
         <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto">
           {cita.estado === "agendada" && (
             <button
-              onClick={() => onCambiarEstado("completada")}
+              onClick={onCompletar}
               className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-semibold text-[#3F6B33]"
             >
               <Check size={12} /> Completada
@@ -528,6 +532,11 @@ function CitaTimelineItem({
 
         {pagando && (
           <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            {completarTrasPago && (
+              <p className="text-[12px] font-medium text-[#3F6B33]">
+                ¿Cómo pagó? La cita se marcará como completada al guardar.
+              </p>
+            )}
             <input
               type="number"
               min="0"
@@ -551,7 +560,11 @@ function CitaTimelineItem({
                 disabled={guardandoPago}
                 className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
-                {guardandoPago ? "Guardando…" : "Guardar pago"}
+                {guardandoPago
+                  ? "Guardando…"
+                  : completarTrasPago
+                    ? "Confirmar pago y completar"
+                    : "Guardar pago"}
               </button>
               <button
                 onClick={onCerrarPago}
@@ -574,6 +587,10 @@ export default function CitasPage() {
   const [error, setError] = useState<string | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
   const [pagoAbiertoId, setPagoAbiertoId] = useState<number | null>(null);
+  // Cuando se abre el formulario de pago desde el botón "Completada"
+  // (en vez de "Registrar pago"), guardar el pago también marca la
+  // cita como completada — así no hace falta el paso extra.
+  const [completarTrasPago, setCompletarTrasPago] = useState(false);
 
   const [pacienteId, setPacienteId] = useState("");
   const [nombreNuevo, setNombreNuevo] = useState("");
@@ -750,7 +767,15 @@ export default function CitasPage() {
         metodo: metodoPago,
       }),
     });
+    if (completarTrasPago) {
+      await fetch("/api/citas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: cita.id, estado: "completada" }),
+      });
+    }
     setPagoAbiertoId(null);
+    setCompletarTrasPago(false);
     setMontoPago("");
     setMetodoPago("efectivo");
     setGuardandoPago(false);
@@ -825,6 +850,7 @@ export default function CitasPage() {
       onCerrarEdicion: () => setEditandoId(null),
       onGuardarEdicion: guardarEdicion,
       pagando: pagoAbiertoId === c.id,
+      completarTrasPago: pagoAbiertoId === c.id && completarTrasPago,
       montoPago,
       setMontoPago,
       metodoPago,
@@ -833,12 +859,27 @@ export default function CitasPage() {
       onAbrirPago: () => {
         setEditandoId(null);
         setPagoAbiertoId(c.id);
+        setCompletarTrasPago(false);
         setMontoPago("");
       },
-      onCerrarPago: () => setPagoAbiertoId(null),
+      onCerrarPago: () => {
+        setPagoAbiertoId(null);
+        setCompletarTrasPago(false);
+      },
       onGuardarPago: () => registrarPago(c),
       deshaciendoPago: deshaciendoPagoId === c.id,
       onCambiarEstado: (estado: "completada" | "cancelada") => cambiarEstado(c.id, estado),
+      onCompletar: () => {
+        const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
+        if (restante && restante > 0) {
+          setEditandoId(null);
+          setPagoAbiertoId(c.id);
+          setCompletarTrasPago(true);
+          setMontoPago("");
+        } else {
+          cambiarEstado(c.id, "completada");
+        }
+      },
       onDeshacerPago: () => deshacerPago(c),
     };
   }
