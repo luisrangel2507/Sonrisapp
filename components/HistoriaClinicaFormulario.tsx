@@ -69,6 +69,12 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 const inputClase =
   "w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]";
 
+// Mismo tamaño/caja que un input, pero de solo lectura (dato que viene
+// del paciente, no se edita aquí) — para que no se vea "chueco" al
+// lado de un campo editable real dentro del mismo grid.
+const soloLecturaClase =
+  "w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3 py-2 text-sm text-[#2b2118]";
+
 function SiNo({
   valor,
   onChange,
@@ -151,7 +157,7 @@ export function CamposHistoriaClinica({
     <>
       <Seccion titulo="Ficha de identificación">
         <Campo label="Nombre del paciente">
-          <div className="text-sm text-[#2b2118]">{pacienteNombre}</div>
+          <div className={soloLecturaClase}>{pacienteNombre}</div>
         </Campo>
         <div className="grid grid-cols-2 gap-3">
           <Campo label="Fecha">
@@ -163,15 +169,15 @@ export function CamposHistoriaClinica({
             />
           </Campo>
           <Campo label="Fecha de nacimiento">
-            <div className="text-sm text-[#2b2118]">
+            <div className={soloLecturaClase}>
               {pacienteFechaNacimiento ? fechaSoloDia(pacienteFechaNacimiento).toLocaleDateString("es-MX") : "—"}
             </div>
           </Campo>
           <Campo label="Edad">
-            <div className="text-sm text-[#2b2118]">{edad ?? "—"}</div>
+            <div className={soloLecturaClase}>{edad ?? "—"}</div>
           </Campo>
           <Campo label="Teléfono">
-            <div className="text-sm text-[#2b2118]">{pacienteTelefono || "—"}</div>
+            <div className={soloLecturaClase}>{pacienteTelefono || "—"}</div>
           </Campo>
         </div>
         <Campo label="Sexo">
