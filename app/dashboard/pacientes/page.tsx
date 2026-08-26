@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChevronRight } from "lucide-react";
 import type { Paciente } from "@/lib/types";
-import { hoyISO } from "@/lib/fechas";
 
 // Heurística: el nombre llega como texto libre ("Nombre(s) Apellidos"),
 // así que se usa la última palabra como apellido para ordenar — no es
@@ -41,7 +40,6 @@ export default function PacientesPage() {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
-  const [fechaNacimiento, setFechaNacimiento] = useState("");
 
   async function cargar(q: string) {
     const res = await fetch(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -81,7 +79,6 @@ export default function PacientesPage() {
         nombre,
         telefono: telefono || null,
         email: email || null,
-        fecha_nacimiento: fechaNacimiento || null,
       }),
     });
     const data = await res.json();
@@ -139,14 +136,6 @@ export default function PacientesPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email (opcional)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-            <label className="block text-[11px] font-medium text-[#a49c8a]">Fecha de nacimiento</label>
-            <input
-              type="date"
-              value={fechaNacimiento}
-              max={hoyISO()}
-              onChange={(e) => setFechaNacimiento(e.target.value)}
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <div className="flex gap-2 pt-1">
