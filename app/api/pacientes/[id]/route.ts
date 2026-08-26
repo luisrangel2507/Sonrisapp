@@ -3,6 +3,11 @@ import { query } from "@/lib/db";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
+import { cifrar, descifrar } from "@/lib/crypto";
+
+// Texto libre clínico de la ficha rápida del paciente — se cifra en
+// reposo (NOM-024) igual que la historia clínica y el formulario público.
+const CAMPOS_CIFRABLES = new Set(["alergias_cual", "medicamentos", "antecedentes_medicos_cual"]);
 
 export async function GET(
   _req: NextRequest,
@@ -23,7 +28,12 @@ export async function GET(
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json({ paciente: rows[0] });
+    const paciente = { ...rows[0] };
+    for (const campo of Array.from(CAMPOS_CIFRABLES)) {
+      if (campo in paciente) paciente[campo] = descifrar(paciente[campo]);
+    }
+
+    return NextResponse.json({ paciente });
   } catch (err) {
     return errorJson(err);
   }
@@ -83,7 +93,10 @@ export async function PATCH(
     }
 
     const asignaciones = actualizaciones.map((campo, i) => `${campo} = $${i + 2}`).join(", ");
-    const valores = actualizaciones.map((campo) => body[campo] ?? null);
+    const valores = actualizaciones.map((campo) => {
+      const valor = body[campo] ?? null;
+      return CAMPOS_CIFRABLES.has(campo) ? cifrar(valor) : valor;
+    });
 
     const { rows } = await query(
       `UPDATE pacientes SET ${asignaciones} WHERE id = $1 RETURNING ${PACIENTE_COLUMNAS}`,
@@ -94,7 +107,12 @@ export async function PATCH(
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json({ paciente: rows[0] });
+    const paciente = { ...rows[0] };
+    for (const campo of Array.from(CAMPOS_CIFRABLES)) {
+      if (campo in paciente) paciente[campo] = descifrar(paciente[campo]);
+    }
+
+    return NextResponse.json({ paciente });
   } catch (err) {
     return errorJson(err);
   }

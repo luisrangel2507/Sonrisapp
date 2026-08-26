@@ -37,3 +37,31 @@ export const HISTORIA_CLINICA_CAMPOS = [
 ] as const;
 
 export const HISTORIA_CLINICA_COLUMNAS = `${HISTORIA_CLINICA_CAMPOS.join(", ")}, actualizado_en`;
+
+// Campos de texto libre/identificables que se cifran en reposo
+// (NOM-024-SSA3-2012) — se excluyen los booleanos (fam_enfermedad_sistemica,
+// enfermedad_actual, etc.) y la fecha, que no tiene sentido cifrar y se
+// usan para filtrar/ordenar.
+export const HISTORIA_CLINICA_CAMPOS_CIFRABLES = new Set<string>([
+  "sexo",
+  "nombre_padre_tutor",
+  "domicilio",
+  "codigo_postal",
+  "ciudad",
+  "estado",
+  "pais",
+  "ocupacion",
+  "emergencia_nombre",
+  "emergencia_telefono",
+  "emergencia_parentesco",
+  "motivo_consulta",
+  "fam_enfermedad_cual",
+  "enfermedad_actual_cual",
+  "toma_medicamento_cual",
+  "alergico_medicamento_cual",
+  "alergico_anestesico_cual",
+  "cirugia_previa_cual",
+  "consume_alcohol",
+  "consume_tabaco",
+  "ets_cual",
+]);

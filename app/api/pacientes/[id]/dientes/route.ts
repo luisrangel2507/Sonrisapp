@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import type { HistorialDental, EstadoDiente } from "@/lib/dental";
 import { errorJson } from "@/lib/api-error";
+import { descifrar } from "@/lib/crypto";
 
 export async function GET(
   _req: NextRequest,
@@ -55,7 +56,7 @@ export async function GET(
         id: e.id,
         fecha: e.fecha,
         tipo: e.tipo,
-        nota: e.nota,
+        nota: descifrar(e.nota),
         creado_por_nombre: e.creado_por_nombre,
         vigente: e.vigente,
         reemplaza_a: e.reemplaza_a,

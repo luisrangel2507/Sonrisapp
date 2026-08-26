@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 import { ESTADO_DIENTE, type EstadoDiente } from "@/lib/dental";
 import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { cifrar, descifrar } from "@/lib/crypto";
 
 export async function POST(
   req: NextRequest,
@@ -45,10 +46,12 @@ export async function POST(
       `INSERT INTO diente_historial (paciente_diente_id, tipo, nota, creado_por, creado_por_nombre)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, fecha, tipo, nota`,
-      [dienteId, tipo, nota ?? null, identidad.usuarioId, identidad.nombre]
+      [dienteId, tipo, cifrar(nota ?? null), identidad.usuarioId, identidad.nombre]
     );
 
-    return NextResponse.json({ entrada: entradaRows[0] }, { status: 201 });
+    const entrada = { ...entradaRows[0], nota: descifrar(entradaRows[0].nota) };
+
+    return NextResponse.json({ entrada }, { status: 201 });
   } catch (err) {
     return errorJson(err);
   }

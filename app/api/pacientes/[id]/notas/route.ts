@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { cifrar, descifrar } from "@/lib/crypto";
+
+const CAMPOS_CIFRABLES = ["nota", "tratamiento", "duracion", "archivo"] as const;
 
 // Límite generoso para el archivo ya comprimido/codificado en el
 // cliente (data URL base64) — evita que alguien mande algo enorme.
@@ -26,7 +29,13 @@ export async function GET(
       [pacienteId]
     );
 
-    return NextResponse.json({ notas: rows });
+    const notas = rows.map((fila) => {
+      const copia = { ...fila };
+      for (const campo of CAMPOS_CIFRABLES) copia[campo] = descifrar(copia[campo]);
+      return copia;
+    });
+
+    return NextResponse.json({ notas });
   } catch (err) {
     return errorJson(err);
   }
@@ -67,18 +76,21 @@ export async function POST(
       [
         pacienteId,
         tipo,
-        nota ?? null,
-        tratamiento ?? null,
-        duracion ?? null,
+        cifrar(nota ?? null),
+        cifrar(tratamiento ?? null),
+        cifrar(duracion ?? null),
         identidad.usuarioId,
         identidad.nombre,
-        archivo ?? null,
+        cifrar(archivo ?? null),
         archivo_nombre ?? null,
         archivo_tipo ?? null,
       ]
     );
 
-    return NextResponse.json({ nota: rows[0] }, { status: 201 });
+    const notaCreada = { ...rows[0] };
+    for (const campo of CAMPOS_CIFRABLES) notaCreada[campo] = descifrar(notaCreada[campo]);
+
+    return NextResponse.json({ nota: notaCreada }, { status: 201 });
   } catch (err) {
     return errorJson(err);
   }

@@ -1,18 +1,34 @@
 import { query } from "@/lib/db";
-import { HISTORIA_CLINICA_CAMPOS as CAMPOS, HISTORIA_CLINICA_COLUMNAS as COLUMNAS } from "@/lib/historia-clinica-campos";
+import {
+  HISTORIA_CLINICA_CAMPOS as CAMPOS,
+  HISTORIA_CLINICA_COLUMNAS as COLUMNAS,
+  HISTORIA_CLINICA_CAMPOS_CIFRABLES as CIFRABLES,
+} from "@/lib/historia-clinica-campos";
+import { cifrar, descifrar } from "@/lib/crypto";
 
 // Trazabilidad tipo NOM-024: nunca se sobrescribe la historia clínica
 // de un paciente — "guardar" inserta una versión nueva (reemplaza_a
 // apunta a la anterior) y marca la anterior vigente=false. Así un
 // guardado con el formulario vacío (por ejemplo, por una falla al
 // cargar los datos) no puede borrar una versión buena ya capturada.
+//
+// El contenido sensible (ver HISTORIA_CLINICA_CAMPOS_CIFRABLES) se
+// guarda cifrado (NOM-024) y se descifra al leer.
+
+function descifrarFila<T extends Record<string, unknown>>(fila: T): T {
+  const copia = { ...fila };
+  for (const campo of Array.from(CIFRABLES)) {
+    if (campo in copia) (copia as Record<string, unknown>)[campo] = descifrar(copia[campo] as string | null);
+  }
+  return copia;
+}
 
 export async function obtenerHistoriaClinicaVigente(pacienteId: number) {
   const { rows } = await query(
     `SELECT ${COLUMNAS} FROM historia_clinica WHERE paciente_id = $1 AND vigente = true ORDER BY id DESC LIMIT 1`,
     [pacienteId]
   );
-  return rows[0] ?? null;
+  return rows[0] ? descifrarFila(rows[0]) : null;
 }
 
 export async function guardarHistoriaClinica(
@@ -34,7 +50,10 @@ export async function guardarHistoriaClinica(
     await query(`UPDATE historia_clinica SET vigente = false WHERE id = $1`, [anteriorId]);
   }
 
-  const valores = CAMPOS.map((campo) => body[campo] ?? null);
+  const valores = CAMPOS.map((campo) => {
+    const valor = (body[campo] as string | null | undefined) ?? null;
+    return CIFRABLES.has(campo) ? cifrar(valor) : valor;
+  });
   const placeholders = CAMPOS.map((_, i) => `$${i + 5}`).join(", ");
 
   const { rows } = await query(
@@ -44,5 +63,5 @@ export async function guardarHistoriaClinica(
     [pacienteId, identidad.usuarioId, identidad.nombre, anteriorId, ...valores]
   );
 
-  return rows[0];
+  return descifrarFila(rows[0]);
 }

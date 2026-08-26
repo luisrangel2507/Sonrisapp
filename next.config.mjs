@@ -12,6 +12,22 @@ const nextConfig = {
     // instrumentation.ts).
     serverComponentsExternalPackages: ["pg", "pg-native", "pgpass"],
   },
+  // Refuerza que la página solo se sirva por HTTPS (Railway ya termina
+  // TLS, esto lo hace explícito a nivel de app) y algunos headers de
+  // seguridad básicos — parte del cifrado exigido por NOM-024-SSA3-2012.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

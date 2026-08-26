@@ -3,6 +3,11 @@ import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
 import { guardarHistoriaClinica, obtenerHistoriaClinicaVigente } from "@/lib/historia-clinica";
+import { cifrar, descifrar } from "@/lib/crypto";
+
+// alergias_cual y antecedentes_medicos_cual son texto libre clínico —
+// se cifran en reposo (NOM-024) igual que la historia clínica.
+const PACIENTE_CAMPOS_CIFRABLES = new Set(["alergias_cual", "antecedentes_medicos_cual"]);
 
 // Quién queda registrado en creado_por_nombre cuando el paciente llena
 // su propia historia clínica desde este link público (sin sesión de
@@ -44,7 +49,11 @@ export async function GET(
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }
 
-    const paciente = pacienteRows[0];
+    const paciente = {
+      ...pacienteRows[0],
+      alergias_cual: descifrar(pacienteRows[0].alergias_cual),
+      antecedentes_medicos_cual: descifrar(pacienteRows[0].antecedentes_medicos_cual),
+    };
     const historiaClinica = await obtenerHistoriaClinicaVigente(paciente.id);
 
     return NextResponse.json({ paciente, historiaClinica });
@@ -86,7 +95,8 @@ export async function PUT(
     ] as const) {
       if (campo in body) {
         pacienteCampos.push(campo);
-        pacienteValores.push(body[campo] ?? null);
+        const valor = body[campo] ?? null;
+        pacienteValores.push(PACIENTE_CAMPOS_CIFRABLES.has(campo) ? cifrar(valor) : valor);
       }
     }
     if (pacienteCampos.length > 0) {

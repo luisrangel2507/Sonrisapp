@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { cifrar, descifrar } from "@/lib/crypto";
 
 // "Editar" no sobrescribe el registro original (NOM-024: nada se borra
 // ni se altera de verdad) — inserta una fila nueva con la corrección,
@@ -47,12 +48,14 @@ export async function PATCH(
       `INSERT INTO diente_historial (paciente_diente_id, tipo, nota, creado_por, creado_por_nombre, reemplaza_a)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, fecha, tipo, nota`,
-      [dienteId, tipo, nota ?? null, identidad.usuarioId, identidad.nombre, entradaId]
+      [dienteId, tipo, cifrar(nota ?? null), identidad.usuarioId, identidad.nombre, entradaId]
     );
 
     await query(`UPDATE diente_historial SET vigente = false WHERE id = $1`, [entradaId]);
 
-    return NextResponse.json({ entrada: nuevaRows[0] });
+    const entrada = { ...nuevaRows[0], nota: descifrar(nuevaRows[0].nota) };
+
+    return NextResponse.json({ entrada });
   } catch (err) {
     return errorJson(err);
   }

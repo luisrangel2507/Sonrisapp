@@ -402,6 +402,26 @@ CREATE TABLE IF NOT EXISTS avisos_push_diarios (
   fecha DATE PRIMARY KEY
 );
 
+-- Cifrado en reposo (NOM-024-SSA3-2012): el contenido clínico sensible
+-- se guarda cifrado con AES-256-GCM (ver lib/crypto.ts), y el texto
+-- cifrado es más largo que el original — estas columnas eran VARCHAR
+-- con un límite que ya no alcanza, así que se amplían a TEXT.
+ALTER TABLE historia_clinica ALTER COLUMN sexo TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN nombre_padre_tutor TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN domicilio TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN codigo_postal TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN ciudad TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN estado TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN pais TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN ocupacion TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN emergencia_nombre TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN emergencia_telefono TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN emergencia_parentesco TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN consume_alcohol TYPE TEXT;
+ALTER TABLE historia_clinica ALTER COLUMN consume_tabaco TYPE TEXT;
+ALTER TABLE paciente_notas ALTER COLUMN tratamiento TYPE TEXT;
+ALTER TABLE paciente_notas ALTER COLUMN duracion TYPE TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);

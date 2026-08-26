@@ -5,6 +5,12 @@ import { generarHistorialToken } from "@/lib/historial-token";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
+import { descifrar } from "@/lib/crypto";
+
+// Igual que en pacientes/[id]: se busca por nombre/folio/teléfono en
+// texto plano (no están cifrados, para no romper la búsqueda), pero el
+// contenido clínico de texto libre sí viene cifrado y se descifra aquí.
+const CAMPOS_CIFRABLES = ["alergias_cual", "medicamentos", "antecedentes_medicos_cual"] as const;
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,7 +25,13 @@ export async function GET(req: NextRequest) {
         )
       : await query(`SELECT ${PACIENTE_COLUMNAS} FROM pacientes ORDER BY id DESC`);
 
-    return NextResponse.json({ pacientes: rows });
+    const pacientes = rows.map((fila) => {
+      const copia = { ...fila };
+      for (const campo of CAMPOS_CIFRABLES) copia[campo] = descifrar(copia[campo]);
+      return copia;
+    });
+
+    return NextResponse.json({ pacientes });
   } catch (err) {
     return errorJson(err);
   }

@@ -5,7 +5,8 @@ import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
 import { ESTADO_DIENTE, type EstadoDiente } from "@/lib/dental";
-import { HISTORIA_CLINICA_COLUMNAS } from "@/lib/historia-clinica-campos";
+import { HISTORIA_CLINICA_COLUMNAS, HISTORIA_CLINICA_CAMPOS_CIFRABLES } from "@/lib/historia-clinica-campos";
+import { descifrar } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +46,26 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     if (pacienteRows.length === 0) {
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
-    const paciente = pacienteRows[0];
+    const paciente = {
+      ...pacienteRows[0],
+      alergias_cual: descifrar(pacienteRows[0].alergias_cual),
+      medicamentos: descifrar(pacienteRows[0].medicamentos),
+      antecedentes_medicos_cual: descifrar(pacienteRows[0].antecedentes_medicos_cual),
+    };
 
     const { rows: historiaRows } = await query(
       `SELECT ${HISTORIA_CLINICA_COLUMNAS} FROM historia_clinica WHERE paciente_id = $1 AND vigente = true`,
       [pacienteId]
     );
-    const historia = historiaRows[0] ?? null;
+    const historia = historiaRows[0]
+      ? (() => {
+          const copia = { ...historiaRows[0] };
+          for (const campo of Array.from(HISTORIA_CLINICA_CAMPOS_CIFRABLES)) {
+            if (campo in copia) copia[campo] = descifrar(copia[campo]);
+          }
+          return copia;
+        })()
+      : null;
 
     const { rows: dientes } = await query<{ id: number; numero_fdi: number; estado: EstadoDiente }>(
       `SELECT id, numero_fdi, estado FROM paciente_dientes WHERE paciente_id = $1 AND estado <> 'sano' ORDER BY numero_fdi`,
@@ -70,6 +84,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
        ORDER BY d.numero_fdi, h.fecha ASC`,
       [pacienteId]
     );
+    const dienteHistorialDescifrado = dienteHistorial.map((h) => ({ ...h, nota: descifrar(h.nota) }));
 
     const { rows: notas } = await query<{
       id: number;
@@ -82,6 +97,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       `SELECT id, fecha, tipo, tratamiento, duracion, nota FROM paciente_notas WHERE paciente_id = $1 AND vigente = true ORDER BY fecha DESC, id DESC`,
       [pacienteId]
     );
+    const notasDescifradas = notas.map((n) => ({
+      ...n,
+      tratamiento: descifrar(n.tratamiento),
+      duracion: descifrar(n.duracion),
+      nota: descifrar(n.nota),
+    }));
 
     const { rows: citas } = await query<{
       id: number;
@@ -195,7 +216,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
             ) : (
               <View>
                 {dientes.map((d) => {
-                  const entradas = dienteHistorial.filter((h) => h.paciente_diente_id === d.id);
+                  const entradas = dienteHistorialDescifrado.filter((h) => h.paciente_diente_id === d.id);
                   const est = ESTADO_DIENTE[d.estado] ?? ESTADO_DIENTE.sano;
                   return (
                     <View key={d.id} style={{ marginBottom: 6 }} wrap={false}>
@@ -221,7 +242,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
           <View style={estilosPdf.seccion} break>
             <Text style={estilosPdf.seccionTitulo}>Historial clínico general</Text>
-            {notas.length === 0 ? (
+            {notasDescifradas.length === 0 ? (
               <Text style={estilosPdf.vacio}>Sin entradas registradas.</Text>
             ) : (
               <View style={estilosPdf.tabla}>
@@ -231,7 +252,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
                   <Text style={{ ...estilosPdf.celdaHead, width: "22%" }}>Tratamiento</Text>
                   <Text style={{ ...estilosPdf.celdaHead, width: "44%" }}>Nota</Text>
                 </View>
-                {notas.map((n) => (
+                {notasDescifradas.map((n) => (
                   <View key={n.id} style={estilosPdf.filaTabla} wrap={false}>
                     <Text style={{ ...estilosPdf.celda, width: "16%" }}>{formatearFecha(n.fecha)}</Text>
                     <Text style={{ ...estilosPdf.celda, width: "18%" }}>{n.tipo}</Text>
