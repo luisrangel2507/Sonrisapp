@@ -58,18 +58,34 @@ export default function LoginPage() {
     }
   }
 
+  async function pedirCredencialFaceId(credId: string | null) {
+    const url = credId
+      ? `/api/auth/webauthn/login/opciones?credId=${encodeURIComponent(credId)}`
+      : "/api/auth/webauthn/login/opciones";
+    const resOpciones = await fetch(url);
+    const opciones = await resOpciones.json();
+    return startAuthentication({ optionsJSON: opciones });
+  }
+
   async function entrarConFaceId() {
     if (faceIdCargando) return;
     setFaceIdCargando(true);
     setError(null);
     try {
       const credIdGuardado = localStorage.getItem(LLAVE_PASSKEY_ID);
-      const url = credIdGuardado
-        ? `/api/auth/webauthn/login/opciones?credId=${encodeURIComponent(credIdGuardado)}`
-        : "/api/auth/webauthn/login/opciones";
-      const resOpciones = await fetch(url);
-      const opciones = await resOpciones.json();
-      const credencial = await startAuthentication({ optionsJSON: opciones });
+      let credencial;
+      try {
+        credencial = await pedirCredencialFaceId(credIdGuardado);
+      } catch (err) {
+        // La credencial que este navegador recordaba ya no existe aquí
+        // (se cambió de teléfono, se limpió Safari, etc.) — el
+        // navegador rechaza de inmediato sin mostrar el prompt. Se
+        // reintenta una vez sin restringir a esa credencial, para que
+        // Safari muestre el selector completo de Face ID.
+        if (!credIdGuardado) throw err;
+        localStorage.removeItem(LLAVE_PASSKEY_ID);
+        credencial = await pedirCredencialFaceId(null);
+      }
 
       const resVerificar = await fetch("/api/auth/webauthn/login/verificar", {
         method: "POST",
