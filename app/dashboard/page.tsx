@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Calendar, MessageCircle, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, Calendar, Check, MessageCircle, TrendingUp, Wallet } from "lucide-react";
 import { Hero } from "@/components/Hero";
 import { Pill } from "@/components/Pill";
 import { StatCard } from "@/components/StatCard";
@@ -40,22 +40,12 @@ export default function PanelPage() {
   // respuesta de /api/perfil es justo el parpadeo que se reportó.
   const [nombreBienvenida, setNombreBienvenida] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/perfil")
-      .then((res) => res.json())
-      .then((data) => {
-        setNombreBienvenida(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
-      })
-      .catch(() => setNombreBienvenida(NOMBRE_CORTO_DOCTORA));
+  const [completandoId, setCompletandoId] = useState<number | null>(null);
+  const [montoPago, setMontoPago] = useState("");
+  const [metodoPago, setMetodoPago] = useState("efectivo");
+  const [guardandoCompletar, setGuardandoCompletar] = useState(false);
 
-    fetch("/api/dashboard/resumen")
-      .then(async (res) => {
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
-        return res.json();
-      })
-      .then((data) => setResumen(data.resumen ?? null))
-      .catch((err) => setErrorResumen(`No se pudo cargar el resumen: ${err.message}`));
-
+  function cargarCitas() {
     fetch("/api/citas")
       .then(async (res) => {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
@@ -74,7 +64,77 @@ export default function PanelPage() {
         );
       })
       .catch((err) => setErrorCitas(`No se pudieron cargar las citas: ${err.message}`));
+  }
+
+  useEffect(() => {
+    fetch("/api/perfil")
+      .then((res) => res.json())
+      .then((data) => {
+        setNombreBienvenida(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
+      })
+      .catch(() => setNombreBienvenida(NOMBRE_CORTO_DOCTORA));
+
+    fetch("/api/dashboard/resumen")
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setResumen(data.resumen ?? null))
+      .catch((err) => setErrorResumen(`No se pudo cargar el resumen: ${err.message}`));
+
+    cargarCitas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Si ya no debe nada, completa directo; si debe, abre el formulario
+  // para elegir el método de pago — al guardar, completa la cita Y
+  // registra el pago en un solo paso (igual que en Agenda).
+  function abrirCompletar(cita: Cita) {
+    const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
+    if (restante && restante > 0) {
+      setCompletandoId(cita.id);
+      setMontoPago("");
+      setMetodoPago("efectivo");
+    } else {
+      completarDirecto(cita.id);
+    }
+  }
+
+  async function completarDirecto(id: number) {
+    await fetch("/api/citas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, estado: "completada" }),
+    });
+    cargarCitas();
+  }
+
+  async function confirmarPagoYCompletar(cita: Cita) {
+    const restante = (cita.monto ?? 0) - cita.pagado;
+    const montoFinal = montoPago ? Number(montoPago) : restante;
+    if (!montoFinal || montoFinal <= 0 || guardandoCompletar) return;
+    setGuardandoCompletar(true);
+    await fetch("/api/pagos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cita_id: cita.id,
+        paciente_id: cita.paciente_id,
+        monto: montoFinal,
+        metodo: metodoPago,
+      }),
+    });
+    await fetch("/api/citas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: cita.id, estado: "completada" }),
+    });
+    setCompletandoId(null);
+    setMontoPago("");
+    setMetodoPago("efectivo");
+    setGuardandoCompletar(false);
+    cargarCitas();
+  }
 
   return (
     <>
@@ -144,12 +204,64 @@ export default function PanelPage() {
         ) : (
           <div className="mt-3 space-y-3">
             {citasHoy.map((c) => (
-              <div key={c.id} className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-[#2b2118]">{c.paciente_nombre}</div>
-                  <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
+              <div key={c.id} className="border-b border-[#EFE9DC] pb-3 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-[#2b2118]">{c.paciente_nombre}</div>
+                    <div className="text-xs text-[#a49c8a]">{c.tratamiento}</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="text-sm font-semibold text-[#2b2118]">{formatearHora(c.fecha_hora)}</div>
+                    {c.estado === "agendada" && (
+                      <button
+                        onClick={() => (completandoId === c.id ? setCompletandoId(null) : abrirCompletar(c))}
+                        className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]"
+                      >
+                        <Check size={11} /> Completada
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm font-semibold text-[#2b2118]">{formatearHora(c.fecha_hora)}</div>
+
+                {completandoId === c.id && (
+                  <div className="mt-2.5 space-y-2 rounded-2xl border border-[#EFE9DC] bg-[#FBF9F5] p-3">
+                    <p className="text-[12px] font-medium text-[#3F6B33]">
+                      ¿Cómo pagó? La cita se marcará como completada al guardar.
+                    </p>
+                    <input
+                      type="number"
+                      min="0"
+                      value={montoPago}
+                      onChange={(e) => setMontoPago(e.target.value)}
+                      placeholder={`Monto (falta ${formatearDinero(Math.max(0, (c.monto ?? 0) - c.pagado))})`}
+                      className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+                    />
+                    <select
+                      value={metodoPago}
+                      onChange={(e) => setMetodoPago(e.target.value)}
+                      className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+                    >
+                      <option value="efectivo">Efectivo</option>
+                      <option value="tarjeta">Tarjeta</option>
+                      <option value="transferencia">Transferencia</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => confirmarPagoYCompletar(c)}
+                        disabled={guardandoCompletar}
+                        className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                      >
+                        {guardandoCompletar ? "Guardando…" : "Confirmar pago y completar"}
+                      </button>
+                      <button
+                        onClick={() => setCompletandoId(null)}
+                        className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
