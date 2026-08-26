@@ -21,7 +21,6 @@ import type { Consentimiento, Paciente, PacienteNota } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
-import { TRATAMIENTOS } from "@/lib/panel-data";
 
 function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
@@ -89,10 +88,6 @@ export default function PacienteDetallePage() {
   const [fechaNacimiento, setFechaNacimiento] = useState("");
 
   const [formNotaAbierto, setFormNotaAbierto] = useState(false);
-  const [tipoNota, setTipoNota] = useState("");
-  const [textoNota, setTextoNota] = useState("");
-  const [tratamientoNota, setTratamientoNota] = useState("");
-  const [duracionNota, setDuracionNota] = useState("");
   const [guardandoNota, setGuardandoNota] = useState(false);
   const [archivoNota, setArchivoNota] = useState<string | null>(null);
   const [archivoNotaNombre, setArchivoNotaNombre] = useState<string | null>(null);
@@ -198,25 +193,18 @@ export default function PacienteDetallePage() {
   }
 
   async function agregarNota() {
-    if (!tipoNota.trim() || guardandoNota) return;
+    if (!archivoNota || guardandoNota) return;
     setGuardandoNota(true);
     await fetch(`/api/pacientes/${pacienteId}/notas`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        tipo: tipoNota,
-        nota: textoNota || null,
-        tratamiento: tratamientoNota || null,
-        duracion: duracionNota || null,
+        tipo: archivoNotaTipo?.startsWith("image/") ? "Foto" : "Documento",
         archivo: archivoNota,
         archivo_nombre: archivoNotaNombre,
         archivo_tipo: archivoNotaTipo,
       }),
     });
-    setTipoNota("");
-    setTextoNota("");
-    setTratamientoNota("");
-    setDuracionNota("");
     quitarArchivoNota();
     setFormNotaAbierto(false);
     setGuardandoNota(false);
@@ -556,40 +544,6 @@ export default function PacienteDetallePage() {
 
         {formNotaAbierto ? (
           <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-            <input
-              value={tipoNota}
-              onChange={(e) => setTipoNota(e.target.value)}
-              placeholder="Tipo (ej. Consulta, Diagnóstico)"
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-            <div className="flex gap-2">
-              <select
-                value={tratamientoNota}
-                onChange={(e) => setTratamientoNota(e.target.value)}
-                className="w-full flex-1 rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
-              >
-                <option value="">Tratamiento (opcional)</option>
-                {TRATAMIENTOS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={duracionNota}
-                onChange={(e) => setDuracionNota(e.target.value)}
-                placeholder="Duración (ej. 45 min)"
-                className="w-32 shrink-0 rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
-              />
-            </div>
-            <textarea
-              value={textoNota}
-              onChange={(e) => setTextoNota(e.target.value)}
-              placeholder="Nota (opcional)"
-              rows={2}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-
             {archivoNota ? (
               <div className="flex items-center gap-2 rounded-xl border border-[#EFE9DC] bg-[#FBF8F2] px-3 py-2">
                 {archivoNotaTipo?.startsWith("image/") ? (
@@ -620,7 +574,7 @@ export default function PacienteDetallePage() {
             <div className="flex gap-2">
               <button
                 onClick={agregarNota}
-                disabled={!tipoNota.trim() || guardandoNota || procesandoArchivo}
+                disabled={!archivoNota || guardandoNota || procesandoArchivo}
                 className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 {guardandoNota ? "Guardando…" : "Guardar"}
