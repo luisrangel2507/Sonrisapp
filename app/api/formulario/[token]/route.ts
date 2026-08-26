@@ -21,6 +21,7 @@ interface PacientePublico {
   nombre: string;
   fecha_nacimiento: string | null;
   telefono: string | null;
+  email: string | null;
   alergias: boolean | null;
   alergias_cual: string | null;
   antecedentes_medicos: boolean | null;
@@ -33,7 +34,7 @@ export async function GET(
 ) {
   try {
     const { rows: pacienteRows } = await query<PacientePublico>(
-      `SELECT id, nombre, fecha_nacimiento, telefono,
+      `SELECT id, nombre, fecha_nacimiento, telefono, email,
               alergias, alergias_cual, antecedentes_medicos, antecedentes_medicos_cual
        FROM pacientes WHERE historial_token = $1`,
       [params.token]
@@ -75,7 +76,14 @@ export async function PUT(
       pacienteCampos.push("fecha_nacimiento");
       pacienteValores.push(body.fecha_nacimiento);
     }
-    for (const campo of ["alergias", "alergias_cual", "antecedentes_medicos", "antecedentes_medicos_cual"] as const) {
+    for (const campo of [
+      "telefono",
+      "email",
+      "alergias",
+      "alergias_cual",
+      "antecedentes_medicos",
+      "antecedentes_medicos_cual",
+    ] as const) {
       if (campo in body) {
         pacienteCampos.push(campo);
         pacienteValores.push(body[campo] ?? null);

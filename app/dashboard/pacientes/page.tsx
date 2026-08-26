@@ -38,8 +38,6 @@ export default function PacientesPage() {
   const [formAbierto, setFormAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [nombre, setNombre] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [email, setEmail] = useState("");
 
   async function cargar(q: string) {
     const res = await fetch(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -75,11 +73,7 @@ export default function PacientesPage() {
     const res = await fetch("/api/pacientes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre,
-        telefono: telefono || null,
-        email: email || null,
-      }),
+      body: JSON.stringify({ nombre }),
     });
     const data = await res.json();
     setGuardando(false);
@@ -126,18 +120,9 @@ export default function PacientesPage() {
               placeholder="Nombre completo *"
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
-            <input
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              placeholder="Teléfono (con WhatsApp)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email (opcional)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
+            <p className="text-[11px] text-[#a49c8a]">
+              Teléfono, email y el resto los llena el paciente al contestar su historia clínica.
+            </p>
             <div className="flex gap-2 pt-1">
               <button
                 onClick={crearPaciente}

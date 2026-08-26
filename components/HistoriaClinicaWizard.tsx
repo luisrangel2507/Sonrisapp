@@ -13,11 +13,15 @@ type Seccion =
   | "Antecedentes personales no patológicos"
   | "Antecedentes médicos";
 
-// Alergias/antecedentes médicos generales viven en la tabla pacientes
-// (no en historia_clinica), así que no forman parte de
+// Teléfono/email/alergias/antecedentes médicos generales viven en la
+// tabla pacientes (no en historia_clinica), así que no forman parte de
 // FormStateHistoriaClinica — el wizard los maneja aparte, igual que ya
-// hace con fecha_nacimiento.
+// hace con fecha_nacimiento. El alta rápida del paciente ya no los
+// pide (solo nombre) — se completan aquí, en su propia historia
+// clínica.
 export interface DatosPacienteWizard {
+  telefono: string | null;
+  email: string | null;
   alergias: boolean | null;
   alergias_cual: string | null;
   antecedentes_medicos: boolean | null;
@@ -91,6 +95,7 @@ type Paso =
       tipo: "paciente_texto";
       pregunta: string;
       seccion: Seccion;
+      inputType?: "tel" | "email";
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     };
 
@@ -101,6 +106,20 @@ const PASOS: Paso[] = [
     tipo: "fecha_nacimiento",
     pregunta: "¿Cuál es tu fecha de nacimiento?",
     seccion: "Ficha de identificación",
+  },
+  {
+    key: "telefono",
+    tipo: "paciente_texto",
+    pregunta: "¿Cuál es tu teléfono?",
+    seccion: "Ficha de identificación",
+    inputType: "tel",
+  },
+  {
+    key: "email",
+    tipo: "paciente_texto",
+    pregunta: "¿Cuál es tu correo?",
+    seccion: "Ficha de identificación",
+    inputType: "email",
   },
   {
     key: "nombre_padre_tutor",
@@ -374,7 +393,6 @@ export function HistoriaClinicaWizard({
   pacienteNombre,
   pacienteFechaNacimiento,
   onChangeFechaNacimiento,
-  pacienteTelefono,
   datosPaciente,
   onChangeDatosPaciente,
   onEnviar,
@@ -386,7 +404,6 @@ export function HistoriaClinicaWizard({
   pacienteNombre: string;
   pacienteFechaNacimiento: string | null;
   onChangeFechaNacimiento: (v: string | null) => void;
-  pacienteTelefono: string | null;
   datosPaciente: DatosPacienteWizard;
   onChangeDatosPaciente: <K extends keyof DatosPacienteWizard>(campo: K, valor: DatosPacienteWizard[K]) => void;
   onEnviar: () => void;
@@ -474,10 +491,6 @@ export function HistoriaClinicaWizard({
               <div>
                 <div className="text-[11px] text-[#a49c8a]">Edad</div>
                 <div className="text-[#2b2118]">{edad ?? "—"}</div>
-              </div>
-              <div>
-                <div className="text-[11px] text-[#a49c8a]">Teléfono</div>
-                <div className="text-[#2b2118]">{pacienteTelefono || "—"}</div>
               </div>
             </div>
           </div>
@@ -591,6 +604,7 @@ export function HistoriaClinicaWizard({
           ) : paso.tipo === "paciente_texto" ? (
             <input
               autoFocus
+              type={paso.inputType ?? "text"}
               value={(datosPaciente[paso.key] as string | null) ?? ""}
               onChange={(e) => onChangeDatosPaciente(paso.key, (e.target.value || null) as DatosPacienteWizard[typeof paso.key])}
               placeholder="Escribe tu respuesta…"

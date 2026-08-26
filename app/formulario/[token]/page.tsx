@@ -11,6 +11,7 @@ interface PacientePublico {
   nombre: string;
   fecha_nacimiento: string | null;
   telefono: string | null;
+  email: string | null;
   alergias: boolean | null;
   alergias_cual: string | null;
   antecedentes_medicos: boolean | null;
@@ -18,6 +19,8 @@ interface PacientePublico {
 }
 
 const DATOS_PACIENTE_VACIOS: DatosPacienteWizard = {
+  telefono: null,
+  email: null,
   alergias: null,
   alergias_cual: null,
   antecedentes_medicos: null,
@@ -60,6 +63,8 @@ export default function FormularioPublicoPage() {
         setPaciente(data.paciente);
         setFechaNacimiento(data.paciente.fecha_nacimiento ? data.paciente.fecha_nacimiento.slice(0, 10) : null);
         setDatosPaciente({
+          telefono: data.paciente.telefono ?? null,
+          email: data.paciente.email ?? null,
           alergias: data.paciente.alergias ?? null,
           alergias_cual: data.paciente.alergias_cual ?? null,
           antecedentes_medicos: data.paciente.antecedentes_medicos ?? null,
@@ -143,7 +148,6 @@ export default function FormularioPublicoPage() {
         pacienteNombre={paciente.nombre}
         pacienteFechaNacimiento={fechaNacimiento}
         onChangeFechaNacimiento={setFechaNacimiento}
-        pacienteTelefono={paciente.telefono}
         datosPaciente={datosPaciente}
         onChangeDatosPaciente={setDato}
         onEnviar={enviar}
