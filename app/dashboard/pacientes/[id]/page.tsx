@@ -14,6 +14,7 @@ import {
   Plus,
   Save,
   Share2,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -105,6 +106,7 @@ export default function PacienteDetallePage() {
   const [tituloConsent, setTituloConsent] = useState("");
   const [contenidoConsent, setContenidoConsent] = useState("");
   const [creandoConsent, setCreandoConsent] = useState(false);
+  const [generandoConsentExpediente, setGenerandoConsentExpediente] = useState(false);
   const [eliminandoConsentId, setEliminandoConsentId] = useState<number | null>(null);
   const [compartiendoConsentId, setCompartiendoConsentId] = useState<number | null>(null);
   const [linkConsentCopiadoId, setLinkConsentCopiadoId] = useState<number | null>(null);
@@ -300,6 +302,16 @@ export default function PacienteDetallePage() {
     const res = await fetch(`/api/pacientes/${pacienteId}/consentimientos`);
     const data = await res.json();
     setConsentimientos(data.consentimientos ?? []);
+  }
+
+  async function generarConsentimientoExpediente() {
+    if (generandoConsentExpediente) return;
+    setGenerandoConsentExpediente(true);
+    await fetch(`/api/pacientes/${pacienteId}/consentimientos/expediente-electronico`, { method: "POST" });
+    const res = await fetch(`/api/pacientes/${pacienteId}/consentimientos`);
+    const data = await res.json();
+    setConsentimientos(data.consentimientos ?? []);
+    setGenerandoConsentExpediente(false);
   }
 
   async function eliminarConsentimiento(id: number) {
@@ -662,6 +674,17 @@ export default function PacienteDetallePage() {
             ))
           )}
         </div>
+
+        <button
+          onClick={generarConsentimientoExpediente}
+          disabled={generandoConsentExpediente}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449] disabled:opacity-50"
+        >
+          <Sparkles size={14} />{" "}
+          {generandoConsentExpediente
+            ? "Generando…"
+            : "Generar consentimiento de expediente electrónico"}
+        </button>
 
         {formConsentAbierto ? (
           <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
