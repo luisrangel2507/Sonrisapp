@@ -37,6 +37,7 @@ export interface PacienteNota {
   vigente: boolean;
   motivo_anulacion: string | null;
   anulado_por_nombre: string | null;
+  subido_en: string;
 }
 
 export type EstadoConsentimiento = "pendiente" | "firmado";

@@ -150,6 +150,10 @@ ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS vigente BOOLEAN NOT NULL DEF
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS motivo_anulacion TEXT;
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS anulado_por_nombre VARCHAR(160);
 ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS anulado_en TIMESTAMPTZ;
+-- Fecha y hora exactas en que se subió la entrada (a diferencia de
+-- "fecha", que es solo el día y no se puede editar hoy) — para poder
+-- mostrar un log de cuándo se adjuntó cada estudio.
+ALTER TABLE paciente_notas ADD COLUMN IF NOT EXISTS subido_en TIMESTAMPTZ NOT NULL DEFAULT now();
 
 -- Pagos — uno o varios por cita (permite abonos parciales).
 CREATE TABLE IF NOT EXISTS pagos (

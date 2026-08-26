@@ -23,7 +23,7 @@ export async function GET(
 
     const { rows } = await query(
       `SELECT id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo,
-              creado_por_nombre, vigente, motivo_anulacion, anulado_por_nombre
+              creado_por_nombre, vigente, motivo_anulacion, anulado_por_nombre, subido_en
        FROM paciente_notas
        WHERE paciente_id = $1 ORDER BY fecha DESC, id DESC`,
       [pacienteId]
@@ -72,7 +72,7 @@ export async function POST(
     const { rows } = await query(
       `INSERT INTO paciente_notas (paciente_id, tipo, nota, tratamiento, duracion, creado_por, creado_por_nombre, archivo, archivo_nombre, archivo_tipo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo, creado_por_nombre, vigente`,
+       RETURNING id, fecha, tipo, nota, tratamiento, duracion, archivo, archivo_nombre, archivo_tipo, creado_por_nombre, vigente, subido_en`,
       [
         pacienteId,
         tipo,

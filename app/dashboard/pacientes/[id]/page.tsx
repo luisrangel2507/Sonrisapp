@@ -27,6 +27,16 @@ function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function formatearFechaHora(fecha: string) {
+  return new Date(fecha).toLocaleString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 // Radiografías/fotos se comprimen a un tamaño más grande que la foto de
 // perfil (se necesita más detalle para poder leerlas), los PDF se suben
 // tal cual con un tope de tamaño ya que no se pueden comprimir.
@@ -500,9 +510,10 @@ export default function PacienteDetallePage() {
                     </button>
                   )}
                 </div>
-                {(n.creado_por_nombre || !n.vigente) && (
+                {(n.creado_por_nombre || n.archivo || !n.vigente) && (
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[#a49c8a]">
                     {n.creado_por_nombre && <span>Registrado por {n.creado_por_nombre}</span>}
+                    {n.archivo && <span>Subido el {formatearFechaHora(n.subido_en)}</span>}
                     {!n.vigente && (
                       <span className="text-[#b23a5a]">
                         Anulado por {n.anulado_por_nombre}: {n.motivo_anulacion}
