@@ -18,6 +18,7 @@ export default function FormularioPublicoPage() {
   const token = params.token;
 
   const [paciente, setPaciente] = useState<PacientePublico | null>(null);
+  const [fechaNacimiento, setFechaNacimiento] = useState<string | null>(null);
   const [form, setForm] = useState<FormStateHistoriaClinica>(HISTORIA_CLINICA_VACIA);
   const [cargando, setCargando] = useState(true);
   const [invalido, setInvalido] = useState(false);
@@ -41,6 +42,7 @@ export default function FormularioPublicoPage() {
           return;
         }
         setPaciente(data.paciente);
+        setFechaNacimiento(data.paciente.fecha_nacimiento ? data.paciente.fecha_nacimiento.slice(0, 10) : null);
         if (data.historiaClinica) {
           setForm({
             ...HISTORIA_CLINICA_VACIA,
@@ -63,7 +65,7 @@ export default function FormularioPublicoPage() {
       const res = await fetch(`/api/formulario/${token}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, fecha_nacimiento: fechaNacimiento }),
       });
       if (!res.ok) throw new Error();
       setEnviado(true);
@@ -117,7 +119,8 @@ export default function FormularioPublicoPage() {
         form={form}
         set={set}
         pacienteNombre={paciente.nombre}
-        pacienteFechaNacimiento={paciente.fecha_nacimiento}
+        pacienteFechaNacimiento={fechaNacimiento}
+        onChangeFechaNacimiento={setFechaNacimiento}
         pacienteTelefono={paciente.telefono}
         onEnviar={enviar}
         guardando={guardando}

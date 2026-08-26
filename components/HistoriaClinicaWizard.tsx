@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil, Save } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
-import { fechaSoloDia } from "@/lib/fechas";
+import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { calcularEdad, type FormStateHistoriaClinica } from "@/components/HistoriaClinicaFormulario";
 
 type Seccion =
@@ -12,36 +12,55 @@ type Seccion =
   | "Antecedentes personales"
   | "Antecedentes personales no patológicos";
 
+// mostrarSi recibe también la edad calculada de la fecha de nacimiento
+// (aparte, no vive en FormStateHistoriaClinica) — la usa el paso de
+// "nombre del padre o tutor" para solo aparecer si es menor de edad.
 type Paso =
   | {
       key: keyof FormStateHistoriaClinica;
       tipo: "texto";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
     }
   | {
       key: keyof FormStateHistoriaClinica;
       tipo: "bool";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
     }
   | {
       key: "sexo";
       tipo: "sexo";
       pregunta: string;
       seccion: Seccion;
-      mostrarSi?: (f: FormStateHistoriaClinica) => boolean;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+    }
+  | {
+      key: "fecha_nacimiento";
+      tipo: "fecha_nacimiento";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
     };
 
 const PASOS: Paso[] = [
   { key: "sexo", tipo: "sexo", pregunta: "¿Cuál es tu sexo?", seccion: "Ficha de identificación" },
   {
+    key: "fecha_nacimiento",
+    tipo: "fecha_nacimiento",
+    pregunta: "¿Cuál es tu fecha de nacimiento?",
+    seccion: "Ficha de identificación",
+  },
+  {
     key: "nombre_padre_tutor",
     tipo: "texto",
-    pregunta: "Nombre del padre o tutor (si eres menor de edad)",
+    pregunta: "Nombre del padre o tutor",
     seccion: "Ficha de identificación",
+    // Solo aplica si es menor de edad — si no se sabe la edad (no
+    // contestó la fecha de nacimiento), se asume que no aplica.
+    mostrarSi: (_f, edad) => edad !== null && edad < 18,
   },
   { key: "domicilio", tipo: "texto", pregunta: "¿Cuál es tu domicilio?", seccion: "Ficha de identificación" },
   { key: "ocupacion", tipo: "texto", pregunta: "¿Cuál es tu ocupación?", seccion: "Ficha de identificación" },
@@ -215,6 +234,7 @@ function BotonSiNo({ valor, onChange }: { valor: boolean | null; onChange: (v: b
 }
 
 function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
+  if (paso.tipo === "fecha_nacimiento") return "—";
   const v = form[paso.key];
   if (paso.tipo === "sexo") return v === "F" ? "Femenino" : v === "M" ? "Masculino" : "—";
   if (paso.tipo === "bool") return v === true ? "Sí" : v === false ? "No" : "—";
@@ -226,6 +246,7 @@ export function HistoriaClinicaWizard({
   set,
   pacienteNombre,
   pacienteFechaNacimiento,
+  onChangeFechaNacimiento,
   pacienteTelefono,
   onEnviar,
   guardando,
@@ -235,6 +256,7 @@ export function HistoriaClinicaWizard({
   set: <K extends keyof FormStateHistoriaClinica>(campo: K, valor: FormStateHistoriaClinica[K]) => void;
   pacienteNombre: string;
   pacienteFechaNacimiento: string | null;
+  onChangeFechaNacimiento: (v: string | null) => void;
   pacienteTelefono: string | null;
   onEnviar: () => void;
   guardando: boolean;
@@ -246,8 +268,8 @@ export function HistoriaClinicaWizard({
   const [vista, setVista] = useState<"intro" | "pregunta" | "resumen">("intro");
   const [pasoIndex, setPasoIndex] = useState(0);
 
-  const pasosVisibles = PASOS.filter((p) => !p.mostrarSi || p.mostrarSi(form));
   const edad = calcularEdad(pacienteFechaNacimiento);
+  const pasosVisibles = PASOS.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad));
 
   function irASiguiente() {
     if (pasoIndex + 1 >= pasosVisibles.length) {
@@ -330,7 +352,9 @@ export function HistoriaClinicaWizard({
           </div>
 
           {SECCIONES.map((seccion) => {
-            const pasosSeccion = pasosVisibles.filter((p) => p.seccion === seccion);
+            // La fecha de nacimiento ya se muestra arriba, en el bloque
+            // de "Ficha de identificación" — no se repite en la lista.
+            const pasosSeccion = pasosVisibles.filter((p) => p.seccion === seccion && p.tipo !== "fecha_nacimiento");
             if (pasosSeccion.length === 0) return null;
             return (
               <div key={seccion} className="mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
@@ -422,6 +446,15 @@ export function HistoriaClinicaWizard({
             <BotonSiNo
               valor={form[paso.key] as boolean | null}
               onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+            />
+          ) : paso.tipo === "fecha_nacimiento" ? (
+            <input
+              autoFocus
+              type="date"
+              value={pacienteFechaNacimiento ?? ""}
+              max={hoyISO()}
+              onChange={(e) => onChangeFechaNacimiento(e.target.value || null)}
+              className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
             />
           ) : (
             <input

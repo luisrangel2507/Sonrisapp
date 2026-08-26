@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { esFechaFutura } from "@/lib/fechas";
 import { HISTORIA_CLINICA_CAMPOS as CAMPOS, HISTORIA_CLINICA_COLUMNAS as COLUMNAS } from "@/lib/historia-clinica-campos";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra
@@ -57,6 +58,10 @@ export async function PUT(
 
     const pacienteId = pacienteRows[0].id;
     const body = await req.json().catch(() => ({}));
+
+    if (typeof body.fecha_nacimiento === "string" && body.fecha_nacimiento && !esFechaFutura(body.fecha_nacimiento)) {
+      await query(`UPDATE pacientes SET fecha_nacimiento = $1 WHERE id = $2`, [body.fecha_nacimiento, pacienteId]);
+    }
 
     const valores = CAMPOS.map((campo) => body[campo] ?? null);
     const placeholders = CAMPOS.map((_, i) => `$${i + 2}`).join(", ");
