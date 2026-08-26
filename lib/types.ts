@@ -127,8 +127,8 @@ export interface HistoriaClinica {
   problemas_sangrado: boolean | null;
   embarazada: boolean | null;
   lactancia: boolean | null;
-  consume_alcohol: boolean | null;
-  consume_tabaco: boolean | null;
+  consume_alcohol: "si" | "no" | "a_veces" | null;
+  consume_tabaco: "si" | "no" | "a_veces" | null;
   ets: boolean | null;
   ets_cual: string | null;
   actualizado_en: string;

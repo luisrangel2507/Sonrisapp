@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil, Save } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
-import { calcularEdad, type FormStateHistoriaClinica } from "@/components/HistoriaClinicaFormulario";
+import { calcularEdad, type FormStateHistoriaClinica, type FrecuenciaConsumo } from "@/components/HistoriaClinicaFormulario";
 
 type Seccion =
   | "Ficha de identificación"
@@ -47,6 +47,13 @@ type Paso =
   | {
       key: "emergencia";
       tipo: "emergencia";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
+    }
+  | {
+      key: keyof FormStateHistoriaClinica;
+      tipo: "frecuencia";
       pregunta: string;
       seccion: Seccion;
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null) => boolean;
@@ -183,13 +190,13 @@ const PASOS: Paso[] = [
   },
   {
     key: "consume_alcohol",
-    tipo: "bool",
+    tipo: "frecuencia",
     pregunta: "¿Consumes alcohol?",
     seccion: "Antecedentes personales no patológicos",
   },
   {
     key: "consume_tabaco",
-    tipo: "bool",
+    tipo: "frecuencia",
     pregunta: "¿Consumes tabaco?",
     seccion: "Antecedentes personales no patológicos",
   },
@@ -248,11 +255,39 @@ function BotonSiNo({ valor, onChange }: { valor: boolean | null; onChange: (v: b
   );
 }
 
+function BotonSiAVecesNo({ valor, onChange }: { valor: FrecuenciaConsumo | null; onChange: (v: FrecuenciaConsumo) => void }) {
+  const opciones: { valor: FrecuenciaConsumo; label: string; activo: string }[] = [
+    { valor: "si", label: "Sí", activo: "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" },
+    { valor: "a_veces", label: "A veces", activo: "border-[#B08A3F] bg-[#F5EDDD] text-[#8A6A22]" },
+    { valor: "no", label: "No", activo: "border-[#B0503A] bg-[#F7E5E0] text-[#B0503A]" },
+  ];
+  return (
+    <div className="flex gap-3">
+      {opciones.map((o) => (
+        <button
+          key={o.valor}
+          type="button"
+          onClick={() => onChange(o.valor)}
+          className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
+            valor === o.valor ? o.activo : "border-[#EFE9DC] bg-white text-[#8a8272]"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function valorLegible(paso: Paso, form: FormStateHistoriaClinica): string {
   if (paso.tipo === "fecha_nacimiento") return "—";
   if (paso.tipo === "emergencia") {
     const partes = [form.emergencia_nombre, form.emergencia_telefono].filter(Boolean);
     return partes.length ? partes.join(" · ") : "—";
+  }
+  if (paso.tipo === "frecuencia") {
+    const v = form[paso.key];
+    return v === "si" ? "Sí" : v === "a_veces" ? "A veces" : v === "no" ? "No" : "—";
   }
   const v = form[paso.key];
   if (paso.tipo === "sexo") return v === "F" ? "Femenino" : v === "M" ? "Masculino" : "—";
@@ -464,6 +499,11 @@ export function HistoriaClinicaWizard({
           ) : paso.tipo === "bool" ? (
             <BotonSiNo
               valor={form[paso.key] as boolean | null}
+              onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+            />
+          ) : paso.tipo === "frecuencia" ? (
+            <BotonSiAVecesNo
+              valor={form[paso.key] as FrecuenciaConsumo | null}
               onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
             />
           ) : paso.tipo === "fecha_nacimiento" ? (

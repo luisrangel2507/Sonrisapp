@@ -170,8 +170,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
                 {historia?.problemas_sangrado && <Text style={estilosPdf.parrafo}>• Problemas de sangrado: {SI}</Text>}
                 {historia?.embarazada && <Text style={estilosPdf.parrafo}>• Embarazo: {SI}</Text>}
                 {historia?.lactancia && <Text style={estilosPdf.parrafo}>• Lactancia: {SI}</Text>}
-                {historia?.consume_alcohol && <Text style={estilosPdf.parrafo}>• Consume alcohol: {SI}</Text>}
-                {historia?.consume_tabaco && <Text style={estilosPdf.parrafo}>• Consume tabaco: {SI}</Text>}
+                {historia?.consume_alcohol && historia.consume_alcohol !== "no" && (
+                  <Text style={estilosPdf.parrafo}>
+                    • Consume alcohol: {historia.consume_alcohol === "a_veces" ? "A veces" : SI}
+                  </Text>
+                )}
+                {historia?.consume_tabaco && historia.consume_tabaco !== "no" && (
+                  <Text style={estilosPdf.parrafo}>
+                    • Consume tabaco: {historia.consume_tabaco === "a_veces" ? "A veces" : SI}
+                  </Text>
+                )}
                 {historia?.ets && <Text style={estilosPdf.parrafo}>• Antecedente de ETS: {historia.ets_cual || SI}</Text>}
               </View>
             )}

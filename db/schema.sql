@@ -160,8 +160,8 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   embarazada BOOLEAN,
   lactancia BOOLEAN,
   -- Antecedentes personales no patológicos
-  consume_alcohol BOOLEAN,
-  consume_tabaco BOOLEAN,
+  consume_alcohol VARCHAR(10), -- 'si' | 'no' | 'a_veces'
+  consume_tabaco VARCHAR(10), -- 'si' | 'no' | 'a_veces'
   ets BOOLEAN,
   ets_cual TEXT,
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -200,6 +200,28 @@ BEGIN
   END IF;
 END $$;
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS toma_medicamento BOOLEAN;
+
+-- consume_alcohol/consume_tabaco ganan una tercera opción ("a veces"),
+-- así que dejan de ser Sí/No booleano y pasan a texto ('si'/'no'/'a_veces').
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'historia_clinica' AND column_name = 'consume_alcohol' AND data_type = 'boolean'
+  ) THEN
+    ALTER TABLE historia_clinica
+      ALTER COLUMN consume_alcohol TYPE VARCHAR(10)
+      USING (CASE consume_alcohol WHEN true THEN 'si' WHEN false THEN 'no' ELSE NULL END);
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'historia_clinica' AND column_name = 'consume_tabaco' AND data_type = 'boolean'
+  ) THEN
+    ALTER TABLE historia_clinica
+      ALTER COLUMN consume_tabaco TYPE VARCHAR(10)
+      USING (CASE consume_tabaco WHEN true THEN 'si' WHEN false THEN 'no' ELSE NULL END);
+  END IF;
+END $$;
 
 -- Consentimientos informados con firma digital. El paciente entra con
 -- el link público (token) igual que con la historia clínica, lee el

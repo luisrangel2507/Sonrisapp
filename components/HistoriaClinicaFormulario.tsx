@@ -100,6 +100,38 @@ function SiNo({
   );
 }
 
+export type FrecuenciaConsumo = "si" | "a_veces" | "no";
+
+function SiAVecesNo({
+  valor,
+  onChange,
+}: {
+  valor: FrecuenciaConsumo | null;
+  onChange: (v: FrecuenciaConsumo) => void;
+}) {
+  const opciones: { valor: FrecuenciaConsumo; label: string; activo: string }[] = [
+    { valor: "si", label: "Sí", activo: "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" },
+    { valor: "a_veces", label: "A veces", activo: "border-[#B08A3F] bg-[#F5EDDD] text-[#8A6A22]" },
+    { valor: "no", label: "No", activo: "border-[#B0503A] bg-[#F7E5E0] text-[#B0503A]" },
+  ];
+  return (
+    <div className="flex gap-2">
+      {opciones.map((o) => (
+        <button
+          key={o.valor}
+          type="button"
+          onClick={() => onChange(o.valor)}
+          className={`rounded-full border px-4 py-1.5 text-[13px] font-semibold ${
+            valor === o.valor ? o.activo : "border-[#EFE9DC] bg-white text-[#8a8272]"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CamposHistoriaClinica({
   form,
   set,
@@ -304,10 +336,10 @@ export function CamposHistoriaClinica({
 
       <Seccion titulo="Antecedentes personales no patológicos">
         <Campo label="¿Consume alcohol?">
-          <SiNo valor={form.consume_alcohol} onChange={(v) => set("consume_alcohol", v)} />
+          <SiAVecesNo valor={form.consume_alcohol} onChange={(v) => set("consume_alcohol", v)} />
         </Campo>
         <Campo label="¿Consume tabaco?">
-          <SiNo valor={form.consume_tabaco} onChange={(v) => set("consume_tabaco", v)} />
+          <SiAVecesNo valor={form.consume_tabaco} onChange={(v) => set("consume_tabaco", v)} />
         </Campo>
         <Campo label="¿Enfermedades de transmisión sexual (VIH/VPH)?">
           <SiNo valor={form.ets} onChange={(v) => set("ets", v)} />
