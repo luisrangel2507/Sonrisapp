@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer, Text, View, Image, Svg, Polygon } from "@react-pdf/renderer";
+import { renderToBuffer, Text, View, Image, Svg, Polygon, Circle, G } from "@react-pdf/renderer";
 import path from "node:path";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -12,21 +12,40 @@ import { descifrar } from "@/lib/crypto";
 const ODONTOGRAMA_IMAGEN = path.join(process.cwd(), "public", "odontograma-hud.jpg");
 const ODONTOGRAMA_ASPECTO = 1300 / 799;
 
+// Centro aproximado de cada polígono (promedio de sus puntos) — para
+// colocar el número del diente encima de su zona coloreada.
+function centroDeDiente(numero: number) {
+  const puntos = POLIGONOS_DIENTE[numero]
+    .split(" ")
+    .map((par) => par.split(",").map(Number));
+  const x = puntos.reduce((s, [px]) => s + px, 0) / puntos.length;
+  const y = puntos.reduce((s, [, py]) => s + py, 0) / puntos.length;
+  return { x, y };
+}
+
 // Misma foto y mismos polígonos que el odontograma del dashboard —
 // solo se colorean los dientes con alguna afectación (los sanos se
-// dejan transparentes, igual que en la vista web).
+// dejan transparentes, igual que en la vista web). El viewBox es
+// cuadrado (0 0 100 100) pero la foto no lo es — sin
+// preserveAspectRatio="none" @react-pdf/renderer encoge el viewBox
+// para que quepa "completo" dentro del recuadro (como una letterbox),
+// lo que descuadra los polígonos respecto a la foto de fondo.
 function OdontogramaPdf({ dientes }: { dientes: { numero_fdi: number; estado: EstadoDiente }[] }) {
   const porNumero = new Map(dientes.map((d) => [d.numero_fdi, d.estado]));
+  const afectados = [...ARCO_SUPERIOR, ...ARCO_INFERIOR].filter((n) => {
+    const estado = porNumero.get(n);
+    return estado && estado !== "sano";
+  });
   return (
     <View style={{ width: "70%", alignSelf: "center", position: "relative", aspectRatio: ODONTOGRAMA_ASPECTO }}>
       <Image src={ODONTOGRAMA_IMAGEN} style={{ width: "100%", height: "100%" }} />
       <Svg
         viewBox="0 0 100 100"
+        preserveAspectRatio="none"
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
       >
-        {[...ARCO_SUPERIOR, ...ARCO_INFERIOR].map((numero) => {
-          const estado = porNumero.get(numero);
-          if (!estado || estado === "sano") return null;
+        {afectados.map((numero) => {
+          const estado = porNumero.get(numero)!;
           const est = ESTADO_DIENTE[estado];
           const fill = estado === "ausente" ? "#0A0A0F" : `rgba(${est.glow},0.45)`;
           return (
@@ -37,6 +56,17 @@ function OdontogramaPdf({ dientes }: { dientes: { numero_fdi: number; estado: Es
               stroke={est.ring}
               strokeWidth={0.5}
             />
+          );
+        })}
+        {afectados.map((numero) => {
+          const { x, y } = centroDeDiente(numero);
+          return (
+            <G key={numero} style={{ fontSize: 2.8 }}>
+              <Circle cx={x} cy={y} r={2.6} fill="#15101f" />
+              <Text x={x} y={y + 0.9} fill="#ffffff" textAnchor="middle">
+                {numero}
+              </Text>
+            </G>
           );
         })}
       </Svg>
