@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronRight, ChevronDown } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 
 // El nombre llega como texto libre ("Nombre(s) Apellidos") — se usa la
@@ -36,6 +36,16 @@ export default function PacientesPage() {
   const [formAbierto, setFormAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [nombre, setNombre] = useState("");
+  const [letrasAbiertas, setLetrasAbiertas] = useState<Set<string>>(new Set());
+
+  function alternarLetra(letra: string) {
+    setLetrasAbiertas((prev) => {
+      const siguiente = new Set(prev);
+      if (siguiente.has(letra)) siguiente.delete(letra);
+      else siguiente.add(letra);
+      return siguiente;
+    });
+  }
 
   async function cargar(q: string) {
     const res = await fetch(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -92,6 +102,18 @@ export default function PacientesPage() {
     () => (pacientes ?? []).filter((p) => p.historial_pendiente).length,
     [pacientes]
   );
+
+  // Agrupa por la inicial del primer nombre — ya viene ordenado, así
+  // que solo hay que ir juntando por letra en el mismo orden.
+  const grupos = useMemo(() => {
+    const mapa = new Map<string, Paciente[]>();
+    for (const p of ordenados) {
+      const letra = (primerNombreParaOrdenar(p.nombre)[0] ?? "#").toUpperCase();
+      if (!mapa.has(letra)) mapa.set(letra, []);
+      mapa.get(letra)!.push(p);
+    }
+    return Array.from(mapa.entries());
+  }, [ordenados]);
 
   return (
     <>
@@ -165,41 +187,75 @@ export default function PacientesPage() {
           <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
             {busqueda ? "Sin resultados." : "Aún no hay pacientes registrados."}
           </p>
-        ) : (
+        ) : busqueda.trim() ? (
           <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-            {ordenados.map((p, i) => {
-              const color = PALETA_AVATAR[i % PALETA_AVATAR.length];
+            {ordenados.map((p, i) => (
+              <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[i % PALETA_AVATAR.length]} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {grupos.map(([letra, pacientesDeLetra]) => {
+              const abierta = letrasAbiertas.has(letra);
               return (
-                <Link
-                  key={p.id}
-                  href={`/dashboard/pacientes/${p.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-[#EFE9DC] bg-white/70 px-4 py-3 shadow-sm transition-colors hover:bg-white active:bg-white"
-                >
-                  <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${color.bg} ${color.text}`}
+                <div key={letra} className="rounded-2xl border border-[#EFE9DC] bg-white/70">
+                  <button
+                    onClick={() => alternarLetra(letra)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
                   >
-                    {iniciales(p.nombre)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-[#2b2118]">
-                      {p.nombre} {p.historial_pendiente && "🚨"}
-                    </div>
-                    <div className="truncate text-xs text-[#a49c8a]">
-                      {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-[#F5E7E9] px-2.5 py-1 text-[11px] font-bold text-[#803449]">
-                      {p.puntos} pts
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F5E7E9] text-[13px] font-bold text-[#803449]">
+                      {letra}
                     </span>
-                    <ChevronRight size={16} className="text-[#a49c8a]" />
-                  </div>
-                </Link>
+                    <span className="flex-1 text-sm font-semibold text-[#2b2118]">
+                      {pacientesDeLetra.length} paciente{pacientesDeLetra.length === 1 ? "" : "s"}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 text-[#a49c8a] transition-transform ${abierta ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {abierta && (
+                    <div className="space-y-2 border-t border-[#EFE9DC] p-2 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
+                      {pacientesDeLetra.map((p, i) => (
+                        <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[i % PALETA_AVATAR.length]} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
         )}
       </div>
     </>
+  );
+}
+
+function TarjetaPaciente({ paciente: p, color }: { paciente: Paciente; color: (typeof PALETA_AVATAR)[number] }) {
+  return (
+    <Link
+      href={`/dashboard/pacientes/${p.id}`}
+      className="flex items-center gap-3 rounded-2xl border border-[#EFE9DC] bg-white px-4 py-3 shadow-sm transition-colors hover:bg-[#FBF9F5] active:bg-[#FBF9F5]"
+    >
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${color.bg} ${color.text}`}
+      >
+        {iniciales(p.nombre)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-[#2b2118]">
+          {p.nombre} {p.historial_pendiente && "🚨"}
+        </div>
+        <div className="truncate text-xs text-[#a49c8a]">
+          {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="rounded-full bg-[#F5E7E9] px-2.5 py-1 text-[11px] font-bold text-[#803449]">
+          {p.puntos} pts
+        </span>
+        <ChevronRight size={16} className="text-[#a49c8a]" />
+      </div>
+    </Link>
   );
 }
