@@ -1,12 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer, Text, View } from "@react-pdf/renderer";
+import { renderToBuffer, Text, View, Image, Svg, Polygon } from "@react-pdf/renderer";
+import path from "node:path";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
-import { ESTADO_DIENTE, type EstadoDiente } from "@/lib/dental";
+import { ARCO_SUPERIOR, ARCO_INFERIOR, ESTADO_DIENTE, POLIGONOS_DIENTE, type EstadoDiente } from "@/lib/dental";
 import { HISTORIA_CLINICA_COLUMNAS, HISTORIA_CLINICA_CAMPOS_CIFRABLES } from "@/lib/historia-clinica-campos";
 import { descifrar } from "@/lib/crypto";
+
+const ODONTOGRAMA_IMAGEN = path.join(process.cwd(), "public", "odontograma-hud.jpg");
+const ODONTOGRAMA_ASPECTO = 1300 / 799;
+
+// Misma foto y mismos polígonos que el odontograma del dashboard —
+// solo se colorean los dientes con alguna afectación (los sanos se
+// dejan transparentes, igual que en la vista web).
+function OdontogramaPdf({ dientes }: { dientes: { numero_fdi: number; estado: EstadoDiente }[] }) {
+  const porNumero = new Map(dientes.map((d) => [d.numero_fdi, d.estado]));
+  return (
+    <View style={{ width: "70%", alignSelf: "center", position: "relative", aspectRatio: ODONTOGRAMA_ASPECTO }}>
+      <Image src={ODONTOGRAMA_IMAGEN} style={{ width: "100%", height: "100%" }} />
+      <Svg
+        viewBox="0 0 100 100"
+        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+      >
+        {[...ARCO_SUPERIOR, ...ARCO_INFERIOR].map((numero) => {
+          const estado = porNumero.get(numero);
+          if (!estado || estado === "sano") return null;
+          const est = ESTADO_DIENTE[estado];
+          const fill = estado === "ausente" ? "#0A0A0F" : `rgba(${est.glow},0.45)`;
+          return (
+            <Polygon
+              key={numero}
+              points={POLIGONOS_DIENTE[numero]}
+              fill={fill}
+              stroke={est.ring}
+              strokeWidth={0.5}
+            />
+          );
+        })}
+      </Svg>
+    </View>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -215,6 +251,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
               <Text style={estilosPdf.vacio}>Sin hallazgos registrados — todos los dientes en estado sano.</Text>
             ) : (
               <View>
+                <OdontogramaPdf dientes={dientes} />
+                <View style={{ marginTop: 10 }} />
                 {dientes.map((d) => {
                   const entradas = dienteHistorialDescifrado.filter((h) => h.paciente_diente_id === d.id);
                   const est = ESTADO_DIENTE[d.estado] ?? ESTADO_DIENTE.sano;
