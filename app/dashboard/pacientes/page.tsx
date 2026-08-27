@@ -6,13 +6,11 @@ import { useRouter } from "next/navigation";
 import { Plus, Search, ChevronRight } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 
-// Heurística: el nombre llega como texto libre ("Nombre(s) Apellidos"),
-// así que se usa la última palabra como apellido para ordenar — no es
-// perfecto con apellidos compuestos, pero es razonable sin separar el
-// nombre en campos de nombre/apellido en la base de datos.
-function apellidoParaOrdenar(nombreCompleto: string) {
+// El nombre llega como texto libre ("Nombre(s) Apellidos") — se usa la
+// primera palabra como nombre de pila para ordenar.
+function primerNombreParaOrdenar(nombreCompleto: string) {
   const partes = nombreCompleto.trim().split(/\s+/);
-  return partes[partes.length - 1] ?? nombreCompleto;
+  return partes[0] ?? nombreCompleto;
 }
 
 function iniciales(nombreCompleto: string) {
@@ -83,7 +81,9 @@ export default function PacientesPage() {
   const ordenados = useMemo(
     () =>
       [...(pacientes ?? [])].sort((a, b) =>
-        apellidoParaOrdenar(a.nombre).localeCompare(apellidoParaOrdenar(b.nombre), "es", { sensitivity: "base" })
+        primerNombreParaOrdenar(a.nombre).localeCompare(primerNombreParaOrdenar(b.nombre), "es", {
+          sensitivity: "base",
+        })
       ),
     [pacientes]
   );
