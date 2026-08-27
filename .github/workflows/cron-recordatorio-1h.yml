@@ -1,0 +1,20 @@
+name: Recordatorio de cita 1h antes
+
+# Nada estaba llamando a /api/cron/recordatorios en producción — el
+# código para mandar el recordatorio existía, pero ningún scheduler lo
+# disparaba. Este workflow lo llama cada 15 minutos (la ruta ya
+# tolera una ventana de 50-70 min antes de la cita, así que un
+# disparo tardío de GitHub Actions no deja citas sin avisar).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  llamar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/cron/recordatorios
+        run: |
+          curl -sS -f -X POST "https://sonrisapp-production.up.railway.app/api/cron/recordatorios" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"

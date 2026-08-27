@@ -1,0 +1,19 @@
+name: Resumen diario y cumpleaños
+
+# Igual que el de recordatorios: /api/cron ya existía (cumpleaños +
+# resumen de citas del día) pero nadie lo llamaba. Querétaro/CDMX está
+# fijo en UTC-6 desde que México quitó el horario de verano, así que
+# 8am hora local son las 14:00 UTC todo el año.
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  llamar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/cron
+        run: |
+          curl -sS -f -X POST "https://sonrisapp-production.up.railway.app/api/cron" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
