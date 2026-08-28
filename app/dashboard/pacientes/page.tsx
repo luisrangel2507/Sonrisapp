@@ -99,7 +99,7 @@ export default function PacientesPage() {
   );
 
   const pendientesDeConfirmar = useMemo(
-    () => (pacientes ?? []).filter((p) => p.historial_pendiente).length,
+    () => (pacientes ?? []).filter((p) => p.historial_pendiente),
     [pacientes]
   );
 
@@ -169,14 +169,25 @@ export default function PacientesPage() {
         )}
       </div>
 
-      {pendientesDeConfirmar > 0 && (
+      {pendientesDeConfirmar.length > 0 && (
         <div className="mx-4 mt-3 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
-          🚨 <strong>
-            {pendientesDeConfirmar} paciente{pendientesDeConfirmar === 1 ? "" : "s"} con historial clínico sin
-            confirmar
+          🚨{" "}
+          <strong>
+            {pendientesDeConfirmar.length} paciente{pendientesDeConfirmar.length === 1 ? "" : "s"} con historial
+            clínico sin confirmar
           </strong>{" "}
-          — lo llenaron desde su link, pero aún falta que revises y confirmes la información. Entra a su historia
-          clínica para confirmarla o corregirla.
+          — lo llenaron desde su link, pero aún falta que revises y confirmes la información.
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {pendientesDeConfirmar.map((p) => (
+              <Link
+                key={p.id}
+                href={`/dashboard/pacientes/${p.id}/historia-clinica`}
+                className="rounded-full border border-[#EABDB0] bg-white px-3 py-1 text-[12px] font-semibold text-[#B0503A]"
+              >
+                {p.nombre}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
