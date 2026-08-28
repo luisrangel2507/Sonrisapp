@@ -15,10 +15,12 @@ import {
   AlertTriangle,
   FileDown,
   Share2,
+  Lock,
 } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { citaVencidaSinCompletar } from "@/lib/fechas";
+import { pagoConfirmado } from "@/lib/citas";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 
 const NUEVO_PACIENTE = "__nuevo__";
@@ -336,6 +338,10 @@ function CitaTimelineItem({
   const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
   const progresoPago = cita.monto ? Math.min(100, (cita.pagado / cita.monto) * 100) : 0;
   const vencida = citaVencidaSinCompletar(cita);
+  // Una vez que el tratamiento está completado Y el pago quedó
+  // confirmado (todo cobrado), la cita se congela: ya no se puede
+  // editar ni deshacer el pago desde aquí.
+  const confirmada = cita.estado === "completada" && pagoConfirmado(cita);
   const [enviandoRecibo, setEnviandoRecibo] = useState(false);
 
   // Comparte el PDF del recibo directamente (WhatsApp, Mail, etc.) vía
@@ -388,6 +394,10 @@ function CitaTimelineItem({
               {vencida ? (
                 <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#B0503A] px-2.5 py-1 text-[11px] font-semibold text-white">
                   <AlertTriangle size={11} /> Vencida
+                </span>
+              ) : cita.estado === "completada" && !confirmada ? (
+                <span className="shrink-0 whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
+                  Confirmación pendiente
                 </span>
               ) : (
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[cita.estado]}`}>
@@ -442,12 +452,14 @@ function CitaTimelineItem({
               <DollarSign size={12} /> Registrar pago
             </button>
           )}
-          <button
-            onClick={() => (editando ? onCerrarEdicion() : onAbrirEdicion())}
-            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
-          >
-            <Pencil size={12} /> Editar
-          </button>
+          {!confirmada && (
+            <button
+              onClick={() => (editando ? onCerrarEdicion() : onAbrirEdicion())}
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+            >
+              <Pencil size={12} /> Editar
+            </button>
+          )}
           {cita.pagado > 0 && (
             <>
               <a
@@ -465,14 +477,21 @@ function CitaTimelineItem({
               >
                 <Share2 size={12} /> {enviandoRecibo ? "Preparando…" : "Enviar recibo"}
               </button>
-              <button
-                onClick={onDeshacerPago}
-                disabled={deshaciendoPago}
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
-              >
-                <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
-              </button>
+              {!confirmada && (
+                <button
+                  onClick={onDeshacerPago}
+                  disabled={deshaciendoPago}
+                  className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+                >
+                  <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
+                </button>
+              )}
             </>
+          )}
+          {confirmada && (
+            <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] text-[#a49c8a]">
+              <Lock size={11} /> Pago confirmado — ya no se puede modificar
+            </span>
           )}
         </div>
 

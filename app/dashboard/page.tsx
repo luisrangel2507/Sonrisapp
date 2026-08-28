@@ -10,6 +10,7 @@ import { StatCard } from "@/components/StatCard";
 import { BotChat } from "@/components/BotChat";
 import { formatearDinero } from "@/lib/dinero";
 import { citaVencidaSinCompletar } from "@/lib/fechas";
+import { pagoConfirmado } from "@/lib/citas";
 import { DOCTORA } from "@/lib/panel-data";
 import type { Cita, ResumenDashboard } from "@/lib/types";
 
@@ -220,9 +221,15 @@ export default function PanelPage() {
                         <Check size={11} /> Completada
                       </button>
                     ) : c.estado === "completada" ? (
-                      <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]">
-                        <Check size={11} /> Completada
-                      </span>
+                      pagoConfirmado(c) ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]">
+                          <Check size={11} /> Completada
+                        </span>
+                      ) : (
+                        <span className="whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
+                          Confirmación pendiente
+                        </span>
+                      )
                     ) : (
                       <span className="whitespace-nowrap rounded-full bg-[#EFE9DC] px-2.5 py-1 text-[11px] font-semibold text-[#a49c8a]">
                         Cancelada
