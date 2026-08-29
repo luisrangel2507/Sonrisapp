@@ -483,20 +483,22 @@ function CitaTimelineItem({
               >
                 <Share2 size={12} /> {enviandoRecibo ? "Preparando…" : "Enviar recibo"}
               </button>
-              {!confirmada && (
-                <button
-                  onClick={onDeshacerPago}
-                  disabled={deshaciendoPago}
-                  className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
-                >
-                  <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
-                </button>
-              )}
+              {/* Deshacer sigue disponible aunque ya esté "confirmada" —
+                  es la forma de corregir un pago marcado por error (ej.
+                  se confirmó sin querer con el saldo completo). Lo que
+                  queda bloqueado es editar tratamiento/fecha/monto. */}
+              <button
+                onClick={onDeshacerPago}
+                disabled={deshaciendoPago}
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B0503A] disabled:opacity-50"
+              >
+                <RotateCcw size={12} /> {deshaciendoPago ? "Deshaciendo…" : "No se pagó, deshacer"}
+              </button>
             </>
           )}
           {confirmada && (
             <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] text-[#a49c8a]">
-              <Lock size={11} /> Pago confirmado — ya no se puede modificar
+              <Lock size={11} /> Pago confirmado — ya no se puede editar
             </span>
           )}
         </div>
@@ -895,7 +897,8 @@ export default function CitasPage() {
         setEditandoId(null);
         setPagoAbiertoId(c.id);
         setCompletarTrasPago(false);
-        setMontoPago("");
+        const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
+        setMontoPago(restante != null ? String(restante) : "");
       },
       onCerrarPago: () => {
         setPagoAbiertoId(null);
@@ -910,7 +913,7 @@ export default function CitasPage() {
           setEditandoId(null);
           setPagoAbiertoId(c.id);
           setCompletarTrasPago(true);
-          setMontoPago("");
+          setMontoPago(String(restante));
         } else {
           cambiarEstado(c.id, "completada");
         }

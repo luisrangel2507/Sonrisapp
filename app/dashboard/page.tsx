@@ -94,7 +94,7 @@ export default function PanelPage() {
     const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
     if (restante && restante > 0) {
       setCompletandoId(cita.id);
-      setMontoPago("");
+      setMontoPago(String(restante));
       setMetodoPago("efectivo");
     } else {
       completarDirecto(cita.id);
