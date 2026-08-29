@@ -216,9 +216,9 @@ export default function PanelPage() {
                     {c.estado === "agendada" ? (
                       <button
                         onClick={() => (completandoId === c.id ? setCompletandoId(null) : abrirCompletar(c))}
-                        className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]"
+                        className="whitespace-nowrap rounded-full bg-[#F7E5E0] px-2.5 py-1 text-[11px] font-semibold text-[#B0503A]"
                       >
-                        <Check size={11} /> Completada
+                        Pendiente
                       </button>
                     ) : c.estado === "completada" ? (
                       pagoConfirmado(c) ? (
