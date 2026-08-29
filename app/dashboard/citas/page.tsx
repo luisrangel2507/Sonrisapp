@@ -444,7 +444,13 @@ function CitaTimelineItem({
               <Check size={12} /> Completada
             </button>
           )}
-          {cita.estado !== "cancelada" && restante !== null && restante > 0 && (
+          {/* Para una cita agendada, el pago se registra adentro del
+              flujo de "Completada" (onCompletar ya abre el mismo
+              formulario de pago) — un botón aparte aquí solo hacía
+              parecer que había que hacer los dos pasos por separado.
+              "Registrar pago" queda solo para una cita ya completada
+              con confirmación de pago pendiente. */}
+          {cita.estado === "completada" && restante !== null && restante > 0 && (
             <button
               onClick={() => (pagando ? onCerrarPago() : onAbrirPago())}
               className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
