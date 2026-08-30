@@ -75,6 +75,8 @@ export default function PerfilPage() {
   const [notifActiva, setNotifActiva] = useState(false);
   const [notifCargando, setNotifCargando] = useState(false);
   const [notifError, setNotifError] = useState("");
+  const [notifProbando, setNotifProbando] = useState(false);
+  const [notifPruebaMsg, setNotifPruebaMsg] = useState("");
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
@@ -284,6 +286,24 @@ export default function PerfilPage() {
       setNotifActiva(false);
     } finally {
       setNotifCargando(false);
+    }
+  }
+
+  async function probarNotificacion() {
+    if (notifProbando) return;
+    setNotifError("");
+    setNotifPruebaMsg("");
+    setNotifProbando(true);
+    try {
+      const res = await fetch("/api/push/prueba", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "No se pudo enviar la notificación de prueba.");
+      setNotifPruebaMsg("Notificación enviada — debería llegarte en unos segundos.");
+      setTimeout(() => setNotifPruebaMsg(""), 4000);
+    } catch (err) {
+      setNotifError(err instanceof Error ? err.message : "No se pudo enviar la notificación de prueba.");
+    } finally {
+      setNotifProbando(false);
     }
   }
 
@@ -514,6 +534,16 @@ export default function PerfilPage() {
                 <Bell size={15} /> {notifCargando ? "Activando…" : "Activar notificaciones en este celular"}
               </button>
             )}
+            {notifActiva && (
+              <button
+                onClick={probarNotificacion}
+                disabled={notifProbando}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#803449] disabled:opacity-50"
+              >
+                <Bell size={15} /> {notifProbando ? "Enviando…" : "Enviar notificación de prueba"}
+              </button>
+            )}
+            {notifPruebaMsg && <p className="mt-2 text-[12px] text-[#3F6B33]">{notifPruebaMsg}</p>}
             {notifError && <p className="mt-2 text-[12px] text-[#B0503A]">{notifError}</p>}
           </>
         )}
