@@ -11,7 +11,7 @@ export const TRATAMIENTOS = [
 ];
 
 export const CLINICA = {
-  direccion: "Av. Constituyentes 123, Querétaro, Qro.",
+  direccion: "Calle Técnicos #134, Col. Nuevo Horizonte",
   horario: "Lun–Vie 9:00–19:00, Sáb 9:00–14:00",
   especialidades: TRATAMIENTOS,
 };
