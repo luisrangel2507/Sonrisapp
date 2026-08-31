@@ -9,8 +9,9 @@ import { identidadDesdeRequest } from "@/lib/auth";
 // "vigente" en el historial.
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; notaId: string } }
+  props: { params: Promise<{ id: string; notaId: string }> }
 ) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     const notaId = Number(params.notaId);

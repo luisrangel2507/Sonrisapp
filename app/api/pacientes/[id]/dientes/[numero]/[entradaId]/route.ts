@@ -11,8 +11,9 @@ import { cifrar, descifrar } from "@/lib/crypto";
 // actual".
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; numero: string; entradaId: string } }
+  props: { params: Promise<{ id: string; numero: string; entradaId: string }> }
 ) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     const numeroFdi = Number(params.numero);
@@ -66,8 +67,9 @@ export async function PATCH(
 // historial.
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; numero: string; entradaId: string } }
+  props: { params: Promise<{ id: string; numero: string; entradaId: string }> }
 ) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     const numeroFdi = Number(params.numero);

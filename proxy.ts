@@ -20,7 +20,7 @@ export const config = {
   ],
 };
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get(COOKIE_SESION)?.value;
   const autenticado = await verificarSesionToken(token);
   if (autenticado) return NextResponse.next();

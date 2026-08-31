@@ -7,7 +7,8 @@ import { errorJson } from "@/lib/api-error";
 // el formulario de historia clínica, sin necesitar cuenta.
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const { rows: pacienteRows } = await query<{
       id: number;

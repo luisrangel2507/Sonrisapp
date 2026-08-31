@@ -83,7 +83,8 @@ function formatearFecha(f: string | null) {
 
 const SI = "Sí";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {

@@ -3,10 +3,8 @@ import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
 import { guardarHistoriaClinica, obtenerHistoriaClinicaVigente } from "@/lib/historia-clinica";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {
@@ -20,10 +18,8 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {

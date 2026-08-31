@@ -7,10 +7,8 @@ import { generarConsentimientoExpediente } from "@/lib/consentimiento-expediente
 // Genera automáticamente el consentimiento de expediente clínico
 // electrónico, ya redactado y con los datos del paciente llenados —
 // la doctora no escribe nada, solo lo comparte para firma.
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {

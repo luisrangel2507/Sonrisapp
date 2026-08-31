@@ -7,8 +7,9 @@ import { cifrar, descifrar } from "@/lib/crypto";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string; numero: string } }
+  props: { params: Promise<{ id: string; numero: string }> }
 ) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     const numeroFdi = Number(params.numero);

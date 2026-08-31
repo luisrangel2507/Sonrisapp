@@ -3,10 +3,8 @@ import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { generarHistorialToken } from "@/lib/historial-token";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {
@@ -25,10 +23,8 @@ export async function GET(
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {

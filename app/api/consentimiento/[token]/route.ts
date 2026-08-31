@@ -8,10 +8,8 @@ export const dynamic = "force-dynamic";
 
 const FIRMA_MAX_BYTES = 500_000;
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const { rows } = await query(
       `SELECT c.id, c.titulo, c.contenido, c.estado, c.firma, c.nombre_firma, c.firmado_en,
@@ -32,10 +30,8 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const body = await req.json().catch(() => ({}));
     const { nombre_firma, firma } = body ?? {};

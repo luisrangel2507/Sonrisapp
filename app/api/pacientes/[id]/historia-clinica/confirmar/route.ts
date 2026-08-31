@@ -7,10 +7,8 @@ import { confirmarHistoriaClinica } from "@/lib/historia-clinica";
 // correcto tal cual — se marca confirmado sin tener que reescribir
 // nada. Si algo estuviera mal, lo corrige en el formulario normal
 // (PUT /historia-clinica), que ya confirma automáticamente al guardar.
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {

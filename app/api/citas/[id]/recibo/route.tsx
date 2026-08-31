@@ -27,7 +27,8 @@ function formatearFechaHora(f: string) {
   });
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const citaId = Number(params.id);
     if (!Number.isInteger(citaId)) {

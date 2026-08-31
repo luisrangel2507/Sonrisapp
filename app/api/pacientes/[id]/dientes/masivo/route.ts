@@ -9,7 +9,8 @@ import { cifrar } from "@/lib/crypto";
 // etc.) — crea el mismo registro en los 32 dientes de una sola vez, en
 // vez de tener que repetirlo diente por diente. Todo o nada: si algo
 // falla a la mitad, no se queda aplicado solo a unos cuantos dientes.
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const client = await pool.connect();
   try {
     const pacienteId = Number(params.id);

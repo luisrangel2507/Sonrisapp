@@ -9,10 +9,8 @@ import { cifrar, descifrar } from "@/lib/crypto";
 // reposo (NOM-024) igual que la historia clínica y el formulario público.
 const CAMPOS_CIFRABLES = new Set(["alergias_cual", "medicamentos", "antecedentes_medicos_cual"]);
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const id = Number(params.id);
     if (!Number.isInteger(id)) {
@@ -39,10 +37,8 @@ export async function GET(
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const id = Number(params.id);
     if (!Number.isInteger(id)) {
@@ -72,10 +68,8 @@ const CAMPOS_EDITABLES = [
   "antecedentes_medicos_cual",
 ] as const;
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const id = Number(params.id);
     if (!Number.isInteger(id)) {

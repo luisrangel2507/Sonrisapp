@@ -4,10 +4,8 @@ import type { HistorialDental, EstadoDiente } from "@/lib/dental";
 import { errorJson } from "@/lib/api-error";
 import { descifrar } from "@/lib/crypto";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     if (!Number.isInteger(pacienteId)) {

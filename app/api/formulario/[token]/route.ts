@@ -33,10 +33,8 @@ interface PacientePublico {
   antecedentes_medicos_cual: string | null;
 }
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const { rows: pacienteRows } = await query<PacientePublico>(
       `SELECT id, nombre, fecha_nacimiento, telefono, email,
@@ -62,10 +60,8 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const { rows: pacienteRows } = await query<{ id: number }>(
       `SELECT id FROM pacientes WHERE historial_token = $1`,

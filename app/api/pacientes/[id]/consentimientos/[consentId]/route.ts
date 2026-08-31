@@ -4,8 +4,9 @@ import { errorJson } from "@/lib/api-error";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string; consentId: string } }
+  props: { params: Promise<{ id: string; consentId: string }> }
 ) {
+  const params = await props.params;
   try {
     const pacienteId = Number(params.id);
     const consentId = Number(params.consentId);
