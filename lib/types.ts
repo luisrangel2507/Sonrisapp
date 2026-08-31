@@ -80,6 +80,7 @@ export interface Cita {
   monto: number | null;
   pagado: number;
   historial_pendiente: boolean;
+  pendiente_aprobacion: boolean;
 }
 
 export type MetodoPago = "efectivo" | "tarjeta" | "transferencia";

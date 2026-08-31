@@ -172,7 +172,13 @@ export default function TarjetaDentistaPage() {
             )}
 
             <p className="mt-5 text-[13px] font-medium italic text-white/90">{datos.frase}</p>
-            <p className="mt-1 text-[13px] font-semibold">{datos.llamadaAccion}</p>
+
+            <a
+              href="/agendar"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-[13px] font-bold text-[#803449]"
+            >
+              {datos.llamadaAccion}
+            </a>
           </div>
         </div>
 

@@ -306,6 +306,7 @@ function CitaTimelineItem({
   onCambiarEstado,
   onCompletar,
   onDeshacerPago,
+  onAprobar,
 }: {
   cita: Cita;
   esUltimo: boolean;
@@ -334,6 +335,7 @@ function CitaTimelineItem({
   onCambiarEstado: (estado: "completada" | "cancelada") => void;
   onCompletar: () => void;
   onDeshacerPago: () => void;
+  onAprobar: () => void;
 }) {
   const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
   const progresoPago = cita.monto ? Math.min(100, (cita.pagado / cita.monto) * 100) : 0;
@@ -415,6 +417,18 @@ function CitaTimelineItem({
           >
             🚨 Historial sin confirmar — tócalo para revisarlo
           </Link>
+        )}
+
+        {cita.pendiente_aprobacion && (
+          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl bg-[#F7ECD9] px-3 py-2 text-[12px] font-semibold text-[#B0834A]">
+            🌐 Solicitud en línea sin aprobar
+            <button
+              onClick={onAprobar}
+              className="shrink-0 rounded-full bg-[#B0834A] px-3 py-1 text-[11px] font-semibold text-white"
+            >
+              Aprobar
+            </button>
+          </div>
         )}
 
         {cita.monto != null && (
@@ -763,6 +777,15 @@ export default function CitasPage() {
     await cargar();
   }
 
+  async function aprobarCita(id: number) {
+    await fetch("/api/citas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, pendiente_aprobacion: false }),
+    });
+    await cargar();
+  }
+
   function abrirEdicion(c: Cita) {
     setPagoAbiertoId(null);
     setEditandoId(c.id);
@@ -907,6 +930,7 @@ export default function CitasPage() {
       onGuardarPago: () => registrarPago(c),
       deshaciendoPago: deshaciendoPagoId === c.id,
       onCambiarEstado: (estado: "completada" | "cancelada") => cambiarEstado(c.id, estado),
+      onAprobar: () => aprobarCita(c.id),
       onCompletar: () => {
         const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
         if (restante && restante > 0) {

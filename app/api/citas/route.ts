@@ -9,7 +9,8 @@ const CITAS_SELECT = `
   SELECT c.id, c.paciente_id, p.nombre AS paciente_nombre, c.tratamiento,
          c.fecha_hora, c.estado, c.monto::float8 AS monto,
          COALESCE(pg.pagado, 0)::float8 AS pagado,
-         (hc.confirmado IS FALSE) AS historial_pendiente
+         (hc.confirmado IS FALSE) AS historial_pendiente,
+         c.pendiente_aprobacion
   FROM citas c
   JOIN pacientes p ON p.id = c.paciente_id
   LEFT JOIN (
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, estado, tratamiento, fecha_hora, monto } = body ?? {};
+    const { id, estado, tratamiento, fecha_hora, monto, pendiente_aprobacion } = body ?? {};
 
     if (!id) {
       return NextResponse.json({ error: "id es requerido" }, { status: 400 });
@@ -91,6 +92,10 @@ export async function PATCH(req: NextRequest) {
       if (monto !== undefined) {
         asignaciones.push(`monto = $${idx++}`);
         valores.push(monto === "" || monto === null ? null : Number(monto));
+      }
+      if (pendiente_aprobacion !== undefined) {
+        asignaciones.push(`pendiente_aprobacion = $${idx++}`);
+        valores.push(Boolean(pendiente_aprobacion));
       }
 
       if (asignaciones.length === 0) {

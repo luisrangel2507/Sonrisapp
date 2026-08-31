@@ -481,3 +481,10 @@ CREATE TABLE IF NOT EXISTS recetas (
   anulado_en TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_recetas_paciente ON recetas(paciente_id);
+
+-- Citas que llegan solas desde el link público de agendado (/agendar,
+-- pensado para compartir en Instagram) — quedan apartadas en el
+-- horario elegido, pero no son oficiales hasta que la doctora las
+-- aprueba desde el dashboard (evita que una cita rara o un horario
+-- mal elegido se cuele directo a la agenda sin que nadie la vea).
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS pendiente_aprobacion BOOLEAN NOT NULL DEFAULT false;

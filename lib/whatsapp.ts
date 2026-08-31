@@ -79,6 +79,11 @@ export function mensajeRecordatorio1h(nombre: string, hora: string, tratamiento:
   return `¡Hola, ${primerNombre}! ⏰ Tu cita de ${tratamiento} es en aproximadamente 1 hora, a las ${hora} ¡Te esperamos en Viña Sonrisas!`;
 }
 
+export function mensajeSolicitudCita(nombre: string, fechaTexto: string, horaTexto: string) {
+  const primerNombre = nombre.split(" ")[0];
+  return `¡Hola, ${primerNombre}! 🦷 Recibimos tu solicitud de cita para el ${fechaTexto} a las ${horaTexto} en Viña Sonrisas. En breve te confirmamos por este medio.`;
+}
+
 export function mensajeRecetaNueva(nombre: string, url: string) {
   const primerNombre = nombre.split(" ")[0];
   return `¡Hola, ${primerNombre}! 📋 La Dra. Michel te dejó una receta nueva. Puedes verla aquí: ${url}`;

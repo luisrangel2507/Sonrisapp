@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace, IdCard, ExternalLink } from "lucide-react";
+import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace, IdCard, ExternalLink, Link2 } from "lucide-react";
 import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario, Passkey } from "@/lib/types";
@@ -75,6 +75,7 @@ export default function PerfilPage() {
   const [guardandoTelefono, setGuardandoTelefono] = useState(false);
   const [telefonoGuardado, setTelefonoGuardado] = useState(false);
   const telefonoTocadoRef = useRef(false);
+  const [linkAgendarCopiado, setLinkAgendarCopiado] = useState(false);
 
   const [notifSoportado, setNotifSoportado] = useState(false);
   const [notifStandalone, setNotifStandalone] = useState(true);
@@ -374,6 +375,12 @@ export default function PerfilPage() {
     }
   }
 
+  async function copiarLinkAgendar() {
+    await navigator.clipboard.writeText(`${window.location.origin}/agendar`);
+    setLinkAgendarCopiado(true);
+    setTimeout(() => setLinkAgendarCopiado(false), 2500);
+  }
+
   async function guardarTelefonoTarjeta() {
     if (guardandoTelefono) return;
     setGuardandoTelefono(true);
@@ -621,6 +628,17 @@ export default function PerfilPage() {
             >
               <ExternalLink size={15} /> Ver mi tarjeta de presentación
             </a>
+
+            <button
+              onClick={copiarLinkAgendar}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#2b2118]"
+            >
+              <Link2 size={15} /> {linkAgendarCopiado ? "Link copiado ✓" : "Copiar link para agendar (Instagram)"}
+            </button>
+            <p className="mt-1.5 text-[11px] text-[#a49c8a]">
+              Pon ese link en tu bio de Instagram — deja que cualquiera se dé de alta y elija su cita directo,
+              sin que tú tengas que capturarla primero. Te aparece como pendiente de aprobar en Citas.
+            </p>
           </>
         )}
       </div>

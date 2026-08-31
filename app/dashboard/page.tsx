@@ -34,6 +34,7 @@ export default function PanelPage() {
   const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
   const [citasHoy, setCitasHoy] = useState<Cita[] | null>(null);
   const [citasVencidas, setCitasVencidas] = useState<Cita[]>([]);
+  const [citasPendientesAprobacion, setCitasPendientesAprobacion] = useState<Cita[]>([]);
   const [errorResumen, setErrorResumen] = useState<string | null>(null);
   const [errorCitas, setErrorCitas] = useState<string | null>(null);
   // Empieza en null (sin nombre) en vez de adivinar uno — mostrar un
@@ -62,6 +63,9 @@ export default function PanelPage() {
         );
         setCitasVencidas(
           citas.filter(citaVencidaSinCompletar).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
+        );
+        setCitasPendientesAprobacion(
+          citas.filter((c) => c.pendiente_aprobacion).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
         );
       })
       .catch((err) => setErrorCitas(`No se pudieron cargar las citas: ${err.message}`));
@@ -164,6 +168,22 @@ export default function PanelPage() {
               {citasVencidas.length === 1 ? "" : "s"}
             </strong>{" "}
             — ya pasaron más de 2 horas. Tócalo para ir a la más antigua.
+          </span>
+        </Link>
+      )}
+
+      {citasPendientesAprobacion.length > 0 && (
+        <Link
+          href="/dashboard/citas"
+          className="mx-4 mt-4 flex items-start gap-2.5 rounded-2xl border border-[#E8CFA0] bg-[#F7ECD9] px-4 py-3 text-[13px] text-[#B0834A]"
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <strong>
+              {citasPendientesAprobacion.length} solicitud{citasPendientesAprobacion.length === 1 ? "" : "es"} de
+              cita en línea sin aprobar
+            </strong>{" "}
+            — se agendaron solas desde el link de Instagram. Tócalo para revisarlas.
           </span>
         </Link>
       )}
