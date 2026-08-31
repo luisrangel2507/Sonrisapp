@@ -14,12 +14,6 @@ jobs:
   llamar:
     runs-on: ubuntu-latest
     steps:
-      - name: Diagnóstico temporal
-        run: |
-          echo "Longitud del secreto en GitHub: ${#SECRETO}"
-          curl -sS "https://sonrisapp-production.up.railway.app/api/cron/recordatorios"
-        env:
-          SECRETO: ${{ secrets.CRON_SECRET }}
       - name: POST /api/cron/recordatorios
         run: |
           curl -sS -f -X POST "https://sonrisapp-production.up.railway.app/api/cron/recordatorios" \
