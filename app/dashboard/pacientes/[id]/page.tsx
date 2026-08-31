@@ -11,6 +11,7 @@ import {
   FileSignature,
   FileText,
   Paperclip,
+  Pill,
   Plus,
   Save,
   Share2,
@@ -18,7 +19,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { Consentimiento, Paciente, PacienteNota } from "@/lib/types";
+import type { Consentimiento, Paciente, PacienteNota, Receta } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
@@ -121,16 +122,26 @@ export default function PacienteDetallePage() {
   const [compartiendoConsentId, setCompartiendoConsentId] = useState<number | null>(null);
   const [linkConsentCopiadoId, setLinkConsentCopiadoId] = useState<number | null>(null);
 
+  const [recetas, setRecetas] = useState<Receta[]>([]);
+  const [formRecetaAbierto, setFormRecetaAbierto] = useState(false);
+  const [diagnosticoReceta, setDiagnosticoReceta] = useState("");
+  const [medicamentosReceta, setMedicamentosReceta] = useState("");
+  const [indicacionesReceta, setIndicacionesReceta] = useState("");
+  const [creandoReceta, setCreandoReceta] = useState(false);
+  const [eliminandoRecetaId, setEliminandoRecetaId] = useState<number | null>(null);
+
   async function cargar() {
     setCargando(true);
-    const [resPaciente, resNotas, resConsent] = await Promise.all([
+    const [resPaciente, resNotas, resConsent, resRecetas] = await Promise.all([
       fetch(`/api/pacientes/${pacienteId}`),
       fetch(`/api/pacientes/${pacienteId}/notas`),
       fetch(`/api/pacientes/${pacienteId}/consentimientos`),
+      fetch(`/api/pacientes/${pacienteId}/recetas`),
     ]);
     const dataPaciente = await resPaciente.json();
     const dataNotas = await resNotas.json();
     const dataConsent = await resConsent.json();
+    const dataRecetas = await resRecetas.json();
     const p: Paciente = dataPaciente.paciente;
     setPaciente(p);
     setNombre(p.nombre);
@@ -139,6 +150,7 @@ export default function PacienteDetallePage() {
     setFechaNacimiento(p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "");
     setNotas(dataNotas.notas ?? []);
     setConsentimientos(dataConsent.consentimientos ?? []);
+    setRecetas(dataRecetas.recetas ?? []);
     setCargando(false);
   }
 
@@ -355,6 +367,48 @@ export default function PacienteDetallePage() {
     } finally {
       setCompartiendoConsentId(null);
     }
+  }
+
+  async function crearReceta() {
+    if (!medicamentosReceta.trim() || creandoReceta) return;
+    setCreandoReceta(true);
+    await fetch(`/api/pacientes/${pacienteId}/recetas`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        diagnostico: diagnosticoReceta || null,
+        medicamentos: medicamentosReceta,
+        indicaciones: indicacionesReceta || null,
+      }),
+    });
+    setDiagnosticoReceta("");
+    setMedicamentosReceta("");
+    setIndicacionesReceta("");
+    setFormRecetaAbierto(false);
+    setCreandoReceta(false);
+    const res = await fetch(`/api/pacientes/${pacienteId}/recetas`);
+    const data = await res.json();
+    setRecetas(data.recetas ?? []);
+  }
+
+  async function eliminarReceta(recetaId: number) {
+    if (eliminandoRecetaId) return;
+    // NOM-024: nada se borra de verdad — "eliminar" anula la receta con
+    // un motivo, pero se sigue viendo (marcada) en el historial.
+    const motivo = window.prompt(
+      "Motivo de la anulación (la receta no se borra, queda marcada como anulada en el historial):"
+    );
+    if (!motivo || !motivo.trim()) return;
+    setEliminandoRecetaId(recetaId);
+    await fetch(`/api/pacientes/${pacienteId}/recetas/${recetaId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
+    const res = await fetch(`/api/pacientes/${pacienteId}/recetas`);
+    const data = await res.json();
+    setRecetas(data.recetas ?? []);
+    setEliminandoRecetaId(null);
   }
 
   async function eliminarPaciente() {
@@ -734,6 +788,118 @@ export default function PacienteDetallePage() {
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
           >
             <Plus size={14} /> Nuevo consentimiento
+          </button>
+        )}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            <Pill size={13} /> Recetas
+          </div>
+          <span className="text-[11px] text-[#a49c8a]">
+            {recetas.length} receta{recetas.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <p className="mb-3 text-[11px] text-[#a49c8a]">
+          En cuanto se crea, el paciente la puede ver en su portal y le llega un aviso por WhatsApp (si tiene
+          teléfono registrado y el WhatsApp Business está configurado).
+        </p>
+
+        <div className="space-y-3">
+          {recetas.length === 0 ? (
+            <p className="text-sm text-[#8a8272]">Sin recetas todavía.</p>
+          ) : (
+            recetas.map((r) => (
+              <div
+                key={r.id}
+                className={`rounded-2xl border p-3 ${
+                  r.vigente ? "border-[#EFE9DC] bg-white" : "border-[#EFE9DC] bg-[#FBF9F5] opacity-70"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    {r.diagnostico && (
+                      <div className={`text-sm font-medium ${r.vigente ? "text-[#2b2118]" : "text-[#8a8272] line-through"}`}>
+                        {r.diagnostico}
+                      </div>
+                    )}
+                    <div className={`whitespace-pre-line text-[13px] ${r.vigente ? "text-[#2b2118]" : "text-[#a49c8a] line-through"}`}>
+                      {r.medicamentos}
+                    </div>
+                    {r.indicaciones && (
+                      <div className={`mt-1 whitespace-pre-line text-[12px] ${r.vigente ? "text-[#8a8272]" : "text-[#a49c8a] line-through"}`}>
+                        {r.indicaciones}
+                      </div>
+                    )}
+                  </div>
+                  {r.vigente && (
+                    <button
+                      onClick={() => eliminarReceta(r.id)}
+                      disabled={eliminandoRecetaId === r.id}
+                      className="shrink-0 text-[#c9a99a] disabled:opacity-50"
+                      aria-label="Anular receta"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+                <div className="mt-1.5 text-[10px] text-[#a49c8a]">
+                  {formatearFecha(r.fecha)} {r.creado_por_nombre && `· ${r.creado_por_nombre}`}
+                  {!r.vigente && r.motivo_anulacion && (
+                    <span className="text-[#B0503A]"> · Anulada por {r.anulado_por_nombre}: {r.motivo_anulacion}</span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {formRecetaAbierto ? (
+          <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            <input
+              value={diagnosticoReceta}
+              onChange={(e) => setDiagnosticoReceta(e.target.value)}
+              placeholder="Diagnóstico (opcional)"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <textarea
+              value={medicamentosReceta}
+              onChange={(e) => setMedicamentosReceta(e.target.value)}
+              placeholder={"Medicamentos — uno por línea, ej.\nAmoxicilina 500mg — cada 8 horas por 7 días"}
+              rows={3}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <textarea
+              value={indicacionesReceta}
+              onChange={(e) => setIndicacionesReceta(e.target.value)}
+              placeholder="Indicaciones generales (opcional)"
+              rows={2}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={crearReceta}
+                disabled={!medicamentosReceta.trim() || creandoReceta}
+                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {creandoReceta ? "Creando…" : "Crear receta"}
+              </button>
+              <button
+                onClick={() => setFormRecetaAbierto(false)}
+                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setFormRecetaAbierto(true)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+          >
+            <Plus size={14} /> Nueva receta
           </button>
         )}
       </div>

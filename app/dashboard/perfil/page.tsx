@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace } from "lucide-react";
+import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace, IdCard, ExternalLink } from "lucide-react";
 import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario, Passkey } from "@/lib/types";
@@ -54,6 +54,7 @@ export default function PerfilPage() {
   const [notifAbierto, setNotifAbierto] = useState(false);
   const [usuariosAbierto, setUsuariosAbierto] = useState(false);
   const [faceIdAbierto, setFaceIdAbierto] = useState(false);
+  const [tarjetaAbierto, setTarjetaAbierto] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -69,6 +70,11 @@ export default function PerfilPage() {
   // Evita que la respuesta del fetch inicial (que puede tardar) borre
   // lo que el usuario ya empezó a escribir antes de que llegara.
   const nombreTocadoRef = useRef(false);
+
+  const [telefonoTarjeta, setTelefonoTarjeta] = useState("");
+  const [guardandoTelefono, setGuardandoTelefono] = useState(false);
+  const [telefonoGuardado, setTelefonoGuardado] = useState(false);
+  const telefonoTocadoRef = useRef(false);
 
   const [notifSoportado, setNotifSoportado] = useState(false);
   const [notifStandalone, setNotifStandalone] = useState(true);
@@ -216,6 +222,7 @@ export default function PerfilPage() {
       .then((data) => {
         setFoto(data.foto ?? null);
         if (!nombreTocadoRef.current) setNombreBienvenida(data.nombre_bienvenida ?? "");
+        if (!telefonoTocadoRef.current) setTelefonoTarjeta(data.telefono ?? "");
       });
 
     cargarUsuarios();
@@ -364,6 +371,23 @@ export default function PerfilPage() {
       setTimeout(() => setNombreGuardado(false), 2000);
     } finally {
       setGuardandoNombre(false);
+    }
+  }
+
+  async function guardarTelefonoTarjeta() {
+    if (guardandoTelefono) return;
+    setGuardandoTelefono(true);
+    setTelefonoGuardado(false);
+    try {
+      await fetch("/api/perfil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefono: telefonoTarjeta.trim() || null }),
+      });
+      setTelefonoGuardado(true);
+      setTimeout(() => setTelefonoGuardado(false), 2000);
+    } finally {
+      setGuardandoTelefono(false);
     }
   }
 
@@ -545,6 +569,58 @@ export default function PerfilPage() {
             )}
             {notifPruebaMsg && <p className="mt-2 text-[12px] text-[#3F6B33]">{notifPruebaMsg}</p>}
             {notifError && <p className="mt-2 text-[12px] text-[#B0503A]">{notifError}</p>}
+          </>
+        )}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <button
+          onClick={() => setTarjetaAbierto((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+            <IdCard size={13} /> Tarjeta digital
+          </div>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-[#a49c8a] transition-transform ${tarjetaAbierto ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {tarjetaAbierto && (
+          <>
+            <p className="mb-4 mt-2 text-[12px] text-[#a49c8a]">
+              Una tarjeta de presentación que puedes compartir con cualquiera — muestra tu foto, especialidades y
+              contacto, y trae un botón para guardarte directo en los contactos del celular.
+            </p>
+
+            <div className="flex gap-2">
+              <input
+                value={telefonoTarjeta}
+                onChange={(e) => {
+                  telefonoTocadoRef.current = true;
+                  setTelefonoTarjeta(e.target.value);
+                }}
+                placeholder="Teléfono para la tarjeta (opcional)"
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+              />
+              <button
+                onClick={guardarTelefonoTarjeta}
+                disabled={guardandoTelefono}
+                className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#2b2118] px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                <Save size={14} /> {guardandoTelefono ? "…" : telefonoGuardado ? "✓" : "Guardar"}
+              </button>
+            </div>
+
+            <a
+              href="/tarjeta"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#F5E7E9] py-3 text-[14px] font-semibold text-[#803449]"
+            >
+              <ExternalLink size={15} /> Ver mi tarjeta de presentación
+            </a>
           </>
         )}
       </div>

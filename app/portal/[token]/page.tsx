@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CalendarClock, History } from "lucide-react";
+import { CalendarClock, History, Pill } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 
@@ -20,6 +20,14 @@ interface PortalPaciente {
 interface PortalCita {
   tratamiento: string;
   fecha_hora: string;
+}
+
+interface PortalReceta {
+  id: number;
+  fecha: string;
+  diagnostico: string | null;
+  medicamentos: string;
+  indicaciones: string | null;
 }
 
 function formatearFechaHora(f: string) {
@@ -43,6 +51,7 @@ export default function PortalPacientePage() {
   const [paciente, setPaciente] = useState<PortalPaciente | null>(null);
   const [proximaCita, setProximaCita] = useState<PortalCita | null>(null);
   const [historial, setHistorial] = useState<PortalCita[]>([]);
+  const [recetas, setRecetas] = useState<PortalReceta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [invalido, setInvalido] = useState(false);
 
@@ -60,6 +69,7 @@ export default function PortalPacientePage() {
         setPaciente(data.paciente);
         setProximaCita(data.proxima_cita ?? null);
         setHistorial(data.historial ?? []);
+        setRecetas(data.recetas ?? []);
         setCargando(false);
       } catch {
         setInvalido(true);
@@ -115,6 +125,28 @@ export default function PortalPacientePage() {
         </div>
 
         <LoyaltyCard paciente={paciente} />
+
+        {recetas.length > 0 && (
+          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+              <Pill size={14} /> Tus recetas
+            </div>
+            <div className="space-y-3">
+              {recetas.map((r) => (
+                <div key={r.id} className="rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                  {r.diagnostico && (
+                    <div className="text-sm font-medium text-[#2b2118]">{r.diagnostico}</div>
+                  )}
+                  <div className="whitespace-pre-line text-[13px] text-[#2b2118]">{r.medicamentos}</div>
+                  {r.indicaciones && (
+                    <div className="mt-1 whitespace-pre-line text-[12px] text-[#8a8272]">{r.indicaciones}</div>
+                  )}
+                  <div className="mt-1.5 text-[10px] text-[#a49c8a]">{formatearFecha(r.fecha)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
           <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">

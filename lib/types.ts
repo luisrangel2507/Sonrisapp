@@ -40,6 +40,19 @@ export interface PacienteNota {
   subido_en: string;
 }
 
+export interface Receta {
+  id: number;
+  fecha: string;
+  diagnostico: string | null;
+  medicamentos: string;
+  indicaciones: string | null;
+  creado_por_nombre: string | null;
+  creado_en: string;
+  vigente: boolean;
+  motivo_anulacion: string | null;
+  anulado_por_nombre: string | null;
+}
+
 export type EstadoConsentimiento = "pendiente" | "firmado";
 
 export interface Consentimiento {

@@ -347,6 +347,11 @@ CREATE TABLE IF NOT EXISTS perfil_dentista (
 -- clínica). Editable desde Perfil.
 ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS nombre_bienvenida VARCHAR(60);
 
+-- Teléfono de contacto para la tarjeta de presentación digital
+-- (/tarjeta) — separado del WhatsApp Business (WHATSAPP_PHONE_NUMBER_ID
+-- en el entorno), que es un ID de la API y no un número marcable.
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS telefono VARCHAR(30);
+
 -- Inventario de insumos del consultorio (materiales, anestésicos,
 -- guantes, etc.) — cantidad_minima define cuándo se marca "bajo stock".
 CREATE TABLE IF NOT EXISTS inventario (
@@ -454,3 +459,25 @@ CREATE TABLE IF NOT EXISTS login_intentos (
   intentos SMALLINT NOT NULL DEFAULT 0,
   bloqueado_hasta TIMESTAMPTZ
 );
+
+-- Recetas médicas. Misma trazabilidad NOM-024 que paciente_notas:
+-- "eliminar" no borra, marca vigente=false con un motivo. No hay
+-- edición — si algo está mal en una receta ya entregada, se anula y se
+-- crea una nueva (no se corrige en el mismo documento). El contenido
+-- clínico se cifra en reposo igual que el resto del expediente.
+CREATE TABLE IF NOT EXISTS recetas (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  diagnostico TEXT,
+  medicamentos TEXT NOT NULL,
+  indicaciones TEXT,
+  creado_por INTEGER,
+  creado_por_nombre VARCHAR(160),
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+  vigente BOOLEAN NOT NULL DEFAULT true,
+  motivo_anulacion TEXT,
+  anulado_por_nombre VARCHAR(160),
+  anulado_en TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_recetas_paciente ON recetas(paciente_id);

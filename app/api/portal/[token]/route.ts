@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { descifrar } from "@/lib/crypto";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra con
 // el link que le comparte la clínica — mismo historial_token que usa
@@ -45,6 +46,25 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       [paciente.id]
     );
 
+    const { rows: recetasRows } = await query<{
+      id: number;
+      fecha: string;
+      diagnostico: string | null;
+      medicamentos: string;
+      indicaciones: string | null;
+    }>(
+      `SELECT id, fecha, diagnostico, medicamentos, indicaciones
+       FROM recetas WHERE paciente_id = $1 AND vigente = true
+       ORDER BY fecha DESC LIMIT 10`,
+      [paciente.id]
+    );
+    const recetas = recetasRows.map((r) => ({
+      ...r,
+      diagnostico: descifrar(r.diagnostico),
+      medicamentos: descifrar(r.medicamentos) ?? "",
+      indicaciones: descifrar(r.indicaciones),
+    }));
+
     return NextResponse.json({
       paciente: {
         nombre: paciente.nombre,
@@ -58,6 +78,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       },
       proxima_cita: proximaCita[0] ?? null,
       historial,
+      recetas,
     });
   } catch (err) {
     return errorJson(err);
