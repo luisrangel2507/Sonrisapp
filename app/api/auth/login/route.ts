@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { DOCTORA } from "@/lib/panel-data";
+import { minutosDeBloqueo, registrarIntentoExitoso, registrarIntentoFallido } from "@/lib/login-intentos";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -22,6 +23,17 @@ export async function POST(req: NextRequest) {
   // El usuario no es sensible a mayúsculas/espacios (evita fallos por
   // autocapitalización del teclado en celular); la contraseña sí.
   const usuarioNorm = usuario.trim().toLowerCase();
+
+  // Bloqueo por fuerza bruta: si ya se agotaron los intentos, ni
+  // siquiera se verifica la contraseña (evita gastar cómputo y, sobre
+  // todo, evita que reintentar alargue el bloqueo).
+  const bloqueoRestante = await minutosDeBloqueo(usuarioNorm);
+  if (bloqueoRestante != null) {
+    return NextResponse.json(
+      { error: `Demasiados intentos fallidos. Espera ${bloqueoRestante} minuto${bloqueoRestante === 1 ? "" : "s"} e inténtalo de nuevo.` },
+      { status: 429 }
+    );
+  }
 
   let identidad: IdentidadSesion | null = null;
 
@@ -47,8 +59,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (!identidad) {
+    await registrarIntentoFallido(usuarioNorm);
     return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
   }
+
+  await registrarIntentoExitoso(usuarioNorm);
 
   const token = await crearSesionToken(identidad);
   const res = NextResponse.json({ ok: true });

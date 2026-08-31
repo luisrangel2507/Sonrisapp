@@ -444,3 +444,13 @@ CREATE INDEX IF NOT EXISTS idx_paciente_notas_paciente ON paciente_notas(pacient
 CREATE INDEX IF NOT EXISTS idx_pagos_cita ON pagos(cita_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_paciente ON pagos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historia_clinica_paciente ON historia_clinica(paciente_id);
+
+-- Límite de intentos de login (protección contra fuerza bruta): 5
+-- intentos fallidos por usuario bloquean ese usuario 15 minutos. Se
+-- guarda en la base (no en memoria) para que sobreviva un reinicio del
+-- servidor y funcione igual si algún día corren varias instancias.
+CREATE TABLE IF NOT EXISTS login_intentos (
+  usuario VARCHAR(160) PRIMARY KEY,
+  intentos SMALLINT NOT NULL DEFAULT 0,
+  bloqueado_hasta TIMESTAMPTZ
+);
