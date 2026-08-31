@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enviarRecordatoriosHoraAntes } from "@/lib/cron/recordatorios";
 
+// DIAGNÓSTICO TEMPORAL — quitar después de resolver el 401 persistente
+// del cron. No expone el valor real, solo si existe y su longitud.
+export async function GET() {
+  const valor = process.env.CRON_SECRET ?? null;
+  return NextResponse.json({
+    tieneSecret: valor != null,
+    longitud: valor?.length ?? 0,
+    longitudSinEspacios: valor?.trim().length ?? 0,
+  });
+}
+
 // Disparado cada 10-15 minutos por el scheduler de Railway (o un cron
 // externo) — manda el recordatorio de "tu cita es en 1 hora".
 // Protegido con CRON_SECRET para que no cualquiera pueda invocarlo.
