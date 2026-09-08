@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Search, ChevronRight } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 
 // El nombre llega como texto libre ("Nombre(s) Apellidos") — se usa la
@@ -36,16 +36,6 @@ export default function PacientesPage() {
   const [formAbierto, setFormAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [nombre, setNombre] = useState("");
-  const [letrasAbiertas, setLetrasAbiertas] = useState<Set<string>>(new Set());
-
-  function alternarLetra(letra: string) {
-    setLetrasAbiertas((prev) => {
-      const siguiente = new Set(prev);
-      if (siguiente.has(letra)) siguiente.delete(letra);
-      else siguiente.add(letra);
-      return siguiente;
-    });
-  }
 
   async function cargar(q: string) {
     const res = await fetch(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -205,36 +195,24 @@ export default function PacientesPage() {
             ))}
           </div>
         ) : (
-          <div className="space-y-2">
-            {grupos.map(([letra, pacientesDeLetra]) => {
-              const abierta = letrasAbiertas.has(letra);
-              return (
-                <div key={letra} className="rounded-2xl border border-[#EFE9DC] bg-white/70">
-                  <button
-                    onClick={() => alternarLetra(letra)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F5E7E9] text-[13px] font-bold text-[#803449]">
-                      {letra}
-                    </span>
-                    <span className="flex-1 text-sm font-semibold text-[#2b2118]">
-                      {pacientesDeLetra.length} paciente{pacientesDeLetra.length === 1 ? "" : "s"}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={`shrink-0 text-[#a49c8a] transition-transform ${abierta ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {abierta && (
-                    <div className="space-y-2 border-t border-[#EFE9DC] p-2 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-                      {pacientesDeLetra.map((p, i) => (
-                        <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[i % PALETA_AVATAR.length]} />
-                      ))}
-                    </div>
-                  )}
+          <div className="space-y-4">
+            {grupos.map(([letra, pacientesDeLetra]) => (
+              <div key={letra}>
+                <div className="sticky top-0 z-10 -mx-4 flex items-center gap-2 bg-[#FBF9F5]/95 px-4 py-1.5 backdrop-blur">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F5E7E9] text-[11px] font-bold text-[#803449]">
+                    {letra}
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#a49c8a]">
+                    {pacientesDeLetra.length} paciente{pacientesDeLetra.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-              );
-            })}
+                <div className="mt-2 space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+                  {pacientesDeLetra.map((p, i) => (
+                    <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[i % PALETA_AVATAR.length]} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
