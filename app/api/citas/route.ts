@@ -88,6 +88,10 @@ export async function PATCH(req: NextRequest) {
       if (fecha_hora !== undefined) {
         asignaciones.push(`fecha_hora = $${idx++}`);
         valores.push(fecha_hora);
+        // Si ya se había mandado el "cita en 1 hora" para la fecha vieja,
+        // reactivarlo — si no, posponer una cita después de ese aviso
+        // dejaría la nueva fecha sin su propio recordatorio.
+        asignaciones.push(`recordatorio_1h_enviado = false`);
       }
       if (monto !== undefined) {
         asignaciones.push(`monto = $${idx++}`);

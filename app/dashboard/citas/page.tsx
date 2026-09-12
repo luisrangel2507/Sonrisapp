@@ -16,6 +16,7 @@ import {
   FileDown,
   Share2,
   Lock,
+  CalendarClock,
 } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
@@ -307,6 +308,13 @@ function CitaTimelineItem({
   onCompletar,
   onDeshacerPago,
   onAprobar,
+  posponiendo,
+  fechaPosponer,
+  setFechaPosponer,
+  guardandoPosponer,
+  onAbrirPosponer,
+  onCerrarPosponer,
+  onGuardarPosponer,
 }: {
   cita: Cita;
   esUltimo: boolean;
@@ -336,6 +344,13 @@ function CitaTimelineItem({
   onCompletar: () => void;
   onDeshacerPago: () => void;
   onAprobar: () => void;
+  posponiendo: boolean;
+  fechaPosponer: string;
+  setFechaPosponer: (v: string) => void;
+  guardandoPosponer: boolean;
+  onAbrirPosponer: () => void;
+  onCerrarPosponer: () => void;
+  onGuardarPosponer: () => void;
 }) {
   const restante = cita.monto != null ? Math.max(0, cita.monto - cita.pagado) : null;
   const progresoPago = cita.monto ? Math.min(100, (cita.pagado / cita.monto) * 100) : 0;
@@ -472,6 +487,14 @@ function CitaTimelineItem({
               <DollarSign size={12} /> Registrar pago
             </button>
           )}
+          {cita.estado === "agendada" && (
+            <button
+              onClick={() => (posponiendo ? onCerrarPosponer() : onAbrirPosponer())}
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#2b2118]"
+            >
+              <CalendarClock size={12} /> Posponer
+            </button>
+          )}
           {!confirmada && (
             <button
               onClick={() => (editando ? onCerrarEdicion() : onAbrirEdicion())}
@@ -581,6 +604,38 @@ function CitaTimelineItem({
           </div>
         )}
 
+        {posponiendo && (
+          <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            <p className="text-[12px] text-[#8a8272]">
+              Se mueve a la nueva fecha sin contar como cancelada — el paciente conserva su lugar, folio e historial.
+            </p>
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">Nueva fecha</label>
+              <input
+                type="datetime-local"
+                value={fechaPosponer}
+                onChange={(e) => setFechaPosponer(e.target.value)}
+                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={onGuardarPosponer}
+                disabled={!fechaPosponer || guardandoPosponer}
+                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {guardandoPosponer ? "Guardando…" : "Posponer cita"}
+              </button>
+              <button
+                onClick={onCerrarPosponer}
+                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
+
         {pagando && (
           <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
             {completarTrasPago && (
@@ -666,6 +721,10 @@ export default function CitasPage() {
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   const [deshaciendoPagoId, setDeshaciendoPagoId] = useState<number | null>(null);
+
+  const [posponiendoId, setPosponiendoId] = useState<number | null>(null);
+  const [fechaPosponer, setFechaPosponer] = useState("");
+  const [guardandoPosponer, setGuardandoPosponer] = useState(false);
 
   async function cargar() {
     try {
@@ -788,10 +847,31 @@ export default function CitasPage() {
 
   function abrirEdicion(c: Cita) {
     setPagoAbiertoId(null);
+    setPosponiendoId(null);
     setEditandoId(c.id);
     setEditTratamiento(c.tratamiento);
     setEditFechaHora(aDatetimeLocal(c.fecha_hora));
     setEditMonto(c.monto != null ? String(c.monto) : "");
+  }
+
+  function abrirPosponer(c: Cita) {
+    setEditandoId(null);
+    setPagoAbiertoId(null);
+    setPosponiendoId(c.id);
+    setFechaPosponer(aDatetimeLocal(c.fecha_hora));
+  }
+
+  async function guardarPosponer() {
+    if (!posponiendoId || !fechaPosponer || guardandoPosponer) return;
+    setGuardandoPosponer(true);
+    await fetch("/api/citas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: posponiendoId, fecha_hora: new Date(fechaPosponer).toISOString() }),
+    });
+    setPosponiendoId(null);
+    setGuardandoPosponer(false);
+    await cargar();
   }
 
   async function guardarEdicion() {
@@ -918,6 +998,7 @@ export default function CitasPage() {
       guardandoPago,
       onAbrirPago: () => {
         setEditandoId(null);
+        setPosponiendoId(null);
         setPagoAbiertoId(c.id);
         setCompletarTrasPago(false);
         const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
@@ -935,6 +1016,7 @@ export default function CitasPage() {
         const restante = c.monto != null ? Math.max(0, c.monto - c.pagado) : null;
         if (restante && restante > 0) {
           setEditandoId(null);
+          setPosponiendoId(null);
           setPagoAbiertoId(c.id);
           setCompletarTrasPago(true);
           setMontoPago(String(restante));
@@ -943,6 +1025,13 @@ export default function CitasPage() {
         }
       },
       onDeshacerPago: () => deshacerPago(c),
+      posponiendo: posponiendoId === c.id,
+      fechaPosponer,
+      setFechaPosponer,
+      guardandoPosponer,
+      onAbrirPosponer: () => abrirPosponer(c),
+      onCerrarPosponer: () => setPosponiendoId(null),
+      onGuardarPosponer: guardarPosponer,
     };
   }
 
