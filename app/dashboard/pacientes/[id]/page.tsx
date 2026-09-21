@@ -625,141 +625,6 @@ export default function PacienteDetallePage() {
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-            Estudios de laboratorio
-          </div>
-          <span className="text-[11px] text-[#a49c8a]">
-            {(() => {
-              const n = notas.filter((x) => x.vigente).length;
-              return `${n} entrada${n === 1 ? "" : "s"}`;
-            })()}
-          </span>
-        </div>
-
-        <div className="relative">
-          {notas.length === 0 ? (
-            <p className="text-sm text-[#8a8272]">Sin entradas todavía.</p>
-          ) : (
-            notas.map((n, i) => (
-              <div key={n.id} className="relative pb-5 pl-6 last:pb-0">
-                {i < notas.length - 1 && (
-                  <span className="absolute left-[5px] top-3 h-full w-px bg-[#EFE9DC]" />
-                )}
-                <span
-                  className="absolute left-0 top-1 h-[11px] w-[11px] rounded-full border-2 border-white shadow-sm"
-                  style={{ backgroundColor: n.vigente ? "#803449" : "#c9a99a" }}
-                />
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className={`text-sm font-medium ${n.vigente ? "text-[#2b2118]" : "text-[#a49c8a] line-through"}`}>
-                      {n.tipo}
-                    </span>
-                    <span className="ml-2 text-[11px] text-[#a49c8a]">{formatearFecha(n.fecha)}</span>
-                  </div>
-                  {n.vigente && (
-                    <button
-                      onClick={() => eliminarNota(n.id)}
-                      disabled={eliminandoNotaId === n.id}
-                      className="shrink-0 text-[#c9a99a] disabled:opacity-50"
-                      aria-label="Eliminar entrada"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-                {(n.creado_por_nombre || n.archivo || !n.vigente) && (
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[#a49c8a]">
-                    {n.creado_por_nombre && <span>Registrado por {n.creado_por_nombre}</span>}
-                    {n.archivo && <span>Subido el {formatearFechaHora(n.subido_en)}</span>}
-                    {!n.vigente && (
-                      <span className="text-[#b23a5a]">
-                        Anulado por {n.anulado_por_nombre}: {n.motivo_anulacion}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {(n.tratamiento || n.duracion) && (
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {n.tratamiento && (
-                      <span className="rounded-full bg-[#F5E7E9] px-2 py-0.5 text-[11px] font-medium text-[#803449]">
-                        {n.tratamiento}
-                      </span>
-                    )}
-                    {n.duracion && (
-                      <span className="rounded-full bg-[#F5F1EA] px-2 py-0.5 text-[11px] font-medium text-[#8a8272]">
-                        {n.duracion}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {n.nota && (
-                  <p className={`mt-0.5 text-[13px] text-[#8a8272] ${n.vigente ? "" : "line-through opacity-70"}`}>
-                    {n.nota}
-                  </p>
-                )}
-                {n.archivo && n.archivo_tipo?.startsWith("image/") ? (
-                  <a href={n.archivo} target="_blank" rel="noreferrer" className="mt-2 inline-block">
-                    <img
-                      src={n.archivo}
-                      alt={n.archivo_nombre ?? "Radiografía"}
-                      className="h-24 w-24 rounded-xl border border-[#EFE9DC] object-cover"
-                    />
-                  </a>
-                ) : n.archivo ? (
-                  <a
-                    href={n.archivo}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 flex w-fit items-center gap-1.5 rounded-xl border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
-                  >
-                    <FileText size={13} /> {n.archivo_nombre ?? "Documento"}
-                  </a>
-                ) : null}
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-          {archivoNota ? (
-            <div className="flex items-center gap-2 rounded-xl border border-[#EFE9DC] bg-[#FBF8F2] px-3 py-2">
-              {archivoNotaTipo?.startsWith("image/") ? (
-                <img src={archivoNota} alt="" className="h-10 w-10 rounded-lg object-cover" />
-              ) : (
-                <FileText size={16} className="text-[#8a8272]" />
-              )}
-              <span className="flex-1 truncate text-[12px] text-[#2b2118]">{archivoNotaNombre}</span>
-              <button onClick={quitarArchivoNota} className="text-[#a49c8a]" aria-label="Quitar archivo">
-                <X size={15} />
-              </button>
-            </div>
-          ) : (
-            <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[12px] font-medium text-[#803449]">
-              <Paperclip size={13} />
-              {procesandoArchivo ? "Procesando…" : "Adjuntar documentos"}
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={elegirArchivoNota}
-                disabled={procesandoArchivo}
-                className="hidden"
-              />
-            </label>
-          )}
-          {errorArchivo && <p className="text-[11px] text-[#B0503A]">{errorArchivo}</p>}
-
-          <button
-            onClick={agregarNota}
-            disabled={!archivoNota || guardandoNota || procesandoArchivo}
-            className="w-full rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-          >
-            {guardandoNota ? "Guardando…" : "Guardar"}
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
             <FileSignature size={13} /> Consentimientos
           </div>
@@ -919,6 +784,8 @@ export default function PacienteDetallePage() {
           </button>
         )}
       </div>
+
+      <Odontograma paciente={paciente} />
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
@@ -1134,6 +1001,141 @@ export default function PacienteDetallePage() {
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            Estudios de laboratorio
+          </div>
+          <span className="text-[11px] text-[#a49c8a]">
+            {(() => {
+              const n = notas.filter((x) => x.vigente).length;
+              return `${n} entrada${n === 1 ? "" : "s"}`;
+            })()}
+          </span>
+        </div>
+
+        <div className="relative">
+          {notas.length === 0 ? (
+            <p className="text-sm text-[#8a8272]">Sin entradas todavía.</p>
+          ) : (
+            notas.map((n, i) => (
+              <div key={n.id} className="relative pb-5 pl-6 last:pb-0">
+                {i < notas.length - 1 && (
+                  <span className="absolute left-[5px] top-3 h-full w-px bg-[#EFE9DC]" />
+                )}
+                <span
+                  className="absolute left-0 top-1 h-[11px] w-[11px] rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: n.vigente ? "#803449" : "#c9a99a" }}
+                />
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className={`text-sm font-medium ${n.vigente ? "text-[#2b2118]" : "text-[#a49c8a] line-through"}`}>
+                      {n.tipo}
+                    </span>
+                    <span className="ml-2 text-[11px] text-[#a49c8a]">{formatearFecha(n.fecha)}</span>
+                  </div>
+                  {n.vigente && (
+                    <button
+                      onClick={() => eliminarNota(n.id)}
+                      disabled={eliminandoNotaId === n.id}
+                      className="shrink-0 text-[#c9a99a] disabled:opacity-50"
+                      aria-label="Eliminar entrada"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+                {(n.creado_por_nombre || n.archivo || !n.vigente) && (
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[#a49c8a]">
+                    {n.creado_por_nombre && <span>Registrado por {n.creado_por_nombre}</span>}
+                    {n.archivo && <span>Subido el {formatearFechaHora(n.subido_en)}</span>}
+                    {!n.vigente && (
+                      <span className="text-[#b23a5a]">
+                        Anulado por {n.anulado_por_nombre}: {n.motivo_anulacion}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {(n.tratamiento || n.duracion) && (
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {n.tratamiento && (
+                      <span className="rounded-full bg-[#F5E7E9] px-2 py-0.5 text-[11px] font-medium text-[#803449]">
+                        {n.tratamiento}
+                      </span>
+                    )}
+                    {n.duracion && (
+                      <span className="rounded-full bg-[#F5F1EA] px-2 py-0.5 text-[11px] font-medium text-[#8a8272]">
+                        {n.duracion}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {n.nota && (
+                  <p className={`mt-0.5 text-[13px] text-[#8a8272] ${n.vigente ? "" : "line-through opacity-70"}`}>
+                    {n.nota}
+                  </p>
+                )}
+                {n.archivo && n.archivo_tipo?.startsWith("image/") ? (
+                  <a href={n.archivo} target="_blank" rel="noreferrer" className="mt-2 inline-block">
+                    <img
+                      src={n.archivo}
+                      alt={n.archivo_nombre ?? "Radiografía"}
+                      className="h-24 w-24 rounded-xl border border-[#EFE9DC] object-cover"
+                    />
+                  </a>
+                ) : n.archivo ? (
+                  <a
+                    href={n.archivo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex w-fit items-center gap-1.5 rounded-xl border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+                  >
+                    <FileText size={13} /> {n.archivo_nombre ?? "Documento"}
+                  </a>
+                ) : null}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+          {archivoNota ? (
+            <div className="flex items-center gap-2 rounded-xl border border-[#EFE9DC] bg-[#FBF8F2] px-3 py-2">
+              {archivoNotaTipo?.startsWith("image/") ? (
+                <img src={archivoNota} alt="" className="h-10 w-10 rounded-lg object-cover" />
+              ) : (
+                <FileText size={16} className="text-[#8a8272]" />
+              )}
+              <span className="flex-1 truncate text-[12px] text-[#2b2118]">{archivoNotaNombre}</span>
+              <button onClick={quitarArchivoNota} className="text-[#a49c8a]" aria-label="Quitar archivo">
+                <X size={15} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[12px] font-medium text-[#803449]">
+              <Paperclip size={13} />
+              {procesandoArchivo ? "Procesando…" : "Adjuntar documentos"}
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={elegirArchivoNota}
+                disabled={procesandoArchivo}
+                className="hidden"
+              />
+            </label>
+          )}
+          {errorArchivo && <p className="text-[11px] text-[#B0503A]">{errorArchivo}</p>}
+
+          <button
+            onClick={agregarNota}
+            disabled={!archivoNota || guardandoNota || procesandoArchivo}
+            className="w-full rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+          >
+            {guardandoNota ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
             <Pill size={13} /> Recetas
           </div>
@@ -1260,8 +1262,6 @@ export default function PacienteDetallePage() {
           </button>
         )}
       </div>
-
-      <Odontograma paciente={paciente} />
 
       <LoyaltyCard paciente={paciente} />
 
