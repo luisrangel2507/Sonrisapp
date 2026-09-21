@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { enviarWhatsApp, mensajeMetaAlcanzada, mensajePostConsulta } from "@/lib/whatsapp";
+import { enviarWhatsApp, mensajePostConsulta } from "@/lib/whatsapp";
 import { errorJson } from "@/lib/api-error";
-
-const PUNTOS_POR_VISITA = 50;
 
 const CITAS_SELECT = `
   SELECT c.id, c.paciente_id, p.nombre AS paciente_nombre, c.tratamiento,
@@ -152,19 +150,19 @@ export async function PATCH(req: NextRequest) {
 
     await query(`UPDATE citas SET estado = 'completada' WHERE id = $1`, [id]);
 
+    // Los puntos de la tarjeta de lealtad ya no se dan por visita —
+    // solo por referidos (ver POST /api/pacientes/[id]/referido). Esta
+    // actualización solo lleva la cuenta de visitas totales.
     const { rows: pacienteRows } = await query<{
       id: number;
       nombre: string;
       telefono: string | null;
-      puntos: number;
-      meta_premio: number;
-      premio_actual: string | null;
     }>(
       `UPDATE pacientes
-       SET puntos = puntos + $2, visitas_totales = visitas_totales + 1
+       SET visitas_totales = visitas_totales + 1
        WHERE id = $1
-       RETURNING id, nombre, telefono, puntos, meta_premio, premio_actual`,
-      [cita.paciente_id, PUNTOS_POR_VISITA]
+       RETURNING id, nombre, telefono`,
+      [cita.paciente_id]
     );
 
     const paciente = pacienteRows[0];
@@ -180,17 +178,6 @@ export async function PATCH(req: NextRequest) {
         paciente.telefono,
         mensajePostConsulta(paciente.nombre, cita.tratamiento, saldoPendiente)
       );
-    }
-
-    const yaAlcanzoLaMeta = paciente.puntos - PUNTOS_POR_VISITA < paciente.meta_premio;
-    if (yaAlcanzoLaMeta && paciente.puntos >= paciente.meta_premio) {
-      await query(`UPDATE pacientes SET ultimo_aviso_meta_en = now() WHERE id = $1`, [paciente.id]);
-      if (paciente.telefono) {
-        await enviarWhatsApp(
-          paciente.telefono,
-          mensajeMetaAlcanzada(paciente.nombre, paciente.premio_actual ?? "tu recompensa")
-        );
-      }
     }
 
     const { rows: citaActualizada } = await query(`${CITAS_SELECT} WHERE c.id = $1`, [id]);

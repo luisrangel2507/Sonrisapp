@@ -1,4 +1,7 @@
-import { CreditCard, Gift, Cake } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { CreditCard, Gift, Cake, Plus } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 import { proximoCumpleanos } from "@/lib/fechas";
 
@@ -7,7 +10,33 @@ type PacienteLealtad = Pick<
   "nombre" | "puntos" | "meta_premio" | "premio_actual" | "fecha_nacimiento" | "creado_en" | "folio" | "visitas_totales"
 >;
 
-export function LoyaltyCard({ paciente }: { paciente: PacienteLealtad }) {
+export function LoyaltyCard({
+  paciente,
+  onRegistrarReferido,
+}: {
+  paciente: PacienteLealtad;
+  // Solo se pasa desde la ficha del paciente en el dashboard — en el
+  // portal público del paciente (/portal/[token]) se omite a propósito,
+  // para que nadie con el link pueda sumarse puntos solo.
+  onRegistrarReferido?: (puntos: number) => Promise<void>;
+}) {
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [puntosReferido, setPuntosReferido] = useState("20");
+  const [guardando, setGuardando] = useState(false);
+
+  async function registrar() {
+    const puntos = Number(puntosReferido);
+    if (!Number.isFinite(puntos) || puntos <= 0 || guardando || !onRegistrarReferido) return;
+    setGuardando(true);
+    try {
+      await onRegistrarReferido(puntos);
+      setFormAbierto(false);
+      setPuntosReferido("20");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   const progreso = Math.min(100, Math.round((paciente.puntos / (paciente.meta_premio || 1)) * 100));
   const cumple = proximoCumpleanos(paciente.fecha_nacimiento);
   const desde = new Date(paciente.creado_en).toLocaleDateString("es-MX", { month: "short", year: "numeric" });
@@ -67,10 +96,46 @@ export function LoyaltyCard({ paciente }: { paciente: PacienteLealtad }) {
         <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Cómo funciona</div>
         <ul className="space-y-2 text-[13px] text-[#8a8272]">
           <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> Se genera sola al dar de alta al paciente.</li>
-          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> +50 pts por visita, +20 pts por referido.</li>
+          <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> Gana puntos cada vez que refiere a alguien nuevo.</li>
           <li className="flex gap-2"><Gift size={14} className="mt-0.5 shrink-0 text-[#803449]" /> Al llegar a la meta, el bot le avisa por WhatsApp.</li>
         </ul>
         <div className="mt-4 text-[11px] text-[#a49c8a]">{paciente.visitas_totales} visitas registradas en total.</div>
+
+        {onRegistrarReferido &&
+          (formAbierto ? (
+            <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+              <label className="block text-[11px] font-medium text-[#a49c8a]">Puntos a sumar</label>
+              <input
+                type="number"
+                min="1"
+                value={puntosReferido}
+                onChange={(e) => setPuntosReferido(e.target.value)}
+                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={registrar}
+                  disabled={!Number(puntosReferido) || guardando}
+                  className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                >
+                  {guardando ? "Guardando…" : "Sumar puntos"}
+                </button>
+                <button
+                  onClick={() => setFormAbierto(false)}
+                  className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setFormAbierto(true)}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449]"
+            >
+              <Plus size={14} /> Registrar referido
+            </button>
+          ))}
       </div>
     </div>
   );

@@ -176,6 +176,15 @@ export default function PacienteDetallePage() {
     setCargando(false);
   }
 
+  async function registrarReferido(puntos: number) {
+    await fetch(`/api/pacientes/${pacienteId}/referido`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puntos }),
+    });
+    await cargar();
+  }
+
   useEffect(() => {
     if (Number.isInteger(pacienteId)) cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1263,7 +1272,7 @@ export default function PacienteDetallePage() {
         )}
       </div>
 
-      <LoyaltyCard paciente={paciente} />
+      <LoyaltyCard paciente={paciente} onRegistrarReferido={registrarReferido} />
 
       <button
         onClick={eliminarPaciente}

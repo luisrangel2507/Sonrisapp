@@ -34,8 +34,8 @@ Ver `.env.example`:
 
 ## Reglas de puntos (tarjeta de lealtad)
 
-- +50 pts por visita completada (se aplica automáticamente al marcar una cita como `completada` vía `PATCH /api/citas`).
-- +20 pts por referido (a registrar manualmente por ahora).
+- Los puntos solo se dan por referidos, no por visitas — desde la ficha del paciente (botón "Registrar referido" en la tarjeta de lealtad) vía `POST /api/pacientes/[id]/referido`, con la cantidad de puntos que se decida en el momento (por defecto sugiere 20).
+- Completar una cita (`PATCH /api/citas`) ya no suma puntos, solo incrementa `visitas_totales`.
 - Al llegar a `meta_premio` (500 pts por defecto), se envía un WhatsApp automático avisando el premio desbloqueado.
 
 ## Cron diario
