@@ -124,6 +124,7 @@ export default function PacienteDetallePage() {
   const [tituloConsent, setTituloConsent] = useState("");
   const [contenidoConsent, setContenidoConsent] = useState("");
   const [creandoConsent, setCreandoConsent] = useState(false);
+  const [tipoConsentAbierto, setTipoConsentAbierto] = useState(false);
   const [generandoConsentExpediente, setGenerandoConsentExpediente] = useState(false);
   const [eliminandoConsentId, setEliminandoConsentId] = useState<number | null>(null);
   const [compartiendoConsentId, setCompartiendoConsentId] = useState<number | null>(null);
@@ -346,14 +347,19 @@ export default function PacienteDetallePage() {
     setConsentimientos(data.consentimientos ?? []);
   }
 
-  async function generarConsentimientoExpediente() {
+  async function generarConsentimientoExpediente(tipo: "expediente" | "ortodoncia") {
     if (generandoConsentExpediente) return;
     setGenerandoConsentExpediente(true);
-    await fetch(`/api/pacientes/${pacienteId}/consentimientos/expediente-electronico`, { method: "POST" });
+    await fetch(`/api/pacientes/${pacienteId}/consentimientos/expediente-electronico`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo }),
+    });
     const res = await fetch(`/api/pacientes/${pacienteId}/consentimientos`);
     const data = await res.json();
     setConsentimientos(data.consentimientos ?? []);
     setGenerandoConsentExpediente(false);
+    setTipoConsentAbierto(false);
   }
 
   async function eliminarConsentimiento(id: number) {
@@ -834,16 +840,41 @@ export default function PacienteDetallePage() {
           )}
         </div>
 
-        <button
-          onClick={generarConsentimientoExpediente}
-          disabled={generandoConsentExpediente}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449] disabled:opacity-50"
-        >
-          <Sparkles size={14} />{" "}
-          {generandoConsentExpediente
-            ? "Generando…"
-            : "Generar consentimiento de expediente electrónico"}
-        </button>
+        {tipoConsentAbierto ? (
+          <div className="mt-4 space-y-2 rounded-2xl border border-[#E3C3C9] bg-[#F5E7E9] p-3">
+            <p className="text-[12px] font-medium text-[#803449]">¿Qué tipo de consentimiento quieres generar?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => generarConsentimientoExpediente("expediente")}
+                disabled={generandoConsentExpediente}
+                className="flex-1 rounded-full bg-[#803449] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {generandoConsentExpediente ? "Generando…" : "General (expediente clínico)"}
+              </button>
+              <button
+                onClick={() => generarConsentimientoExpediente("ortodoncia")}
+                disabled={generandoConsentExpediente}
+                className="flex-1 rounded-full border border-[#803449] py-2 text-[13px] font-semibold text-[#803449] disabled:opacity-50"
+              >
+                {generandoConsentExpediente ? "Generando…" : "Ortodoncia"}
+              </button>
+            </div>
+            <button
+              onClick={() => setTipoConsentAbierto(false)}
+              disabled={generandoConsentExpediente}
+              className="w-full text-center text-[12px] font-medium text-[#803449]/70 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setTipoConsentAbierto(true)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449]"
+          >
+            <Sparkles size={14} /> Generar consentimiento
+          </button>
+        )}
 
         {formConsentAbierto ? (
           <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">

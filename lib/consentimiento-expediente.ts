@@ -41,3 +41,32 @@ Firmo de conformidad el día de hoy, ${hoy}.`;
 
   return { titulo, contenido };
 }
+
+// Consentimiento específico para tratamiento de ortodoncia — el texto
+// definitivo lo da la doctora (riesgos, alcance del tratamiento, plan
+// de pagos, etc.); mientras tanto se autollena con un borrador
+// marcado como pendiente para que no se comparta por accidente sin
+// revisar. En cuanto la doctora entregue el texto final, se reemplaza
+// aquí (mismo patrón que generarConsentimientoExpediente arriba).
+export function generarConsentimientoOrtodoncia(paciente: {
+  nombre: string;
+  folio: string | null;
+  fecha_nacimiento: string | null;
+}) {
+  const hoy = formatearFecha(new Date());
+  const fechaNacimiento = paciente.fecha_nacimiento
+    ? formatearFecha(new Date(paciente.fecha_nacimiento))
+    : "no registrada";
+
+  const titulo = "Consentimiento informado para tratamiento de ortodoncia";
+
+  const contenido = `[BORRADOR PENDIENTE DE REVISIÓN — sustituir por el texto definitivo antes de compartir con el paciente]
+
+Yo, ${paciente.nombre}, identificado(a) con folio ${paciente.folio ?? "—"} y fecha de nacimiento ${fechaNacimiento}, otorgo mi consentimiento informado a ${NOMBRE_CLINICA}, a cargo de ${DOCTORA.nombre} (cédula profesional ${DOCTORA.cedula}), ubicada en ${CLINICA.direccion}, para iniciar mi tratamiento de ortodoncia.
+
+Este documento debe describir, al menos: el diagnóstico y objetivo del tratamiento, la duración estimada, los riesgos y molestias esperables (dolor, ulceraciones, descalcificación, reabsorción radicular, etc.), los cuidados e higiene que debo seguir durante el tratamiento, las consecuencias de no usar los aparatos o no asistir a citas, el costo y plan de pagos, y mi derecho a preguntar y a revocar este consentimiento.
+
+Firmo de conformidad el día de hoy, ${hoy}.`;
+
+  return { titulo, contenido };
+}

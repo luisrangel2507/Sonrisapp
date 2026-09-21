@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { generarHistorialToken } from "@/lib/historial-token";
-import { generarConsentimientoExpediente } from "@/lib/consentimiento-expediente";
+import { generarConsentimientoExpediente, generarConsentimientoOrtodoncia } from "@/lib/consentimiento-expediente";
 
-// Genera automáticamente el consentimiento de expediente clínico
-// electrónico, ya redactado y con los datos del paciente llenados —
-// la doctora no escribe nada, solo lo comparte para firma.
+// Genera automáticamente un consentimiento ya redactado y con los
+// datos del paciente llenados, según el tipo elegido — la doctora no
+// escribe nada, solo lo comparte para firma.
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
@@ -14,6 +14,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (!Number.isInteger(pacienteId)) {
       return NextResponse.json({ error: "id inválido" }, { status: 400 });
     }
+
+    const body = await req.json().catch(() => ({}));
+    const tipo = body?.tipo === "ortodoncia" ? "ortodoncia" : "expediente";
 
     const { rows: pacienteRows } = await query<{
       nombre: string;
@@ -25,7 +28,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
 
-    const { titulo, contenido } = generarConsentimientoExpediente(pacienteRows[0]);
+    const { titulo, contenido } =
+      tipo === "ortodoncia"
+        ? generarConsentimientoOrtodoncia(pacienteRows[0])
+        : generarConsentimientoExpediente(pacienteRows[0]);
     const token = generarHistorialToken();
 
     const { rows } = await query(
