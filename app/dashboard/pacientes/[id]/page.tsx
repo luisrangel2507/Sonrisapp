@@ -13,16 +13,23 @@ import {
   Paperclip,
   Pill,
   Plus,
+  Receipt,
   Save,
   Share2,
   Sparkles,
   Trash2,
   X,
 } from "lucide-react";
-import type { Consentimiento, Paciente, PacienteNota, Receta } from "@/lib/types";
+import type { Consentimiento, Paciente, PacienteNota, Presupuesto, Receta } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
+import { formatearDinero } from "@/lib/dinero";
+import { TRATAMIENTOS } from "@/lib/panel-data";
+
+function totalPresupuesto(items: { cantidad: number; precio_unitario: number }[]) {
+  return items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
+}
 
 function formatearFecha(fecha: string) {
   return fechaSoloDia(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
@@ -122,6 +129,16 @@ export default function PacienteDetallePage() {
   const [compartiendoConsentId, setCompartiendoConsentId] = useState<number | null>(null);
   const [linkConsentCopiadoId, setLinkConsentCopiadoId] = useState<number | null>(null);
 
+  const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+  const [formPresupuestoAbierto, setFormPresupuestoAbierto] = useState(false);
+  const [tituloPresupuesto, setTituloPresupuesto] = useState("");
+  const [notasPresupuesto, setNotasPresupuesto] = useState("");
+  const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "" }]);
+  const [creandoPresupuesto, setCreandoPresupuesto] = useState(false);
+  const [eliminandoPresupuestoId, setEliminandoPresupuestoId] = useState<number | null>(null);
+  const [compartiendoPresupuestoId, setCompartiendoPresupuestoId] = useState<number | null>(null);
+  const [linkPresupuestoCopiadoId, setLinkPresupuestoCopiadoId] = useState<number | null>(null);
+
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [formRecetaAbierto, setFormRecetaAbierto] = useState(false);
   const [diagnosticoReceta, setDiagnosticoReceta] = useState("");
@@ -132,15 +149,17 @@ export default function PacienteDetallePage() {
 
   async function cargar() {
     setCargando(true);
-    const [resPaciente, resNotas, resConsent, resRecetas] = await Promise.all([
+    const [resPaciente, resNotas, resConsent, resPresupuestos, resRecetas] = await Promise.all([
       fetch(`/api/pacientes/${pacienteId}`),
       fetch(`/api/pacientes/${pacienteId}/notas`),
       fetch(`/api/pacientes/${pacienteId}/consentimientos`),
+      fetch(`/api/pacientes/${pacienteId}/presupuestos`),
       fetch(`/api/pacientes/${pacienteId}/recetas`),
     ]);
     const dataPaciente = await resPaciente.json();
     const dataNotas = await resNotas.json();
     const dataConsent = await resConsent.json();
+    const dataPresupuestos = await resPresupuestos.json();
     const dataRecetas = await resRecetas.json();
     const p: Paciente = dataPaciente.paciente;
     setPaciente(p);
@@ -150,6 +169,7 @@ export default function PacienteDetallePage() {
     setFechaNacimiento(p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "");
     setNotas(dataNotas.notas ?? []);
     setConsentimientos(dataConsent.consentimientos ?? []);
+    setPresupuestos(dataPresupuestos.presupuestos ?? []);
     setRecetas(dataRecetas.recetas ?? []);
     setCargando(false);
   }
@@ -366,6 +386,80 @@ export default function PacienteDetallePage() {
       }
     } finally {
       setCompartiendoConsentId(null);
+    }
+  }
+
+  function agregarItemPresupuesto() {
+    setItemsPresupuesto((prev) => [...prev, { concepto: "", cantidad: "1", precio_unitario: "" }]);
+  }
+
+  function quitarItemPresupuesto(index: number) {
+    setItemsPresupuesto((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+  }
+
+  function actualizarItemPresupuesto(index: number, campo: "concepto" | "cantidad" | "precio_unitario", valor: string) {
+    setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, [campo]: valor } : it)));
+  }
+
+  async function crearPresupuesto() {
+    const itemsValidos = itemsPresupuesto.filter((it) => it.concepto.trim() && it.precio_unitario !== "");
+    if (!tituloPresupuesto.trim() || itemsValidos.length === 0 || creandoPresupuesto) return;
+    setCreandoPresupuesto(true);
+    await fetch(`/api/pacientes/${pacienteId}/presupuestos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        titulo: tituloPresupuesto,
+        notas: notasPresupuesto || null,
+        items: itemsValidos.map((it) => ({
+          concepto: it.concepto.trim(),
+          cantidad: Number(it.cantidad) || 1,
+          precio_unitario: Number(it.precio_unitario) || 0,
+        })),
+      }),
+    });
+    setTituloPresupuesto("");
+    setNotasPresupuesto("");
+    setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "" }]);
+    setFormPresupuestoAbierto(false);
+    setCreandoPresupuesto(false);
+    const res = await fetch(`/api/pacientes/${pacienteId}/presupuestos`);
+    const data = await res.json();
+    setPresupuestos(data.presupuestos ?? []);
+  }
+
+  async function eliminarPresupuesto(id: number) {
+    if (eliminandoPresupuestoId) return;
+    const ok = window.confirm("¿Eliminar este presupuesto?");
+    if (!ok) return;
+    setEliminandoPresupuestoId(id);
+    await fetch(`/api/pacientes/${pacienteId}/presupuestos/${id}`, { method: "DELETE" });
+    setPresupuestos((prev) => prev.filter((p) => p.id !== id));
+    setEliminandoPresupuestoId(null);
+  }
+
+  async function compartirPresupuesto(p: Presupuesto) {
+    if (compartiendoPresupuestoId || !paciente) return;
+    setCompartiendoPresupuestoId(p.id);
+    try {
+      const url = `${window.location.origin}/presupuesto/${p.token}`;
+      const texto = `Hola ${paciente.nombre.split(" ")[0]}, te comparto el presupuesto "${p.titulo}" (${formatearDinero(
+        totalPresupuesto(p.items)
+      )}) para que lo revises y apruebes aquí: ${url}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "Presupuesto — Viña Sonrisas", text: texto, url });
+        } catch {
+          // el usuario canceló el share, no hacer nada
+        }
+      } else {
+        await navigator.clipboard.writeText(texto);
+        setLinkPresupuestoCopiadoId(p.id);
+        setTimeout(() => setLinkPresupuestoCopiadoId(null), 2500);
+      }
+    } finally {
+      setCompartiendoPresupuestoId(null);
     }
   }
 
@@ -788,6 +882,218 @@ export default function PacienteDetallePage() {
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
           >
             <Plus size={14} /> Nuevo consentimiento
+          </button>
+        )}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            <Receipt size={13} /> Presupuestos
+          </div>
+          <span className="text-[11px] text-[#a49c8a]">
+            {presupuestos.length} presupuesto{presupuestos.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <p className="mb-3 text-[11px] text-[#a49c8a]">
+          Arma el desglose de costos y comparte el link — el paciente ve el total y aprueba o rechaza sin
+          necesitar cuenta.
+        </p>
+
+        <div className="space-y-3">
+          {presupuestos.length === 0 ? (
+            <p className="text-sm text-[#8a8272]">Sin presupuestos todavía.</p>
+          ) : (
+            presupuestos.map((p) => (
+              <div key={p.id} className="rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-[#2b2118]">{p.titulo}</div>
+                    {p.estado === "aprobado" ? (
+                      <span className="mt-1 inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
+                        Aprobado
+                      </span>
+                    ) : p.estado === "rechazado" ? (
+                      <span className="mt-1 inline-block rounded-full bg-[#F7E5E0] px-2 py-0.5 text-[10px] font-semibold text-[#B0503A]">
+                        Rechazado
+                      </span>
+                    ) : (
+                      <span className="mt-1 inline-block rounded-full bg-[#F7ECD9] px-2 py-0.5 text-[10px] font-semibold text-[#B0834A]">
+                        Pendiente de respuesta
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-sm font-semibold text-[#2b2118]">
+                      {formatearDinero(totalPresupuesto(p.items))}
+                    </span>
+                    <button
+                      onClick={() => eliminarPresupuesto(p.id)}
+                      disabled={eliminandoPresupuestoId === p.id}
+                      className="text-[#c9a99a] disabled:opacity-50"
+                      aria-label="Eliminar presupuesto"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-2 space-y-1">
+                  {p.items.map((it) => (
+                    <div key={it.id} className="flex items-center justify-between text-[12px] text-[#8a8272]">
+                      <span className="truncate">
+                        {it.concepto}
+                        {it.cantidad !== 1 && ` ×${it.cantidad}`}
+                      </span>
+                      <span className="shrink-0">{formatearDinero(it.cantidad * it.precio_unitario)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {p.estado === "pendiente" ? (
+                  <button
+                    onClick={() => compartirPresupuesto(p)}
+                    disabled={compartiendoPresupuestoId === p.id}
+                    className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-[#803449] disabled:opacity-50"
+                  >
+                    <Share2 size={12} />
+                    {linkPresupuestoCopiadoId === p.id ? "Link copiado ✓" : "Compartir para aprobación"}
+                  </button>
+                ) : (
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#a49c8a]">
+                    <span>
+                      {p.nombre_respuesta}
+                      {p.respondido_en &&
+                        ` · ${new Date(p.respondido_en).toLocaleDateString("es-MX", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}`}
+                    </span>
+                    <a
+                      href={`/presupuesto/${p.token}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-[#803449] underline underline-offset-2"
+                    >
+                      Ver
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        {formPresupuestoAbierto ? (
+          <div className="mt-4 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+            <input
+              value={tituloPresupuesto}
+              onChange={(e) => setTituloPresupuesto(e.target.value)}
+              placeholder="Título (ej. Tratamiento de ortodoncia)"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+
+            <datalist id="conceptos-presupuesto">
+              {TRATAMIENTOS.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+
+            <div className="space-y-2">
+              {itemsPresupuesto.map((it, i) => (
+                <div key={i} className="flex gap-1.5">
+                  <input
+                    value={it.concepto}
+                    onChange={(e) => actualizarItemPresupuesto(i, "concepto", e.target.value)}
+                    placeholder="Concepto"
+                    list="conceptos-presupuesto"
+                    className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] px-2.5 py-2 text-[13px] outline-none focus:border-[#803449]"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={it.cantidad}
+                    onChange={(e) => actualizarItemPresupuesto(i, "cantidad", e.target.value)}
+                    placeholder="Cant."
+                    className="w-14 rounded-xl border border-[#EFE9DC] px-2 py-2 text-[13px] outline-none focus:border-[#803449]"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={it.precio_unitario}
+                    onChange={(e) => actualizarItemPresupuesto(i, "precio_unitario", e.target.value)}
+                    placeholder="Precio"
+                    className="w-20 rounded-xl border border-[#EFE9DC] px-2 py-2 text-[13px] outline-none focus:border-[#803449]"
+                  />
+                  <button
+                    onClick={() => quitarItemPresupuesto(i)}
+                    disabled={itemsPresupuesto.length === 1}
+                    className="shrink-0 text-[#c9a99a] disabled:opacity-30"
+                    aria-label="Quitar concepto"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={agregarItemPresupuesto}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-[#803449]"
+            >
+              <Plus size={13} /> Agregar concepto
+            </button>
+
+            <textarea
+              value={notasPresupuesto}
+              onChange={(e) => setNotasPresupuesto(e.target.value)}
+              placeholder="Notas para el paciente (opcional)"
+              rows={2}
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+
+            <div className="flex items-center justify-between rounded-xl bg-[#FBF9F5] px-3 py-2">
+              <span className="text-[12px] font-medium text-[#8a8272]">Total</span>
+              <span className="text-sm font-bold text-[#3F6B33]">
+                {formatearDinero(
+                  totalPresupuesto(
+                    itemsPresupuesto.map((it) => ({
+                      cantidad: Number(it.cantidad) || 0,
+                      precio_unitario: Number(it.precio_unitario) || 0,
+                    }))
+                  )
+                )}
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={crearPresupuesto}
+                disabled={
+                  !tituloPresupuesto.trim() ||
+                  !itemsPresupuesto.some((it) => it.concepto.trim() && it.precio_unitario !== "") ||
+                  creandoPresupuesto
+                }
+                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                {creandoPresupuesto ? "Creando…" : "Crear y generar link"}
+              </button>
+              <button
+                onClick={() => setFormPresupuestoAbierto(false)}
+                className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setFormPresupuestoAbierto(true)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+          >
+            <Plus size={14} /> Nuevo presupuesto
           </button>
         )}
       </div>

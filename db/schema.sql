@@ -482,6 +482,33 @@ CREATE TABLE IF NOT EXISTS recetas (
 );
 CREATE INDEX IF NOT EXISTS idx_recetas_paciente ON recetas(paciente_id);
 
+-- Presupuestos/cotizaciones: la doctora arma una lista de conceptos con
+-- precio y comparte un link público (mismo patrón que consentimientos)
+-- donde el paciente ve el desglose y el total, y aprueba o rechaza sin
+-- necesitar cuenta.
+CREATE TABLE IF NOT EXISTS presupuestos (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  titulo VARCHAR(160) NOT NULL,
+  notas TEXT,
+  token VARCHAR(40) UNIQUE NOT NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'pendiente', -- 'pendiente' | 'aprobado' | 'rechazado'
+  nombre_respuesta VARCHAR(160),
+  respondido_en TIMESTAMPTZ,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS presupuesto_items (
+  id SERIAL PRIMARY KEY,
+  presupuesto_id INTEGER NOT NULL REFERENCES presupuestos(id) ON DELETE CASCADE,
+  concepto VARCHAR(160) NOT NULL,
+  cantidad NUMERIC(10,2) NOT NULL DEFAULT 1,
+  precio_unitario NUMERIC(10,2) NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_presupuestos_paciente ON presupuestos(paciente_id);
+CREATE INDEX IF NOT EXISTS idx_presupuesto_items_presupuesto ON presupuesto_items(presupuesto_id);
+
 -- Citas que llegan solas desde el link público de agendado (/agendar,
 -- pensado para compartir en Instagram) — quedan apartadas en el
 -- horario elegido, pero no son oficiales hasta que la doctora las

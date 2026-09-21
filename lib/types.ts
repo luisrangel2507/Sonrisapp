@@ -68,6 +68,28 @@ export interface Consentimiento {
   creado_en: string;
 }
 
+export type EstadoPresupuesto = "pendiente" | "aprobado" | "rechazado";
+
+export interface PresupuestoItem {
+  id: number;
+  concepto: string;
+  cantidad: number;
+  precio_unitario: number;
+}
+
+export interface Presupuesto {
+  id: number;
+  paciente_id: number;
+  titulo: string;
+  notas: string | null;
+  token: string;
+  estado: EstadoPresupuesto;
+  nombre_respuesta: string | null;
+  respondido_en: string | null;
+  creado_en: string;
+  items: PresupuestoItem[];
+}
+
 export type EstadoCita = "agendada" | "completada" | "cancelada";
 
 export interface Cita {
