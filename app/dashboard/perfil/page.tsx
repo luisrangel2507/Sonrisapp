@@ -76,6 +76,7 @@ export default function PerfilPage() {
   const [telefonoGuardado, setTelefonoGuardado] = useState(false);
   const telefonoTocadoRef = useRef(false);
   const [linkAgendarCopiado, setLinkAgendarCopiado] = useState(false);
+  const [generandoLinkAgendar, setGenerandoLinkAgendar] = useState(false);
 
   const [notifSoportado, setNotifSoportado] = useState(false);
   const [notifStandalone, setNotifStandalone] = useState(true);
@@ -376,9 +377,21 @@ export default function PerfilPage() {
   }
 
   async function copiarLinkAgendar() {
-    await navigator.clipboard.writeText(`${window.location.origin}/agendar`);
-    setLinkAgendarCopiado(true);
-    setTimeout(() => setLinkAgendarCopiado(false), 2500);
+    if (generandoLinkAgendar) return;
+    setGenerandoLinkAgendar(true);
+    try {
+      const res = await fetch("/api/perfil/link-agendar");
+      const data = await res.json();
+      await navigator.clipboard.writeText(data.link ?? `${window.location.origin}/agendar`);
+      setLinkAgendarCopiado(true);
+      setTimeout(() => setLinkAgendarCopiado(false), 2500);
+    } catch {
+      await navigator.clipboard.writeText(`${window.location.origin}/agendar`);
+      setLinkAgendarCopiado(true);
+      setTimeout(() => setLinkAgendarCopiado(false), 2500);
+    } finally {
+      setGenerandoLinkAgendar(false);
+    }
   }
 
   async function guardarTelefonoTarjeta() {
@@ -631,9 +644,15 @@ export default function PerfilPage() {
 
             <button
               onClick={copiarLinkAgendar}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#2b2118]"
+              disabled={generandoLinkAgendar}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#2b2118] disabled:opacity-50"
             >
-              <Link2 size={15} /> {linkAgendarCopiado ? "Link copiado ✓" : "Copiar link para agendar (Instagram)"}
+              <Link2 size={15} />{" "}
+              {generandoLinkAgendar
+                ? "Generando link corto…"
+                : linkAgendarCopiado
+                  ? "Link copiado ✓"
+                  : "Copiar link para agendar (Instagram)"}
             </button>
             <p className="mt-1.5 text-[11px] text-[#a49c8a]">
               Pon ese link en tu bio de Instagram — deja que cualquiera se dé de alta y elija su cita directo,

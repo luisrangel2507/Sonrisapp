@@ -352,6 +352,12 @@ ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS nombre_bienvenida VARCHAR(6
 -- en el entorno), que es un ID de la API y no un número marcable.
 ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS telefono VARCHAR(30);
 
+-- Versión acortada (is.gd/TinyURL) del link público de agendado
+-- (/agendar) — se genera una sola vez y se cachea aquí porque el
+-- destino no cambia; para Instagram un link corto se ve/pega mejor
+-- que la URL completa de Railway.
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS link_agendar_corto TEXT;
+
 -- Inventario de insumos del consultorio (materiales, anestésicos,
 -- guantes, etc.) — cantidad_minima define cuándo se marca "bajo stock".
 CREATE TABLE IF NOT EXISTS inventario (
