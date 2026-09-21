@@ -442,6 +442,21 @@ ALTER TABLE historia_clinica ALTER COLUMN consume_tabaco TYPE TEXT;
 ALTER TABLE paciente_notas ALTER COLUMN tratamiento TYPE TEXT;
 ALTER TABLE paciente_notas ALTER COLUMN duracion TYPE TEXT;
 
+-- Estados de diente que la doctora agrega además de los 15 fijos del
+-- odontograma (ver ESTADO_DIENTE en lib/dental.ts) — por si algo no
+-- está en la lista. Color en hex; se calcula solo, sin que la doctora
+-- tenga que elegirlo.
+CREATE TABLE IF NOT EXISTS estados_diente_personalizados (
+  clave VARCHAR(30) PRIMARY KEY,
+  etiqueta VARCHAR(60) NOT NULL,
+  color VARCHAR(7) NOT NULL,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- El estado de un diente ahora puede ser una clave personalizada más
+-- larga que las 15 fijas — se amplía por si acaso.
+ALTER TABLE paciente_dientes ALTER COLUMN estado TYPE VARCHAR(30);
+
 CREATE INDEX IF NOT EXISTS idx_citas_paciente ON citas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_paciente_dientes_paciente ON paciente_dientes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_diente_historial_diente ON diente_historial(paciente_diente_id);

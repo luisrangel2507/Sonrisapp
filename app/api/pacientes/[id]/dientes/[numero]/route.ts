@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { ESTADO_DIENTE, type EstadoDiente } from "@/lib/dental";
+import type { EstadoDiente } from "@/lib/dental";
 import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { estadoDienteValido } from "@/lib/estados-diente";
 import { cifrar, descifrar } from "@/lib/crypto";
 
 export async function POST(
@@ -25,7 +26,7 @@ export async function POST(
       return NextResponse.json({ error: "tipo es requerido" }, { status: 400 });
     }
 
-    if (estado && !(estado in ESTADO_DIENTE)) {
+    if (estado && !(await estadoDienteValido(estado))) {
       return NextResponse.json({ error: "estado inválido" }, { status: 400 });
     }
 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { ESTADO_DIENTE, NUMEROS_FDI, type EstadoDiente } from "@/lib/dental";
+import { NUMEROS_FDI, type EstadoDiente } from "@/lib/dental";
 import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { estadoDienteValido } from "@/lib/estados-diente";
 import { cifrar } from "@/lib/crypto";
 
 // Para procedimientos que aplican a toda la boca (limpieza, fluorización,
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (!tipo || typeof tipo !== "string") {
       return NextResponse.json({ error: "tipo es requerido" }, { status: 400 });
     }
-    if (estado && !(estado in ESTADO_DIENTE)) {
+    if (estado && !(await estadoDienteValido(estado))) {
       return NextResponse.json({ error: "estado inválido" }, { status: 400 });
     }
 

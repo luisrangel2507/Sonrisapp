@@ -1,16 +1,20 @@
 "use client";
 
-import { Fragment, useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Plus } from "lucide-react";
 import {
   ARCO_SUPERIOR,
   ARCO_INFERIOR,
   ESTADO_DIENTE,
   POLIGONOS_DIENTE,
+  construirMapaEstados,
   type EstadoDiente,
+  type EstadoDientePersonalizado,
   type HistorialDental,
   type HistorialEntrada,
 } from "@/lib/dental";
+
+type MapaEstados = Record<string, { ring: string; glow: string; label: string }>;
 import type { Paciente } from "@/lib/types";
 import { fechaSoloDia } from "@/lib/fechas";
 
@@ -133,14 +137,16 @@ function CasillaCarta({
   estado,
   activo,
   onClick,
+  mapaEstados,
 }: {
   numero: number;
   arriba: boolean;
   estado: EstadoDiente;
   activo: boolean;
   onClick: () => void;
+  mapaEstados: MapaEstados;
 }) {
-  const est = ESTADO_DIENTE[estado];
+  const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
   const etiqueta = (
     <span className={`text-[9px] font-semibold ${activo ? "text-white" : "text-white/50"}`}>{numero}</span>
   );
@@ -166,8 +172,8 @@ function CasillaCarta({
   );
 }
 
-function estiloPoligono(estado: EstadoDiente, activo: boolean): CSSProperties {
-  const est = ESTADO_DIENTE[estado];
+function estiloPoligono(estado: EstadoDiente, activo: boolean, mapaEstados: MapaEstados): CSSProperties {
+  const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
   if (activo) {
     return {
       fill: "rgba(0,0,0,0.42)",
@@ -206,12 +212,14 @@ function FilaEtiquetas({
   historial,
   seleccionado,
   onSeleccionar,
+  mapaEstados,
 }: {
   numeros: number[];
   arriba: boolean;
   historial: HistorialDental;
   seleccionado: number;
   onSeleccionar: (n: number) => void;
+  mapaEstados: MapaEstados;
 }) {
   const yCirculo = arriba ? RADIO_CIRCULO + 2 : ALTURA_ETIQUETAS - RADIO_CIRCULO - 2;
   const yLineaInicio = arriba ? yCirculo + RADIO_CIRCULO : yCirculo - RADIO_CIRCULO;
@@ -221,7 +229,7 @@ function FilaEtiquetas({
     <div className="relative" style={{ height: ALTURA_ETIQUETAS }}>
       <svg viewBox={`0 0 100 ${ALTURA_ETIQUETAS}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
         {numeros.map((n, i) => {
-          const est = ESTADO_DIENTE[historial[n]?.estado ?? "sano"];
+          const est = mapaEstados[historial[n]?.estado ?? "sano"] ?? ESTADO_DIENTE.sano;
           const activo = n === seleccionado;
           const color = activo || historial[n]?.estado ? est.ring : "rgba(255,255,255,0.25)";
           return (
@@ -240,7 +248,7 @@ function FilaEtiquetas({
       </svg>
       {numeros.map((n, i) => {
         const estado = historial[n]?.estado ?? "sano";
-        const est = ESTADO_DIENTE[estado];
+        const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
         const activo = n === seleccionado;
         const circuloEstilo: CSSProperties = activo
           ? { backgroundColor: est.ring, borderColor: est.ring, color: "#15101f" }
@@ -279,12 +287,14 @@ function FilaCarta({
   historial,
   seleccionado,
   onSeleccionar,
+  mapaEstados,
 }: {
   numeros: number[];
   arriba: boolean;
   historial: HistorialDental;
   seleccionado: number;
   onSeleccionar: (n: number) => void;
+  mapaEstados: MapaEstados;
 }) {
   return (
     <div className="flex w-max items-stretch justify-center gap-[3px]">
@@ -297,6 +307,7 @@ function FilaCarta({
             estado={historial[n]?.estado ?? "sano"}
             activo={n === seleccionado}
             onClick={() => onSeleccionar(n)}
+            mapaEstados={mapaEstados}
           />
         </Fragment>
       ))}
@@ -321,6 +332,13 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [guardandoEdit, setGuardandoEdit] = useState(false);
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
 
+  const [personalizados, setPersonalizados] = useState<EstadoDientePersonalizado[]>([]);
+  const [formEstadoAbierto, setFormEstadoAbierto] = useState(false);
+  const [nombreEstadoNuevo, setNombreEstadoNuevo] = useState("");
+  const [creandoEstado, setCreandoEstado] = useState(false);
+
+  const mapaEstados = useMemo(() => construirMapaEstados(personalizados), [personalizados]);
+
   async function cargarHistorial() {
     setCargando(true);
     const res = await fetch(`/api/pacientes/${paciente.id}/dientes`);
@@ -334,8 +352,36 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paciente.id]);
 
+  useEffect(() => {
+    fetch("/api/estados-diente")
+      .then((res) => res.json())
+      .then((data) => setPersonalizados(data.estados ?? []))
+      .catch(() => {});
+  }, []);
+
+  async function crearEstadoPersonalizado() {
+    if (!nombreEstadoNuevo.trim() || creandoEstado) return;
+    setCreandoEstado(true);
+    try {
+      const res = await fetch("/api/estados-diente", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ etiqueta: nombreEstadoNuevo.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.estado) {
+        setPersonalizados((prev) => [...prev, data.estado]);
+        setEstadoNuevo(data.estado.clave);
+        setNombreEstadoNuevo("");
+        setFormEstadoAbierto(false);
+      }
+    } finally {
+      setCreandoEstado(false);
+    }
+  }
+
   const info = historial[seleccionado];
-  const estado = ESTADO_DIENTE[info?.estado ?? "sano"];
+  const estado = mapaEstados[info?.estado ?? "sano"] ?? ESTADO_DIENTE.sano;
 
   // Solo las condiciones que de verdad tiene marcadas este paciente —
   // mostrar las 15 posibles siempre hacía el legend enorme y difícil
@@ -362,6 +408,8 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
     setEstadoNuevo("");
     setAplicarTodos(false);
     setFormAbierto(false);
+    setFormEstadoAbierto(false);
+    setNombreEstadoNuevo("");
     setGuardando(false);
     await cargarHistorial();
   }
@@ -369,6 +417,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   function seleccionar(n: number) {
     setSeleccionado(n);
     setFormAbierto(false);
+    setFormEstadoAbierto(false);
     setEditandoId(null);
   }
 
@@ -447,6 +496,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               historial={historial}
               seleccionado={seleccionado}
               onSeleccionar={seleccionar}
+              mapaEstados={mapaEstados}
             />
 
             <div className="relative overflow-hidden rounded-2xl border border-white/10">
@@ -472,7 +522,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                     role="button"
                     aria-label={`Diente ${n}`}
                     className="cursor-pointer transition-colors"
-                    style={estiloPoligono(historial[n]?.estado ?? "sano", n === seleccionado)}
+                    style={estiloPoligono(historial[n]?.estado ?? "sano", n === seleccionado, mapaEstados)}
                   />
                 ))}
               </svg>
@@ -484,6 +534,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               historial={historial}
               seleccionado={seleccionado}
               onSeleccionar={seleccionar}
+              mapaEstados={mapaEstados}
             />
           </div>
         ) : (
@@ -494,6 +545,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               historial={historial}
               seleccionado={seleccionado}
               onSeleccionar={seleccionar}
+              mapaEstados={mapaEstados}
             />
             <div className="border-t border-dashed border-white/15" />
             <FilaCarta
@@ -502,13 +554,14 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               historial={historial}
               seleccionado={seleccionado}
               onSeleccionar={seleccionar}
+              mapaEstados={mapaEstados}
             />
           </div>
         )}
 
         {estadosPresentes.size > 0 ? (
           <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-white/10 pt-4">
-            {Object.entries(ESTADO_DIENTE)
+            {Object.entries(mapaEstados)
               .filter(([key]) => estadosPresentes.has(key as EstadoDiente))
               .map(([key, v]) => (
                 <div key={key} className="flex items-center gap-1.5">
@@ -658,17 +711,54 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               Aplicar a los 32 dientes (limpieza, fluorización, etc.)
             </label>
             {!aplicarTodos && (
-              <select
-                value={estadoNuevo || info?.estado || "sano"}
-                onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente)}
-                className="w-full rounded-xl border border-white/15 bg-[#15101f] px-3 py-2 text-sm text-white outline-none"
-              >
-                {Object.entries(ESTADO_DIENTE).map(([key, v]) => (
-                  <option key={key} value={key}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={estadoNuevo || info?.estado || "sano"}
+                  onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente)}
+                  className="w-full rounded-xl border border-white/15 bg-[#15101f] px-3 py-2 text-sm text-white outline-none"
+                >
+                  {Object.entries(mapaEstados).map(([key, v]) => (
+                    <option key={key} value={key}>
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+
+                {formEstadoAbierto ? (
+                  <div className="flex gap-1.5">
+                    <input
+                      value={nombreEstadoNuevo}
+                      onChange={(e) => setNombreEstadoNuevo(e.target.value)}
+                      placeholder="Nombre del estado (ej. Bruxismo)"
+                      autoFocus
+                      className="min-w-0 flex-1 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
+                    />
+                    <button
+                      onClick={crearEstadoPersonalizado}
+                      disabled={!nombreEstadoNuevo.trim() || creandoEstado}
+                      className="shrink-0 rounded-xl bg-[#7C5CE0] px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-50"
+                    >
+                      {creandoEstado ? "…" : "Agregar"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFormEstadoAbierto(false);
+                        setNombreEstadoNuevo("");
+                      }}
+                      className="shrink-0 rounded-xl border border-white/15 px-3 py-2 text-[12px] font-medium text-white/70"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setFormEstadoAbierto(true)}
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-[#7C5CE0]"
+                  >
+                    <Plus size={13} /> ¿No está en la lista? Agrega un estado nuevo
+                  </button>
+                )}
+              </>
             )}
             <input
               value={tipo}
@@ -695,6 +785,8 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                 onClick={() => {
                   setFormAbierto(false);
                   setAplicarTodos(false);
+                  setFormEstadoAbierto(false);
+                  setNombreEstadoNuevo("");
                 }}
                 className="rounded-full border border-white/15 px-4 py-2 text-[13px] font-medium text-white/70"
               >

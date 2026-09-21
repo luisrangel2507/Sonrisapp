@@ -5,9 +5,10 @@ import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
-import { ARCO_SUPERIOR, ARCO_INFERIOR, ESTADO_DIENTE, POLIGONOS_DIENTE, type EstadoDiente } from "@/lib/dental";
+import { ARCO_SUPERIOR, ARCO_INFERIOR, ESTADO_DIENTE, POLIGONOS_DIENTE, construirMapaEstados, type EstadoDiente } from "@/lib/dental";
 import { HISTORIA_CLINICA_COLUMNAS, HISTORIA_CLINICA_CAMPOS_CIFRABLES } from "@/lib/historia-clinica-campos";
 import { descifrar } from "@/lib/crypto";
+import { estadosPersonalizados } from "@/lib/estados-diente";
 
 const ODONTOGRAMA_IMAGEN = path.join(process.cwd(), "public", "odontograma-hud.jpg");
 const ODONTOGRAMA_ASPECTO = 1300 / 799;
@@ -30,7 +31,13 @@ function centroDeDiente(numero: number) {
 // preserveAspectRatio="none" @react-pdf/renderer encoge el viewBox
 // para que quepa "completo" dentro del recuadro (como una letterbox),
 // lo que descuadra los polígonos respecto a la foto de fondo.
-function OdontogramaPdf({ dientes }: { dientes: { numero_fdi: number; estado: EstadoDiente }[] }) {
+function OdontogramaPdf({
+  dientes,
+  mapaEstados,
+}: {
+  dientes: { numero_fdi: number; estado: EstadoDiente }[];
+  mapaEstados: Record<string, { ring: string; glow: string; label: string }>;
+}) {
   const porNumero = new Map(dientes.map((d) => [d.numero_fdi, d.estado]));
   const afectados = [...ARCO_SUPERIOR, ...ARCO_INFERIOR].filter((n) => {
     const estado = porNumero.get(n);
@@ -46,7 +53,7 @@ function OdontogramaPdf({ dientes }: { dientes: { numero_fdi: number; estado: Es
       >
         {afectados.map((numero) => {
           const estado = porNumero.get(numero)!;
-          const est = ESTADO_DIENTE[estado];
+          const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
           const fill = estado === "ausente" ? "#0A0A0F" : `rgba(${est.glow},0.45)`;
           return (
             <Polygon
@@ -138,6 +145,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       `SELECT id, numero_fdi, estado FROM paciente_dientes WHERE paciente_id = $1 AND estado <> 'sano' ORDER BY numero_fdi`,
       [pacienteId]
     );
+    const mapaEstados = construirMapaEstados(await estadosPersonalizados());
     const { rows: dienteHistorial } = await query<{
       paciente_diente_id: number;
       fecha: string;
@@ -282,11 +290,11 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
               <Text style={estilosPdf.vacio}>Sin hallazgos registrados — todos los dientes en estado sano.</Text>
             ) : (
               <View>
-                <OdontogramaPdf dientes={dientes} />
+                <OdontogramaPdf dientes={dientes} mapaEstados={mapaEstados} />
                 <View style={{ marginTop: 10 }} />
                 {dientes.map((d) => {
                   const entradas = dienteHistorialDescifrado.filter((h) => h.paciente_diente_id === d.id);
-                  const est = ESTADO_DIENTE[d.estado] ?? ESTADO_DIENTE.sano;
+                  const est = mapaEstados[d.estado] ?? ESTADO_DIENTE.sano;
                   return (
                     <View key={d.id} style={{ marginBottom: 6 }} wrap={false}>
                       <Text style={{ fontSize: 9.5, fontFamily: "Helvetica-Bold" }}>

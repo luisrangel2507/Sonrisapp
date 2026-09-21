@@ -12,7 +12,7 @@ export const NUMEROS_FDI = [...ARCO_SUPERIOR, ...ARCO_INFERIOR];
 // sarro quedaron fuera a propósito — son condiciones de toda la boca,
 // no de un diente en particular, así que solo se documentan como nota
 // en el historial y no aparecen aquí ni se pueden "marcar" en un diente.
-export type EstadoDiente =
+type EstadoDienteFijo =
   | "sano"
   | "caries"
   | "sensibilidad"
@@ -29,7 +29,18 @@ export type EstadoDiente =
   | "implante"
   | "ausente";
 
-export const ESTADO_DIENTE: Record<EstadoDiente, { ring: string; glow: string; label: string }> = {
+// Además de los 15 fijos de abajo, la doctora puede dar de alta estados
+// propios (ver estados_diente_personalizados) — por eso el tipo admite
+// cualquier string, no solo los literales conocidos.
+export type EstadoDiente = EstadoDienteFijo | (string & {});
+
+export interface EstadoDientePersonalizado {
+  clave: string;
+  etiqueta: string;
+  color: string;
+}
+
+export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: string; label: string }> = {
   sano: { ring: "#5DC9E8", glow: "93,201,232", label: "Sano" },
   caries: { ring: "#E8508C", glow: "232,80,140", label: "Caries" },
   sensibilidad: { ring: "#6FD8F2", glow: "111,216,242", label: "Sensibilidad" },
@@ -46,6 +57,28 @@ export const ESTADO_DIENTE: Record<EstadoDiente, { ring: string; glow: string; l
   implante: { ring: "#7C5CE0", glow: "124,92,224", label: "Implante" },
   ausente: { ring: "#6B6575", glow: "107,101,117", label: "Ausente" },
 };
+
+// "#RRGGBB" -> "r,g,b", mismo formato que .glow arriba, para poder
+// armar el rgba() de los estados personalizados a partir de su color hex.
+export function hexARgb(hex: string): string {
+  const limpio = hex.replace("#", "");
+  const entero = parseInt(limpio, 16);
+  return `${(entero >> 16) & 255},${(entero >> 8) & 255},${entero & 255}`;
+}
+
+// Mezcla el catálogo fijo de 15 estados con los que la doctora haya
+// dado de alta — todo el resto del odontograma (colores, leyenda,
+// selector) lee de aquí en vez de ESTADO_DIENTE directo, para que un
+// estado personalizado se vea y se seleccione igual que uno fijo.
+export function construirMapaEstados(
+  personalizados: EstadoDientePersonalizado[]
+): Record<string, { ring: string; glow: string; label: string }> {
+  const mapa: Record<string, { ring: string; glow: string; label: string }> = { ...ESTADO_DIENTE };
+  for (const p of personalizados) {
+    mapa[p.clave] = { ring: p.color, glow: hexARgb(p.color), label: p.etiqueta };
+  }
+  return mapa;
+}
 
 // FDI ⇄ Universal (1-32) — el doctor puede alternar el sistema de numeración.
 export const FDI_A_UNIVERSAL: Record<number, number> = {

@@ -11,6 +11,7 @@ export const config = {
     "/api/reportes/:path*",
     "/api/bot/:path*",
     "/api/precios-servicios/:path*",
+    "/api/estados-diente/:path*",
     "/api/perfil/:path*",
     "/api/inventario/:path*",
     "/api/usuarios/:path*",
