@@ -35,6 +35,19 @@ export function citaVencidaSinCompletar(cita: { estado: string; fecha_hora: stri
   return new Date(cita.fecha_hora).getTime() + HORAS_PARA_VENCIDA * 60 * 60 * 1000 < Date.now();
 }
 
+// Edad cumplida a una fecha dada (por defecto hoy) — para mostrarla en
+// documentos como la receta, calculada a partir de la fecha de
+// nacimiento en vez de pedirle a la doctora que la escriba a mano.
+export function calcularEdad(fechaNacimiento: string, enFecha: Date = new Date()): number {
+  const nacimiento = fechaSoloDia(fechaNacimiento);
+  let edad = enFecha.getFullYear() - nacimiento.getFullYear();
+  const aunNoCumple =
+    enFecha.getMonth() < nacimiento.getMonth() ||
+    (enFecha.getMonth() === nacimiento.getMonth() && enFecha.getDate() < nacimiento.getDate());
+  if (aunNoCumple) edad--;
+  return edad;
+}
+
 export function proximoCumpleanos(fechaNacimiento: string | null) {
   if (!fechaNacimiento) return null;
   const hoy = new Date();

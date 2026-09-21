@@ -19,6 +19,8 @@ export const CLINICA = {
 export const DOCTORA = {
   nombre: "Dra. Daniela Michel Galván Salazar",
   cedula: "13551924",
+  titulo: "Lic. en Odontología",
+  universidad: "Universidad Cuauhtémoc Querétaro",
 };
 
 // Contenido de la tarjeta de presentación digital (/tarjeta) — calcado

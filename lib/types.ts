@@ -46,6 +46,7 @@ export interface Receta {
   diagnostico: string | null;
   medicamentos: string;
   indicaciones: string | null;
+  peso: string | null;
   creado_por_nombre: string | null;
   creado_en: string;
   vigente: boolean;

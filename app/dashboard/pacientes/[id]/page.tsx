@@ -145,6 +145,7 @@ export default function PacienteDetallePage() {
   const [diagnosticoReceta, setDiagnosticoReceta] = useState("");
   const [medicamentosReceta, setMedicamentosReceta] = useState("");
   const [indicacionesReceta, setIndicacionesReceta] = useState("");
+  const [pesoReceta, setPesoReceta] = useState("");
   const [creandoReceta, setCreandoReceta] = useState(false);
   const [eliminandoRecetaId, setEliminandoRecetaId] = useState<number | null>(null);
 
@@ -479,11 +480,13 @@ export default function PacienteDetallePage() {
         diagnostico: diagnosticoReceta || null,
         medicamentos: medicamentosReceta,
         indicaciones: indicacionesReceta || null,
+        peso: pesoReceta || null,
       }),
     });
     setDiagnosticoReceta("");
     setMedicamentosReceta("");
     setIndicacionesReceta("");
+    setPesoReceta("");
     setFormRecetaAbierto(false);
     setCreandoReceta(false);
     const res = await fetch(`/api/pacientes/${pacienteId}/recetas`);
@@ -1171,16 +1174,27 @@ export default function PacienteDetallePage() {
                       </div>
                     )}
                   </div>
-                  {r.vigente && (
-                    <button
-                      onClick={() => eliminarReceta(r.id)}
-                      disabled={eliminandoRecetaId === r.id}
-                      className="shrink-0 text-[#c9a99a] disabled:opacity-50"
-                      aria-label="Anular receta"
+                  <div className="flex shrink-0 items-center gap-2">
+                    <a
+                      href={`/api/pacientes/${pacienteId}/recetas/${r.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#803449]"
+                      aria-label="Descargar receta"
                     >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
+                      <FileDown size={14} />
+                    </a>
+                    {r.vigente && (
+                      <button
+                        onClick={() => eliminarReceta(r.id)}
+                        disabled={eliminandoRecetaId === r.id}
+                        className="text-[#c9a99a] disabled:opacity-50"
+                        aria-label="Anular receta"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-1.5 text-[10px] text-[#a49c8a]">
                   {formatearFecha(r.fecha)} {r.creado_por_nombre && `· ${r.creado_por_nombre}`}
@@ -1199,6 +1213,12 @@ export default function PacienteDetallePage() {
               value={diagnosticoReceta}
               onChange={(e) => setDiagnosticoReceta(e.target.value)}
               placeholder="Diagnóstico (opcional)"
+              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <input
+              value={pesoReceta}
+              onChange={(e) => setPesoReceta(e.target.value)}
+              placeholder="Peso (opcional, ej. 70 kg)"
               className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <textarea

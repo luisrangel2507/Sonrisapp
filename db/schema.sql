@@ -495,6 +495,10 @@ CREATE TABLE IF NOT EXISTS recetas (
   anulado_por_nombre VARCHAR(160),
   anulado_en TIMESTAMPTZ
 );
+-- Peso del paciente al momento de la receta (para dosis pediátricas,
+-- por ejemplo) — cifrado igual que el resto del contenido clínico.
+ALTER TABLE recetas ADD COLUMN IF NOT EXISTS peso TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_recetas_paciente ON recetas(paciente_id);
 
 -- Presupuestos/cotizaciones: la doctora arma una lista de conceptos con

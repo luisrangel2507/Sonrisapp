@@ -7,7 +7,7 @@ import { asegurarHistorialToken } from "@/lib/historial-token";
 import { enviarWhatsApp, mensajeRecetaNueva } from "@/lib/whatsapp";
 import { obtenerRpIdYOrigin } from "@/lib/webauthn-origin";
 
-const CAMPOS_CIFRABLES = ["diagnostico", "medicamentos", "indicaciones"] as const;
+const CAMPOS_CIFRABLES = ["diagnostico", "medicamentos", "indicaciones", "peso"] as const;
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const { rows } = await query(
-      `SELECT id, fecha, diagnostico, medicamentos, indicaciones,
+      `SELECT id, fecha, diagnostico, medicamentos, indicaciones, peso,
               creado_por_nombre, creado_en, vigente, motivo_anulacion, anulado_por_nombre
        FROM recetas
        WHERE paciente_id = $1 ORDER BY creado_en DESC`,
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const body = await req.json();
-    const { diagnostico, medicamentos, indicaciones } = body ?? {};
+    const { diagnostico, medicamentos, indicaciones, peso } = body ?? {};
 
     if (!medicamentos || typeof medicamentos !== "string" || !medicamentos.trim()) {
       return NextResponse.json({ error: "medicamentos es requerido" }, { status: 400 });
@@ -55,14 +55,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const identidad = await identidadDesdeRequest(req);
 
     const { rows } = await query(
-      `INSERT INTO recetas (paciente_id, diagnostico, medicamentos, indicaciones, creado_por, creado_por_nombre)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, fecha, diagnostico, medicamentos, indicaciones, creado_por_nombre, creado_en, vigente`,
+      `INSERT INTO recetas (paciente_id, diagnostico, medicamentos, indicaciones, peso, creado_por, creado_por_nombre)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, fecha, diagnostico, medicamentos, indicaciones, peso, creado_por_nombre, creado_en, vigente`,
       [
         pacienteId,
         cifrar(diagnostico ?? null),
         cifrar(medicamentos),
         cifrar(indicaciones ?? null),
+        cifrar(peso ?? null),
         identidad.usuarioId,
         identidad.nombre,
       ]
