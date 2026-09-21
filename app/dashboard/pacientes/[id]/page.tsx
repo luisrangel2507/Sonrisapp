@@ -540,14 +540,14 @@ export default function PacienteDetallePage() {
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+            className="flex items-center gap-1.5 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] px-3 py-1.5 text-[12px] font-medium text-[#803449]"
           >
             <ClipboardList size={13} /> Historia clínica
           </Link>
           <button
             onClick={compartirLink}
             disabled={enviandoLink}
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full border border-[#E8D8A0] bg-[#FCEFD2] px-3 py-1.5 text-[12px] font-medium text-[#B08419] disabled:opacity-50"
           >
             <Share2 size={13} /> {linkCopiado ? "Link copiado ✓" : "Enviar link para llenar historial"}
           </button>
@@ -555,14 +555,14 @@ export default function PacienteDetallePage() {
             href={`/api/pacientes/${paciente.id}/reporte`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118]"
+            className="flex items-center gap-1.5 rounded-full border border-[#BFD8B4] bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-medium text-[#3F6B33]"
           >
             <FileDown size={13} /> Descargar reporte
           </a>
           <button
             onClick={compartirPortal}
             disabled={enviandoPortal}
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2b2118] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full border border-[#DDC2E0] bg-[#EFE3F0] px-3 py-1.5 text-[12px] font-medium text-[#7A4D8A] disabled:opacity-50"
           >
             <ExternalLink size={13} /> {portalCopiado ? "Link copiado ✓" : "Copiar link del portal"}
           </button>
@@ -725,7 +725,7 @@ export default function PacienteDetallePage() {
               </button>
             </div>
           ) : (
-            <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#EFE9DC] bg-[#FBF8F2] py-2.5 text-[12px] font-medium text-[#8a8272]">
+            <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[12px] font-medium text-[#803449]">
               <Paperclip size={13} />
               {procesandoArchivo ? "Procesando…" : "Adjuntar documentos"}
               <input
@@ -879,7 +879,7 @@ export default function PacienteDetallePage() {
         ) : (
           <button
             onClick={() => setFormConsentAbierto(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449]"
           >
             <Plus size={14} /> Nuevo consentimiento
           </button>
@@ -1091,7 +1091,7 @@ export default function PacienteDetallePage() {
         ) : (
           <button
             onClick={() => setFormPresupuestoAbierto(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#E8D8A0] bg-[#FCEFD2] py-2.5 text-[13px] font-semibold text-[#B08419]"
           >
             <Plus size={14} /> Nuevo presupuesto
           </button>
@@ -1203,7 +1203,7 @@ export default function PacienteDetallePage() {
         ) : (
           <button
             onClick={() => setFormRecetaAbierto(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#BFD8B4] bg-[#E8F0E3] py-2.5 text-[13px] font-semibold text-[#3F6B33]"
           >
             <Plus size={14} /> Nueva receta
           </button>
