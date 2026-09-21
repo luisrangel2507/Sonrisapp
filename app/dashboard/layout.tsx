@@ -134,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <div className="mx-auto max-w-md pb-10 md:max-w-5xl md:px-8 md:py-8">{children}</div>
+        <div className="mx-auto max-w-md pb-10 md:mx-0 md:max-w-none md:px-8 md:py-8">{children}</div>
       </div>
     </div>
   );
