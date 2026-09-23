@@ -5,15 +5,63 @@ import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
 import { obtenerDatosReporte, ReporteClinicoPdf, formatearFecha } from "@/lib/pdf/reporte-clinico";
+import { ARCO_SUPERIOR, ARCO_INFERIOR } from "@/lib/dental";
 import type { PresupuestoItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+const ARCO_INFERIOR_VISUAL = [...ARCO_INFERIOR].reverse();
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: "Pendiente de respuesta",
   aprobado: "Aprobado",
   rechazado: "Rechazado",
 };
+
+// Mismo mini odontograma seleccionable de la app, redibujado con las
+// primitivas de @react-pdf/renderer — solo marca los dientes elegidos,
+// sin estado clínico (eso vive en el reporte, páginas siguientes).
+function FilaDientesPdf({ numeros, seleccionados }: { numeros: number[]; seleccionados: Set<number> }) {
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "center" }}>
+      {numeros.map((n) => {
+        const activo = seleccionados.has(n);
+        return (
+          <View
+            key={n}
+            style={{
+              width: 16,
+              height: 16,
+              marginHorizontal: 2,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: activo ? PDF_COLOR.rose : PDF_COLOR.border,
+              backgroundColor: activo ? PDF_COLOR.rose : "#ffffff",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontSize: 6, color: activo ? "#ffffff" : PDF_COLOR.muted, fontFamily: "Helvetica-Bold" }}>
+              {n}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function DientesRelacionadosPdf({ dientes }: { dientes: number[] }) {
+  const set = new Set(dientes);
+  return (
+    <View style={estilosPdf.seccion}>
+      <Text style={estilosPdf.seccionTitulo}>Dientes relacionados</Text>
+      <FilaDientesPdf numeros={ARCO_SUPERIOR} seleccionados={set} />
+      <View style={{ marginTop: 4 }} />
+      <FilaDientesPdf numeros={ARCO_INFERIOR_VISUAL} seleccionados={set} />
+    </View>
+  );
+}
 
 // Página del presupuesto — mismo membrete que el reporte clínico, para
 // que ambas páginas del documento se vean como una sola unidad.
@@ -29,6 +77,7 @@ function PresupuestoPdf({
     nombre_respuesta: string | null;
     respondido_en: string | null;
     creado_en: string;
+    dientes: number[];
   };
   items: PresupuestoItem[];
   pacienteNombre: string;
@@ -85,6 +134,8 @@ function PresupuestoPdf({
         </View>
       </View>
 
+      {presupuesto.dientes.length > 0 && <DientesRelacionadosPdf dientes={presupuesto.dientes} />}
+
       <View style={estilosPdf.seccion}>
         <Text style={estilosPdf.seccionTitulo}>Estado</Text>
         <Text style={estilosPdf.parrafo}>{ETIQUETA_ESTADO[presupuesto.estado] ?? presupuesto.estado}</Text>
@@ -117,8 +168,9 @@ export async function GET(
       nombre_respuesta: string | null;
       respondido_en: string | null;
       creado_en: string;
+      dientes: number[];
     }>(
-      `SELECT titulo, notas, estado, nombre_respuesta, respondido_en, creado_en
+      `SELECT titulo, notas, estado, nombre_respuesta, respondido_en, creado_en, dientes
        FROM presupuestos WHERE id = $1 AND paciente_id = $2`,
       [presupuestoId, pacienteId]
     );

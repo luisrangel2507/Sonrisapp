@@ -534,6 +534,11 @@ CREATE TABLE IF NOT EXISTS presupuesto_items (
 CREATE INDEX IF NOT EXISTS idx_presupuestos_paciente ON presupuestos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_presupuesto_items_presupuesto ON presupuesto_items(presupuesto_id);
 
+-- Dientes (numeración FDI) a los que aplica el presupuesto — marcados
+-- a mano en un mini odontograma al armarlo, para que se vea de un
+-- vistazo cuáles están involucrados (en la app, el link público y el PDF).
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS dientes INTEGER[] NOT NULL DEFAULT '{}';
+
 -- Citas que llegan solas desde el link público de agendado (/agendar,
 -- pensado para compartir en Instagram) — quedan apartadas en el
 -- horario elegido, pero no son oficiales hasta que la doctora las

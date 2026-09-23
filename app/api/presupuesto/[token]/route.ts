@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
   const params = await props.params;
   try {
     const { rows } = await query(
-      `SELECT pr.id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en,
+      `SELECT pr.id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
               p.nombre AS paciente_nombre
        FROM presupuestos pr
        JOIN pacientes p ON p.id = pr.paciente_id

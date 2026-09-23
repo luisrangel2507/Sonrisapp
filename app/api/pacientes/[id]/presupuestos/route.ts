@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { generarHistorialToken } from "@/lib/historial-token";
+import { NUMEROS_FDI } from "@/lib/dental";
 import type { PresupuestoItem } from "@/lib/types";
 
 interface ItemEntrada {
@@ -19,7 +20,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const { rows: presupuestos } = await query(
-      `SELECT id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en
+      `SELECT id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes
        FROM presupuestos WHERE paciente_id = $1 ORDER BY creado_en DESC`,
       [pacienteId]
     );
@@ -59,13 +60,27 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const body = await req.json().catch(() => ({}));
-    const { titulo, notas, items } = body ?? {};
+    const { titulo, notas, items, dientes } = body ?? {};
 
     if (!titulo || typeof titulo !== "string" || !titulo.trim()) {
       return NextResponse.json({ error: "título es requerido" }, { status: 400 });
     }
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "agrega al menos un concepto" }, { status: 400 });
+    }
+
+    const dientesValidos: number[] = [];
+    if (dientes != null) {
+      if (!Array.isArray(dientes)) {
+        return NextResponse.json({ error: "dientes debe ser una lista" }, { status: 400 });
+      }
+      for (const d of dientes) {
+        const n = Number(d);
+        if (!NUMEROS_FDI.includes(n)) {
+          return NextResponse.json({ error: `diente inválido: ${d}` }, { status: 400 });
+        }
+        dientesValidos.push(n);
+      }
     }
 
     const itemsValidos: ItemEntrada[] = [];
@@ -88,10 +103,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const token = generarHistorialToken();
 
     const { rows } = await query(
-      `INSERT INTO presupuestos (paciente_id, titulo, notas, token)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en`,
-      [pacienteId, titulo.trim(), notas || null, token]
+      `INSERT INTO presupuestos (paciente_id, titulo, notas, token, dientes)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes`,
+      [pacienteId, titulo.trim(), notas || null, token, dientesValidos]
     );
     const presupuesto = rows[0];
 

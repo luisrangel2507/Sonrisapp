@@ -89,6 +89,7 @@ export interface Presupuesto {
   respondido_en: string | null;
   creado_en: string;
   items: PresupuestoItem[];
+  dientes: number[];
 }
 
 export type EstadoCita = "agendada" | "completada" | "cancelada";

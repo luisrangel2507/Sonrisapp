@@ -23,6 +23,7 @@ import {
 import type { Consentimiento, Paciente, PacienteNota, Presupuesto, Receta } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
+import { SelectorDientes } from "@/components/SelectorDientes";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -135,6 +136,7 @@ export default function PacienteDetallePage() {
   const [tituloPresupuesto, setTituloPresupuesto] = useState("");
   const [notasPresupuesto, setNotasPresupuesto] = useState("");
   const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "" }]);
+  const [dientesPresupuesto, setDientesPresupuesto] = useState<number[]>([]);
   const [creandoPresupuesto, setCreandoPresupuesto] = useState(false);
   const [eliminandoPresupuestoId, setEliminandoPresupuestoId] = useState<number | null>(null);
   const [compartiendoPresupuestoId, setCompartiendoPresupuestoId] = useState<number | null>(null);
@@ -432,11 +434,13 @@ export default function PacienteDetallePage() {
           cantidad: Number(it.cantidad) || 1,
           precio_unitario: Number(it.precio_unitario) || 0,
         })),
+        dientes: dientesPresupuesto,
       }),
     });
     setTituloPresupuesto("");
     setNotasPresupuesto("");
     setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "" }]);
+    setDientesPresupuesto([]);
     setFormPresupuestoAbierto(false);
     setCreandoPresupuesto(false);
     const res = await fetch(`/api/pacientes/${pacienteId}/presupuestos`);
@@ -870,6 +874,12 @@ export default function PacienteDetallePage() {
                   ))}
                 </div>
 
+                {p.dientes.length > 0 && (
+                  <div className="mt-2">
+                    <SelectorDientes seleccionados={p.dientes} soloLectura />
+                  </div>
+                )}
+
                 {p.estado === "pendiente" ? (
                   <button
                     onClick={() => compartirPresupuesto(p)}
@@ -964,6 +974,13 @@ export default function PacienteDetallePage() {
             >
               <Plus size={13} /> Agregar concepto
             </button>
+
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">
+                Dientes relacionados (opcional)
+              </label>
+              <SelectorDientes seleccionados={dientesPresupuesto} onCambiar={setDientesPresupuesto} />
+            </div>
 
             <textarea
               value={notasPresupuesto}

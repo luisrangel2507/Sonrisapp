@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Check, CheckCircle2, X, XCircle } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { formatearDinero } from "@/lib/dinero";
+import { SelectorDientes } from "@/components/SelectorDientes";
 import type { PresupuestoItem } from "@/lib/types";
 
 interface PresupuestoPublico {
@@ -16,6 +17,7 @@ interface PresupuestoPublico {
   respondido_en: string | null;
   paciente_nombre: string;
   items: PresupuestoItem[];
+  dientes: number[];
 }
 
 function formatearFechaHora(fecha: string) {
@@ -143,6 +145,15 @@ export default function PresupuestoPublicoPage() {
             <span className="text-lg font-bold text-[#3F6B33]">{formatearDinero(total)}</span>
           </div>
         </div>
+
+        {datos.dientes.length > 0 && (
+          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+              Dientes relacionados
+            </div>
+            <SelectorDientes seleccionados={datos.dientes} soloLectura />
+          </div>
+        )}
 
         {yaRespondido ? (
           <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
