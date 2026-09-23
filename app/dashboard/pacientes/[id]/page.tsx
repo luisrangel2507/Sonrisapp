@@ -838,6 +838,15 @@ export default function PacienteDetallePage() {
                     <span className="text-sm font-semibold text-[#2b2118]">
                       {formatearDinero(totalPresupuesto(p.items))}
                     </span>
+                    <a
+                      href={`/api/pacientes/${pacienteId}/presupuestos/${p.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#803449]"
+                      aria-label="Descargar presupuesto en PDF"
+                    >
+                      <FileDown size={14} />
+                    </a>
                     <button
                       onClick={() => eliminarPresupuesto(p.id)}
                       disabled={eliminandoPresupuestoId === p.id}
