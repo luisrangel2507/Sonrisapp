@@ -301,7 +301,10 @@ export default function PacienteDetallePage() {
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Historia clínica — Viña Sonrisas", text: texto, url });
+          // No mandar `url` aparte: ya va dentro de `texto`, y en
+          // iOS/WhatsApp el share sheet lo pega otra vez al final
+          // (queda el link duplicado en el mensaje).
+          await navigator.share({ title: "Historia clínica — Viña Sonrisas", text: texto });
         } catch {
           // el usuario canceló el share, no hacer nada
         }
@@ -328,7 +331,7 @@ export default function PacienteDetallePage() {
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Tu portal — Viña Sonrisas", text: texto, url });
+          await navigator.share({ title: "Tu portal — Viña Sonrisas", text: texto });
         } catch {
           // el usuario canceló el share, no hacer nada
         }
@@ -393,7 +396,7 @@ export default function PacienteDetallePage() {
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Consentimiento — Viña Sonrisas", text: texto, url });
+          await navigator.share({ title: "Consentimiento — Viña Sonrisas", text: texto });
         } catch {
           // el usuario canceló el share, no hacer nada
         }
@@ -469,7 +472,7 @@ export default function PacienteDetallePage() {
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Presupuesto — Viña Sonrisas", text: texto, url });
+          await navigator.share({ title: "Presupuesto — Viña Sonrisas", text: texto });
         } catch {
           // el usuario canceló el share, no hacer nada
         }
