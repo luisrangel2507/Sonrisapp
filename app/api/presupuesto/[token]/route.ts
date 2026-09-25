@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
-import { obtenerHistorialDientes } from "@/lib/dental-historial";
-import { construirMapaEstados, ESTADO_DIENTE } from "@/lib/dental";
-import { estadosPersonalizados } from "@/lib/estados-diente";
 import type { PresupuestoItem } from "@/lib/types";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra con
@@ -15,7 +12,6 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
   try {
     const { rows } = await query<{
       id: number;
-      paciente_id: number;
       titulo: string;
       notas: string | null;
       estado: string;
@@ -25,7 +21,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       dientes: number[];
       paciente_nombre: string;
     }>(
-      `SELECT pr.id, pr.paciente_id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
+      `SELECT pr.id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
               p.nombre AS paciente_nombre
        FROM presupuestos pr
        JOIN pacientes p ON p.id = pr.paciente_id
@@ -36,7 +32,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
     if (rows.length === 0) {
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }
-    const { paciente_id, ...presupuesto } = rows[0];
+    const presupuesto = rows[0];
 
     const { rows: items } = await query<PresupuestoItem>(
       `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario
@@ -44,13 +40,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       [presupuesto.id]
     );
 
-    const mapaEstados = construirMapaEstados(await estadosPersonalizados());
-    const historialDientes = (await obtenerHistorialDientes(paciente_id, presupuesto.dientes)).map((d) => ({
-      ...d,
-      estado_label: (mapaEstados[d.estado] ?? ESTADO_DIENTE.sano).label,
-    }));
-
-    return NextResponse.json({ presupuesto: { ...presupuesto, items, historialDientes } });
+    return NextResponse.json({ presupuesto: { ...presupuesto, items } });
   } catch (err) {
     return errorJson(err);
   }

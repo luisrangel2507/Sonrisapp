@@ -8,13 +8,6 @@ import { formatearDinero } from "@/lib/dinero";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
 import type { PresupuestoItem } from "@/lib/types";
 
-interface HistorialDiente {
-  numero_fdi: number;
-  estado: string;
-  estado_label: string;
-  entradas: { tipo: string; fecha: string; nota: string | null }[];
-}
-
 interface PresupuestoPublico {
   id: number;
   titulo: string;
@@ -25,7 +18,6 @@ interface PresupuestoPublico {
   paciente_nombre: string;
   items: PresupuestoItem[];
   dientes: number[];
-  historialDientes: HistorialDiente[];
 }
 
 function formatearFechaHora(fecha: string) {
@@ -36,10 +28,6 @@ function formatearFechaHora(fecha: string) {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function formatearFecha(fecha: string) {
-  return new Date(fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function PresupuestoPublicoPage() {
@@ -164,38 +152,6 @@ export default function PresupuestoPublicoPage() {
               Dientes relacionados
             </div>
             <OdontogramaFoto seleccionados={datos.dientes} soloLectura />
-          </div>
-        )}
-
-        {datos.historialDientes.length > 0 && (
-          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-            <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-              Historial de atención
-            </div>
-            <div className="space-y-3">
-              {datos.historialDientes.map((d) => (
-                <div key={d.numero_fdi} className="border-b border-[#EFE9DC] pb-3 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[#2b2118]">Diente {d.numero_fdi}</span>
-                    <span className="rounded-full bg-[#F5F1EA] px-2 py-0.5 text-[11px] font-medium text-[#8a8272]">
-                      {d.estado_label}
-                    </span>
-                  </div>
-                  {d.entradas.length === 0 ? (
-                    <p className="mt-1 text-[12px] text-[#a49c8a]">Sin tratamientos registrados todavía.</p>
-                  ) : (
-                    <div className="mt-1 space-y-0.5">
-                      {d.entradas.map((e, i) => (
-                        <p key={i} className="text-[12px] text-[#8a8272]">
-                          {formatearFecha(e.fecha)} — {e.tipo}
-                          {e.nota ? `: ${e.nota}` : ""}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
         )}
 

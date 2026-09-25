@@ -6,9 +6,7 @@ import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
 import { obtenerDatosReporte, ReporteClinicoPdf, formatearFecha } from "@/lib/pdf/reporte-clinico";
-import { obtenerHistorialDientes } from "@/lib/dental-historial";
-import { NUMEROS_FDI, POLIGONOS_DIENTE, construirMapaEstados, ESTADO_DIENTE } from "@/lib/dental";
-import { estadosPersonalizados } from "@/lib/estados-diente";
+import { NUMEROS_FDI, POLIGONOS_DIENTE } from "@/lib/dental";
 import type { PresupuestoItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -56,42 +54,12 @@ function DientesRelacionadosPdf({ dientes }: { dientes: number[] }) {
   );
 }
 
-function HistorialDientesPdf({
-  historial,
-}: {
-  historial: { numero_fdi: number; estado_label: string; entradas: { tipo: string; fecha: string; nota: string | null }[] }[];
-}) {
-  return (
-    <View style={estilosPdf.seccion}>
-      <Text style={estilosPdf.seccionTitulo}>Historial de atención</Text>
-      {historial.map((d) => (
-        <View key={d.numero_fdi} style={{ marginBottom: 6 }} wrap={false}>
-          <Text style={{ fontSize: 9.5, fontFamily: "Helvetica-Bold" }}>
-            Diente {d.numero_fdi} — <Text style={{ color: PDF_COLOR.rose }}>{d.estado_label}</Text>
-          </Text>
-          {d.entradas.length === 0 ? (
-            <Text style={{ ...estilosPdf.vacio, marginLeft: 8 }}>Sin tratamientos registrados todavía.</Text>
-          ) : (
-            d.entradas.map((e, i) => (
-              <Text key={i} style={{ fontSize: 8.5, color: PDF_COLOR.muted, marginLeft: 8 }}>
-                {formatearFecha(e.fecha)} — {e.tipo}
-                {e.nota ? `: ${e.nota}` : ""}
-              </Text>
-            ))
-          )}
-        </View>
-      ))}
-    </View>
-  );
-}
-
 // Página del presupuesto — mismo membrete que el reporte clínico, para
 // que ambas páginas del documento se vean como una sola unidad.
 function PresupuestoPdf({
   presupuesto,
   items,
   pacienteNombre,
-  historialDientes,
 }: {
   presupuesto: {
     titulo: string;
@@ -104,7 +72,6 @@ function PresupuestoPdf({
   };
   items: PresupuestoItem[];
   pacienteNombre: string;
-  historialDientes: { numero_fdi: number; estado_label: string; entradas: { tipo: string; fecha: string; nota: string | null }[] }[];
 }) {
   const total = items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
 
@@ -160,8 +127,6 @@ function PresupuestoPdf({
 
       {presupuesto.dientes.length > 0 && <DientesRelacionadosPdf dientes={presupuesto.dientes} />}
 
-      {historialDientes.length > 0 && <HistorialDientesPdf historial={historialDientes} />}
-
       <View style={estilosPdf.seccion}>
         <Text style={estilosPdf.seccionTitulo}>Estado</Text>
         <Text style={estilosPdf.parrafo}>{ETIQUETA_ESTADO[presupuesto.estado] ?? presupuesto.estado}</Text>
@@ -216,20 +181,9 @@ export async function GET(
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
 
-    const mapaEstados = construirMapaEstados(await estadosPersonalizados());
-    const historialDientes = (await obtenerHistorialDientes(pacienteId, presupuesto.dientes)).map((d) => ({
-      ...d,
-      estado_label: (mapaEstados[d.estado] ?? ESTADO_DIENTE.sano).label,
-    }));
-
     const documento = (
       <DocumentoPdf>
-        <PresupuestoPdf
-          presupuesto={presupuesto}
-          items={items}
-          pacienteNombre={datosReporte.paciente.nombre}
-          historialDientes={historialDientes}
-        />
+        <PresupuestoPdf presupuesto={presupuesto} items={items} pacienteNombre={datosReporte.paciente.nombre} />
         <ReporteClinicoPdf datos={datosReporte} />
       </DocumentoPdf>
     );
