@@ -17,6 +17,7 @@ export function OdontogramaFoto({
   soloLectura?: boolean;
 }) {
   const set = new Set(seleccionados);
+  const todosMarcados = NUMEROS_FDI.every((n) => set.has(n));
 
   function alternar(n: number) {
     if (soloLectura || !onCambiar) return;
@@ -24,6 +25,11 @@ export function OdontogramaFoto({
     if (nuevo.has(n)) nuevo.delete(n);
     else nuevo.add(n);
     onCambiar([...nuevo].sort((a, b) => a - b));
+  }
+
+  function alternarTodos() {
+    if (soloLectura || !onCambiar) return;
+    onCambiar(todosMarcados ? [] : [...NUMEROS_FDI]);
   }
 
   return (
@@ -59,6 +65,15 @@ export function OdontogramaFoto({
           })}
         </svg>
       </div>
+      {!soloLectura && onCambiar && (
+        <button
+          type="button"
+          onClick={alternarTodos}
+          className="flex w-full items-center justify-center gap-1 text-[11px] font-medium text-[#803449]"
+        >
+          {todosMarcados ? "Quitar todos" : "Seleccionar todos"}
+        </button>
+      )}
       <p className="text-center text-[11px] text-[#a49c8a]">
         {seleccionados.length === 0
           ? soloLectura
