@@ -23,7 +23,7 @@ import {
 import type { Consentimiento, Paciente, PacienteNota, Presupuesto, Receta } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
-import { SelectorDientes } from "@/components/SelectorDientes";
+import { OdontogramaFoto } from "@/components/OdontogramaFoto";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -876,7 +876,7 @@ export default function PacienteDetallePage() {
 
                 {p.dientes.length > 0 && (
                   <div className="mt-2">
-                    <SelectorDientes seleccionados={p.dientes} soloLectura />
+                    <OdontogramaFoto seleccionados={p.dientes} soloLectura />
                   </div>
                 )}
 
@@ -979,7 +979,7 @@ export default function PacienteDetallePage() {
               <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">
                 Dientes relacionados (opcional)
               </label>
-              <SelectorDientes seleccionados={dientesPresupuesto} onCambiar={setDientesPresupuesto} />
+              <OdontogramaFoto seleccionados={dientesPresupuesto} onCambiar={setDientesPresupuesto} />
             </div>
 
             <textarea

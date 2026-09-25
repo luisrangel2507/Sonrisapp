@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer, Text, View } from "@react-pdf/renderer";
+import { renderToBuffer, Text, View, Image, Svg, Polygon } from "@react-pdf/renderer";
+import path from "node:path";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
 import { obtenerDatosReporte, ReporteClinicoPdf, formatearFecha } from "@/lib/pdf/reporte-clinico";
-import { ARCO_SUPERIOR, ARCO_INFERIOR } from "@/lib/dental";
+import { obtenerHistorialDientes } from "@/lib/dental-historial";
+import { NUMEROS_FDI, POLIGONOS_DIENTE, construirMapaEstados, ESTADO_DIENTE } from "@/lib/dental";
+import { estadosPersonalizados } from "@/lib/estados-diente";
 import type { PresupuestoItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const ARCO_INFERIOR_VISUAL = [...ARCO_INFERIOR].reverse();
+const ODONTOGRAMA_IMAGEN = path.join(process.cwd(), "public", "odontograma-hud.jpg");
+const ODONTOGRAMA_ASPECTO = 1300 / 799;
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: "Pendiente de respuesta",
@@ -18,47 +22,65 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   rechazado: "Rechazado",
 };
 
-// Mismo mini odontograma seleccionable de la app, redibujado con las
-// primitivas de @react-pdf/renderer — solo marca los dientes elegidos,
-// sin estado clínico (eso vive en el reporte, páginas siguientes).
-function FilaDientesPdf({ numeros, seleccionados }: { numeros: number[]; seleccionados: Set<number> }) {
-  return (
-    <View style={{ flexDirection: "row", justifyContent: "center" }}>
-      {numeros.map((n) => {
-        const activo = seleccionados.has(n);
-        return (
-          <View
-            key={n}
-            style={{
-              width: 16,
-              height: 16,
-              marginHorizontal: 2,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: activo ? PDF_COLOR.rose : PDF_COLOR.border,
-              backgroundColor: activo ? PDF_COLOR.rose : "#ffffff",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text style={{ fontSize: 6, color: activo ? "#ffffff" : PDF_COLOR.muted, fontFamily: "Helvetica-Bold" }}>
-              {n}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
+// Misma foto y mismos polígonos que el odontograma real del paciente
+// (ver lib/pdf/reporte-clinico.tsx) — aquí solo marca los dientes
+// elegidos para este presupuesto, sin estado clínico, para que el
+// paciente reconozca su propia boca en vez de una lista de números.
 function DientesRelacionadosPdf({ dientes }: { dientes: number[] }) {
   const set = new Set(dientes);
   return (
     <View style={estilosPdf.seccion}>
       <Text style={estilosPdf.seccionTitulo}>Dientes relacionados</Text>
-      <FilaDientesPdf numeros={ARCO_SUPERIOR} seleccionados={set} />
-      <View style={{ marginTop: 4 }} />
-      <FilaDientesPdf numeros={ARCO_INFERIOR_VISUAL} seleccionados={set} />
+      <View style={{ width: "70%", alignSelf: "center", position: "relative", aspectRatio: ODONTOGRAMA_ASPECTO }}>
+        <Image src={ODONTOGRAMA_IMAGEN} style={{ width: "100%", height: "100%" }} />
+        <Svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+        >
+          {NUMEROS_FDI.filter((n) => set.has(n)).map((n) => (
+            // rgba() con alpha en Polygon.fill se pinta azul en esta
+            // versión de @react-pdf/renderer — hex sólido + fillOpacity sí funciona.
+            <Polygon
+              key={n}
+              points={POLIGONOS_DIENTE[n]}
+              fill={PDF_COLOR.rose}
+              fillOpacity={0.55}
+              stroke={PDF_COLOR.rose}
+              strokeWidth={0.5}
+            />
+          ))}
+        </Svg>
+      </View>
+    </View>
+  );
+}
+
+function HistorialDientesPdf({
+  historial,
+}: {
+  historial: { numero_fdi: number; estado_label: string; entradas: { tipo: string; fecha: string; nota: string | null }[] }[];
+}) {
+  return (
+    <View style={estilosPdf.seccion}>
+      <Text style={estilosPdf.seccionTitulo}>Historial de atención</Text>
+      {historial.map((d) => (
+        <View key={d.numero_fdi} style={{ marginBottom: 6 }} wrap={false}>
+          <Text style={{ fontSize: 9.5, fontFamily: "Helvetica-Bold" }}>
+            Diente {d.numero_fdi} — <Text style={{ color: PDF_COLOR.rose }}>{d.estado_label}</Text>
+          </Text>
+          {d.entradas.length === 0 ? (
+            <Text style={{ ...estilosPdf.vacio, marginLeft: 8 }}>Sin tratamientos registrados todavía.</Text>
+          ) : (
+            d.entradas.map((e, i) => (
+              <Text key={i} style={{ fontSize: 8.5, color: PDF_COLOR.muted, marginLeft: 8 }}>
+                {formatearFecha(e.fecha)} — {e.tipo}
+                {e.nota ? `: ${e.nota}` : ""}
+              </Text>
+            ))
+          )}
+        </View>
+      ))}
     </View>
   );
 }
@@ -69,6 +91,7 @@ function PresupuestoPdf({
   presupuesto,
   items,
   pacienteNombre,
+  historialDientes,
 }: {
   presupuesto: {
     titulo: string;
@@ -81,6 +104,7 @@ function PresupuestoPdf({
   };
   items: PresupuestoItem[];
   pacienteNombre: string;
+  historialDientes: { numero_fdi: number; estado_label: string; entradas: { tipo: string; fecha: string; nota: string | null }[] }[];
 }) {
   const total = items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
 
@@ -136,6 +160,8 @@ function PresupuestoPdf({
 
       {presupuesto.dientes.length > 0 && <DientesRelacionadosPdf dientes={presupuesto.dientes} />}
 
+      {historialDientes.length > 0 && <HistorialDientesPdf historial={historialDientes} />}
+
       <View style={estilosPdf.seccion}>
         <Text style={estilosPdf.seccionTitulo}>Estado</Text>
         <Text style={estilosPdf.parrafo}>{ETIQUETA_ESTADO[presupuesto.estado] ?? presupuesto.estado}</Text>
@@ -190,9 +216,20 @@ export async function GET(
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
 
+    const mapaEstados = construirMapaEstados(await estadosPersonalizados());
+    const historialDientes = (await obtenerHistorialDientes(pacienteId, presupuesto.dientes)).map((d) => ({
+      ...d,
+      estado_label: (mapaEstados[d.estado] ?? ESTADO_DIENTE.sano).label,
+    }));
+
     const documento = (
       <DocumentoPdf>
-        <PresupuestoPdf presupuesto={presupuesto} items={items} pacienteNombre={datosReporte.paciente.nombre} />
+        <PresupuestoPdf
+          presupuesto={presupuesto}
+          items={items}
+          pacienteNombre={datosReporte.paciente.nombre}
+          historialDientes={historialDientes}
+        />
         <ReporteClinicoPdf datos={datosReporte} />
       </DocumentoPdf>
     );

@@ -59,12 +59,15 @@ function OdontogramaPdf({
         {afectados.map((numero) => {
           const estado = porNumero.get(numero)!;
           const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
-          const fill = estado === "ausente" ? "#0A0A0F" : `rgba(${est.glow},0.45)`;
+          // rgba() con alpha en Polygon.fill se pinta azul en esta
+          // versión de @react-pdf/renderer (bug de esa librería) — el
+          // color sólido + fillOpacity numérico sí funciona bien.
           return (
             <Polygon
               key={numero}
               points={POLIGONOS_DIENTE[numero]}
-              fill={fill}
+              fill={estado === "ausente" ? "#0A0A0F" : est.ring}
+              fillOpacity={estado === "ausente" ? 1 : 0.45}
               stroke={est.ring}
               strokeWidth={0.5}
             />
