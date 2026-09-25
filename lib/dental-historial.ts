@@ -10,9 +10,9 @@ export interface HistorialDienteResumen {
 // Historial de atención (estado actual + tratamientos registrados) de
 // una lista puntual de dientes — para mostrar, junto a un presupuesto,
 // por qué se está proponiendo cada tratamiento (lo que ya se detectó
-// o se hizo en esos dientes). Los dientes sin ninguna ficha todavía
-// (paciente_dientes solo tiene fila una vez que algo se marcó) se
-// incluyen igual, como "sano" sin tratamientos registrados.
+// o se hizo en esos dientes). Los dientes sanos y sin tratamientos
+// registrados no aportan nada que reportar, así que se omiten de la
+// lista (aunque estén marcados en el odontograma del presupuesto).
 export async function obtenerHistorialDientes(
   pacienteId: number,
   numerosFdi: number[]
@@ -55,5 +55,6 @@ export async function obtenerHistorialDientes(
               .map((h) => ({ tipo: h.tipo, fecha: h.fecha, nota: descifrar(h.nota) }))
           : [],
       };
-    });
+    })
+    .filter((d) => d.estado !== "sano" || d.entradas.length > 0);
 }
