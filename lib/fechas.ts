@@ -1,10 +1,16 @@
-// Convierte una columna DATE de Postgres (llega al cliente como ISO
-// con hora, p. ej. "2026-08-19T00:00:00.000Z") a un Date en horario
-// LOCAL sin desfasarse un día. `new Date(iso)` interpreta esa media
-// noche como UTC, y en cualquier zona horaria detrás de UTC (todo
+// Convierte una columna DATE de Postgres a un Date en horario LOCAL
+// sin desfasarse un día. Puede llegar como string ISO con hora (p. ej.
+// "2026-08-19T00:00:00.000Z", ya pasada por JSON en una respuesta de
+// API) o como objeto Date (pg parsea las columnas DATE a Date del
+// lado del servidor, p. ej. en las rutas de PDF que leen la fila
+// directo de la base). `new Date(iso)` interpreta esa media noche
+// como UTC, y en cualquier zona horaria detrás de UTC (todo
 // México/Latam) los getters locales (getDate/getMonth/getFullYear)
-// terminan devolviendo el día anterior.
-export function fechaSoloDia(fecha: string): Date {
+// terminan devolviendo el día anterior — por eso no se usa aquí.
+export function fechaSoloDia(fecha: string | Date): Date {
+  if (fecha instanceof Date) {
+    return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  }
   const [y, m, d] = fecha.slice(0, 10).split("-").map(Number);
   return new Date(y, m - 1, d);
 }
@@ -38,7 +44,7 @@ export function citaVencidaSinCompletar(cita: { estado: string; fecha_hora: stri
 // Edad cumplida a una fecha dada (por defecto hoy) — para mostrarla en
 // documentos como la receta, calculada a partir de la fecha de
 // nacimiento en vez de pedirle a la doctora que la escriba a mano.
-export function calcularEdad(fechaNacimiento: string, enFecha: Date = new Date()): number {
+export function calcularEdad(fechaNacimiento: string | Date, enFecha: Date = new Date()): number {
   const nacimiento = fechaSoloDia(fechaNacimiento);
   let edad = enFecha.getFullYear() - nacimiento.getFullYear();
   const aunNoCumple =
