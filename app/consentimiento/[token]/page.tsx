@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, PenLine } from "lucide-react";
-import { DOCTORA } from "@/lib/panel-data";
+import { CLINICA, DOCTORA } from "@/lib/panel-data";
 import { FirmaCanvas } from "@/components/FirmaCanvas";
 
 interface ConsentimientoPublico {
@@ -25,6 +25,70 @@ function formatearFechaHora(fecha: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// El contenido llega como texto plano con párrafos separados por línea
+// en blanco (ver lib/consentimiento-expediente.ts). Aquí se interpreta
+// esa estructura —encabezados cortos terminados en ":", listas "1. …",
+// cierre "Firmo de conformidad…"— para que se lea como un documento
+// legal formal en vez de un bloque de texto corrido.
+function ContenidoConsentimiento({ contenido }: { contenido: string }) {
+  const bloques = contenido
+    .split(/\n\s*\n/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const elementos: ReactNode[] = [];
+  let listaActual: string[] = [];
+
+  function flushLista(key: string) {
+    if (listaActual.length === 0) return;
+    elementos.push(
+      <ol key={key} className="space-y-2.5">
+        {listaActual.map((item, i) => {
+          const m = item.match(/^(\d+)\.\s*([\s\S]+)$/);
+          return (
+            <li key={i} className="flex gap-2.5">
+              <span className="shrink-0 font-semibold text-[#803449]">{m ? `${m[1]}.` : `${i + 1}.`}</span>
+              <span className="text-justify">{m ? m[2] : item}</span>
+            </li>
+          );
+        })}
+      </ol>
+    );
+    listaActual = [];
+  }
+
+  bloques.forEach((bloque, idx) => {
+    if (/^\d+\.\s/.test(bloque)) {
+      listaActual.push(bloque);
+      return;
+    }
+    flushLista(`lista-${idx}`);
+
+    if (bloque.length < 60 && bloque.endsWith(":")) {
+      elementos.push(
+        <p key={idx} className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+          {bloque}
+        </p>
+      );
+    } else if (bloque.startsWith("Firmo de conformidad")) {
+      elementos.push(
+        <p key={idx} className="pt-2 text-justify italic text-[#5c5648]">
+          {bloque}
+        </p>
+      );
+    } else {
+      elementos.push(
+        <p key={idx} className="text-justify">
+          {bloque}
+        </p>
+      );
+    }
+  });
+  flushLista("lista-final");
+
+  return <div className="space-y-3.5">{elementos}</div>;
 }
 
 export default function ConsentimientoPublicoPage() {
@@ -104,24 +168,35 @@ export default function ConsentimientoPublicoPage() {
   const yaFirmado = datos.estado === "firmado";
 
   return (
-    <div className="min-h-dvh bg-[#F5F1EA]">
+    <div className="min-h-dvh bg-[#EDE7D8]">
       <div className="mx-auto max-w-md space-y-4 px-4 pb-10 pt-6">
-        <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
+        {/* Membrete formal — mismo criterio que el encabezado de los PDFs
+            de la clínica (lib/pdf.tsx: EncabezadoPdf). */}
+        <div className="rounded-2xl border-b-[3px] border-[#803449] bg-white px-5 pb-4 pt-5 text-center shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-52" />
-          <div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
-            Consentimiento informado
-          </div>
-          <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
+          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-36" />
+          <p className="mt-2.5 font-serif text-lg font-bold text-[#803449]">Viña Sonrisas</p>
+          <p className="text-[11px] text-[#8a8272]">Odontología Estética</p>
+          <p className="mt-2 text-[12px] font-medium text-[#2b2118]">
+            {DOCTORA.nombre} · Céd. Prof. {DOCTORA.cedula}
+          </p>
+          <p className="text-[11px] text-[#8a8272]">{CLINICA.direccion}</p>
         </div>
 
-        <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-          <h2 className="text-base font-bold text-[#2b2118]">{datos.titulo}</h2>
-          <p className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-[#5c5648]">{datos.contenido}</p>
+        <div className="rounded-2xl border border-[#EFE9DC] bg-white px-5 py-6 shadow-sm">
+          <div className="mb-4 border-b-2 border-double border-[#e2d9c4] pb-4 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a49c8a]">
+              Consentimiento informado
+            </p>
+            <h2 className="mt-1.5 font-serif text-[19px] font-bold leading-snug text-[#2b2118]">{datos.titulo}</h2>
+          </div>
+          <div className="font-serif text-[13.5px] leading-relaxed text-[#3d372c]">
+            <ContenidoConsentimiento contenido={datos.contenido} />
+          </div>
         </div>
 
         {yaFirmado ? (
-          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
+          <div className="rounded-2xl border border-[#EFE9DC] bg-white p-5 text-center shadow-sm">
             <CheckCircle2 className="mx-auto mb-2 text-[#3F6B33]" size={36} />
             <p className="text-base font-semibold text-[#2b2118]">
               {firmadoAhora ? "¡Gracias, quedó firmado!" : "Este consentimiento ya fue firmado"}
@@ -141,7 +216,8 @@ export default function ConsentimientoPublicoPage() {
             {firmadoAhora && <p className="mt-4 text-sm text-[#8a8272]">Ya puedes cerrar esta ventana.</p>}
           </div>
         ) : (
-          <div className="space-y-3 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+          <div className="space-y-3 rounded-2xl border border-[#EFE9DC] bg-white p-5 shadow-sm">
+            <p className="text-[11px] uppercase tracking-wide text-[#a49c8a]">Firma de conformidad</p>
             <div>
               <label className="block text-[11px] font-medium text-[#a49c8a]">Nombre de quien firma</label>
               <input
