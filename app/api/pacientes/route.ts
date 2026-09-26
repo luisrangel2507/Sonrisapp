@@ -22,12 +22,21 @@ export async function GET(req: NextRequest) {
     // Subconsulta correlacionada (en vez de JOIN) para que
     // historia_clinica no entre al FROM de la consulta principal — así
     // el "id" sin calificar de PACIENTE_COLUMNAS no queda ambiguo.
+    // Mismo criterio: un paciente sin ningún consentimiento vigente
+    // firmado (nunca se le generó uno, lo tiene pendiente de firma, o
+    // el único que tenía fue anulado) se marca para que no se pierda
+    // de vista — la norma exige el consentimiento antes de tratar el
+    // expediente electrónico del paciente.
     const SELECT_PACIENTES = `
       SELECT ${PACIENTE_COLUMNAS},
         EXISTS (
           SELECT 1 FROM historia_clinica hc
           WHERE hc.paciente_id = pacientes.id AND hc.vigente = true AND hc.confirmado = false
-        ) AS historial_pendiente
+        ) AS historial_pendiente,
+        NOT EXISTS (
+          SELECT 1 FROM consentimientos c
+          WHERE c.paciente_id = pacientes.id AND c.vigente = true AND c.estado = 'firmado'
+        ) AS consentimiento_pendiente
       FROM pacientes
     `;
 

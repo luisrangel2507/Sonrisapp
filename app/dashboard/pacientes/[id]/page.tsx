@@ -686,6 +686,12 @@ export default function PacienteDetallePage() {
           </span>
         </div>
 
+        {!consentimientos.some((c) => c.vigente && c.estado === "firmado") && (
+          <p className="mb-3 rounded-xl border border-[#EAD9B0] bg-[#FCEFD2] px-3 py-2 text-[12px] text-[#8a6d1f]">
+            📝 Este paciente todavía no tiene un consentimiento firmado.
+          </p>
+        )}
+
         <div className="space-y-3">
           {consentimientos.length === 0 ? (
             <p className="text-sm text-[#8a8272]">Sin consentimientos todavía.</p>

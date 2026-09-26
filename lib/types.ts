@@ -21,9 +21,14 @@ export interface Paciente {
   // solo paciente (solo se calcula en la lista) — el objeto Paciente
   // ahí no lo incluye, pero se agrega vía intersección donde se usa.
   historial_pendiente?: boolean;
+  // true si el paciente no tiene ningún consentimiento vigente firmado
+  // (nunca se le generó uno, lo tiene pendiente de firma, o el único
+  // que tenía fue anulado). Igual que historial_pendiente, solo se
+  // calcula en la lista.
+  consentimiento_pendiente?: boolean;
   // NOM-024: dar de baja a un paciente no borra su expediente, solo lo
-  // desactiva (activo=false) — se excluye del listado pero el registro
-  // y su historial siguen intactos para auditoría.
+  // desactiva (activo=false) — deja de contar como paciente activo del
+  // día a día, pero el registro y su historial siguen intactos.
   activo: boolean;
   motivo_baja: string | null;
   dado_de_baja_por_nombre: string | null;

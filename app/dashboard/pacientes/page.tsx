@@ -100,6 +100,11 @@ export default function PacientesPage() {
     [activos]
   );
 
+  const sinConsentimiento = useMemo(
+    () => activos.filter((p) => p.consentimiento_pendiente),
+    [activos]
+  );
+
   // Agrupa por la inicial del primer nombre — ya viene ordenado, así
   // que solo hay que ir juntando por letra en el mismo orden.
   const grupos = useMemo(() => {
@@ -185,6 +190,17 @@ export default function PacientesPage() {
               </Link>
             ))}
           </div>
+        </div>
+      )}
+
+      {sinConsentimiento.length > 0 && (
+        <div className="mx-4 mt-3 rounded-2xl border border-[#EAD9B0] bg-[#FCEFD2] px-4 py-3 text-[13px] text-[#8a6d1f]">
+          📝{" "}
+          <strong>
+            {sinConsentimiento.length} paciente{sinConsentimiento.length === 1 ? "" : "s"} sin consentimiento
+            firmado
+          </strong>{" "}
+          — desde su ficha puedes generar el link para que lo firme (marcados con 📝 en la lista).
         </div>
       )}
 
@@ -284,6 +300,9 @@ function TarjetaPaciente({
       <div className="min-w-0 flex-1">
         <div className={`truncate text-sm font-semibold ${inactivo ? "text-[#8a8272]" : "text-[#2b2118]"}`}>
           {p.nombre} {p.historial_pendiente && "🚨"}
+          {!inactivo && p.consentimiento_pendiente && (
+            <span title="Sin consentimiento firmado">📝</span>
+          )}
         </div>
         <div className="truncate text-xs text-[#a49c8a]">
           {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
