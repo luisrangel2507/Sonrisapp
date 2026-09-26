@@ -14,6 +14,7 @@ import {
   Pill,
   Plus,
   Receipt,
+  RefreshCw,
   Save,
   Share2,
   Sparkles,
@@ -122,6 +123,7 @@ export default function PacienteDetallePage() {
   const [linkCopiado, setLinkCopiado] = useState(false);
   const [enviandoPortal, setEnviandoPortal] = useState(false);
   const [portalCopiado, setPortalCopiado] = useState(false);
+  const [regenerandoLink, setRegenerandoLink] = useState(false);
 
   const [consentimientos, setConsentimientos] = useState<Consentimiento[]>([]);
   const [formConsentAbierto, setFormConsentAbierto] = useState(false);
@@ -353,6 +355,21 @@ export default function PacienteDetallePage() {
     } finally {
       setEnviandoPortal(false);
     }
+  }
+
+  // El link de historial/portal no expira solo — si se compartió por
+  // error o quedó en un dispositivo perdido, esta es la única forma de
+  // invalidarlo sin borrar al paciente: el link viejo deja de servir
+  // en cuanto se genera uno nuevo.
+  async function regenerarLink() {
+    if (regenerandoLink) return;
+    const ok = window.confirm(
+      "¿Generar un link nuevo? El link de historial/portal que ya compartiste (por WhatsApp, etc.) dejará de funcionar."
+    );
+    if (!ok) return;
+    setRegenerandoLink(true);
+    await fetch(`/api/pacientes/${pacienteId}/historial-token`, { method: "POST" });
+    setRegenerandoLink(false);
   }
 
   async function crearConsentimiento() {
@@ -627,6 +644,14 @@ export default function PacienteDetallePage() {
             className="flex items-center gap-1.5 rounded-full border border-[#DDC2E0] bg-[#EFE3F0] px-3 py-1.5 text-[12px] font-medium text-[#7A4D8A] disabled:opacity-50"
           >
             <ExternalLink size={13} /> {portalCopiado ? "Link copiado ✓" : "Copiar link del portal"}
+          </button>
+          <button
+            onClick={regenerarLink}
+            disabled={regenerandoLink}
+            title="Invalida el link de historial/portal actual y genera uno nuevo"
+            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#8a8272] disabled:opacity-50"
+          >
+            <RefreshCw size={13} /> {regenerandoLink ? "Generando…" : "Regenerar link"}
           </button>
         </div>
 

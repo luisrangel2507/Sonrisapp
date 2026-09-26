@@ -98,6 +98,7 @@ export default function ConsentimientoPublicoPage() {
   const [datos, setDatos] = useState<ConsentimientoPublico | null>(null);
   const [cargando, setCargando] = useState(true);
   const [invalido, setInvalido] = useState(false);
+  const [expirado, setExpirado] = useState(false);
   const [nombreFirma, setNombreFirma] = useState("");
   const [firma, setFirma] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -111,7 +112,8 @@ export default function ConsentimientoPublicoPage() {
         const res = await fetch(`/api/consentimiento/${token}`);
         const data = await res.json();
         if (!res.ok || !data.consentimiento) {
-          setInvalido(true);
+          if (res.status === 410) setExpirado(true);
+          else setInvalido(true);
           setCargando(false);
           return;
         }
@@ -136,7 +138,13 @@ export default function ConsentimientoPublicoPage() {
         body: JSON.stringify({ nombre_firma: nombreFirma.trim(), firma }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "");
+      if (!res.ok) {
+        if (res.status === 410) {
+          setExpirado(true);
+          return;
+        }
+        throw new Error(data.error ?? "");
+      }
       setDatos((prev) => (prev ? { ...prev, ...data.consentimiento } : prev));
       setFirmadoAhora(true);
     } catch {
@@ -150,6 +158,19 @@ export default function ConsentimientoPublicoPage() {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#F5F1EA]">
         <p className="text-sm text-[#8a8272]">Cargando…</p>
+      </div>
+    );
+  }
+
+  if (expirado) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#F5F1EA] px-6 text-center">
+        <div>
+          <p className="text-lg font-semibold text-[#2b2118]">Este link ya expiró</p>
+          <p className="mt-2 text-sm text-[#8a8272]">
+            Pídele a tu clínica que te comparta un consentimiento nuevo para firmarlo.
+          </p>
+        </div>
       </div>
     );
   }

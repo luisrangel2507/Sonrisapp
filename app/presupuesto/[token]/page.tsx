@@ -37,6 +37,7 @@ export default function PresupuestoPublicoPage() {
   const [datos, setDatos] = useState<PresupuestoPublico | null>(null);
   const [cargando, setCargando] = useState(true);
   const [invalido, setInvalido] = useState(false);
+  const [expirado, setExpirado] = useState(false);
   const [nombreRespuesta, setNombreRespuesta] = useState("");
   const [enviando, setEnviando] = useState<"aprobado" | "rechazado" | null>(null);
   const [error, setError] = useState("");
@@ -49,7 +50,8 @@ export default function PresupuestoPublicoPage() {
         const res = await fetch(`/api/presupuesto/${token}`);
         const data = await res.json();
         if (!res.ok || !data.presupuesto) {
-          setInvalido(true);
+          if (res.status === 410) setExpirado(true);
+          else setInvalido(true);
           setCargando(false);
           return;
         }
@@ -74,7 +76,13 @@ export default function PresupuestoPublicoPage() {
         body: JSON.stringify({ estado, nombre_respuesta: nombreRespuesta.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "");
+      if (!res.ok) {
+        if (res.status === 410) {
+          setExpirado(true);
+          return;
+        }
+        throw new Error(data.error ?? "");
+      }
       setDatos((prev) => (prev ? { ...prev, ...data.presupuesto } : prev));
       setRespondidoAhora(true);
     } catch {
@@ -88,6 +96,19 @@ export default function PresupuestoPublicoPage() {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#F5F1EA]">
         <p className="text-sm text-[#8a8272]">Cargando…</p>
+      </div>
+    );
+  }
+
+  if (expirado) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#F5F1EA] px-6 text-center">
+        <div>
+          <p className="text-lg font-semibold text-[#2b2118]">Este link ya expiró</p>
+          <p className="mt-2 text-sm text-[#8a8272]">
+            Pídele a tu clínica que te comparta un presupuesto nuevo para revisarlo.
+          </p>
+        </div>
       </div>
     );
   }

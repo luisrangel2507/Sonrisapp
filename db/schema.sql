@@ -570,3 +570,12 @@ ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT t
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS motivo_baja TEXT;
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dado_de_baja_por_nombre VARCHAR(160);
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dado_de_baja_en TIMESTAMPTZ;
+
+-- Expiración de los links públicos de un solo trámite (firmar un
+-- consentimiento, responder un presupuesto) — mientras siguen
+-- pendientes, 90 días después de creados dejan de aceptarse (hay que
+-- generar uno nuevo). Uno ya firmado/respondido NO expira: ese link
+-- es el que la propia doctora reutiliza para "Ver" el documento desde
+-- el panel, y es el registro de lo que se acordó.
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS expira_en TIMESTAMPTZ DEFAULT (now() + interval '90 days');
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS expira_en TIMESTAMPTZ DEFAULT (now() + interval '90 days');

@@ -20,9 +20,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       creado_en: string;
       dientes: number[];
       paciente_nombre: string;
+      expira_en: string | null;
     }>(
       `SELECT pr.id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
-              p.nombre AS paciente_nombre
+              pr.expira_en, p.nombre AS paciente_nombre
        FROM presupuestos pr
        JOIN pacientes p ON p.id = pr.paciente_id
        WHERE pr.token = $1`,
@@ -32,7 +33,13 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
     if (rows.length === 0) {
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }
-    const presupuesto = rows[0];
+    const { expira_en, ...presupuesto } = rows[0];
+    // Un presupuesto ya respondido nunca expira (queda como el
+    // registro de lo aprobado/rechazado) — solo importa mientras sigue
+    // pendiente de respuesta.
+    if (presupuesto.estado === "pendiente" && expira_en && new Date(expira_en) < new Date()) {
+      return NextResponse.json({ error: "expirado" }, { status: 410 });
+    }
 
     const { rows: items } = await query<PresupuestoItem>(
       `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario
@@ -59,8 +66,8 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
       return NextResponse.json({ error: "nombre_respuesta es requerido" }, { status: 400 });
     }
 
-    const { rows: existentes } = await query<{ id: number; estado: string }>(
-      `SELECT id, estado FROM presupuestos WHERE token = $1`,
+    const { rows: existentes } = await query<{ id: number; estado: string; expira_en: string | null }>(
+      `SELECT id, estado, expira_en FROM presupuestos WHERE token = $1`,
       [params.token]
     );
     if (existentes.length === 0) {
@@ -68,6 +75,9 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
     }
     if (existentes[0].estado !== "pendiente") {
       return NextResponse.json({ error: "este presupuesto ya fue respondido" }, { status: 409 });
+    }
+    if (existentes[0].expira_en && new Date(existentes[0].expira_en) < new Date()) {
+      return NextResponse.json({ error: "expirado" }, { status: 410 });
     }
 
     const { rows } = await query(

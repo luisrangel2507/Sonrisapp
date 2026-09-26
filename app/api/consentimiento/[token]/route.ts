@@ -16,8 +16,18 @@ const CAMPOS_CIFRABLES = ["contenido", "firma"] as const;
 export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
-    const { rows } = await query(
-      `SELECT c.id, c.titulo, c.contenido, c.estado, c.firma, c.nombre_firma, c.firmado_en,
+    const { rows } = await query<{
+      id: number;
+      titulo: string;
+      contenido: string;
+      estado: string;
+      firma: string | null;
+      nombre_firma: string | null;
+      firmado_en: string | null;
+      paciente_nombre: string;
+      expira_en: string | null;
+    }>(
+      `SELECT c.id, c.titulo, c.contenido, c.estado, c.firma, c.nombre_firma, c.firmado_en, c.expira_en,
               p.nombre AS paciente_nombre
        FROM consentimientos c
        JOIN pacientes p ON p.id = c.paciente_id
@@ -29,8 +39,16 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }
 
-    const consentimiento = { ...rows[0] };
-    for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo]);
+    // Un consentimiento ya firmado nunca expira (es el registro de lo
+    // acordado, y la doctora reutiliza este mismo link para "Ver" desde
+    // el panel) — solo importa la expiración mientras sigue pendiente.
+    const { expira_en, ...resto } = rows[0];
+    if (resto.estado === "pendiente" && expira_en && new Date(expira_en) < new Date()) {
+      return NextResponse.json({ error: "expirado" }, { status: 410 });
+    }
+
+    const consentimiento: Record<string, unknown> = { ...resto };
+    for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo] as string | null);
 
     return NextResponse.json({ consentimiento });
   } catch (err) {
@@ -54,8 +72,8 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
       return NextResponse.json({ error: "la firma es demasiado grande" }, { status: 400 });
     }
 
-    const { rows: existentes } = await query<{ id: number; estado: string }>(
-      `SELECT id, estado FROM consentimientos WHERE token = $1`,
+    const { rows: existentes } = await query<{ id: number; estado: string; expira_en: string | null }>(
+      `SELECT id, estado, expira_en FROM consentimientos WHERE token = $1`,
       [params.token]
     );
     if (existentes.length === 0) {
@@ -63,6 +81,9 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
     }
     if (existentes[0].estado === "firmado") {
       return NextResponse.json({ error: "este consentimiento ya fue firmado" }, { status: 409 });
+    }
+    if (existentes[0].expira_en && new Date(existentes[0].expira_en) < new Date()) {
+      return NextResponse.json({ error: "expirado" }, { status: 410 });
     }
 
     const { rows } = await query(
