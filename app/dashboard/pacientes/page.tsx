@@ -78,19 +78,26 @@ export default function PacientesPage() {
     if (data.paciente?.id) router.push(`/dashboard/pacientes/${data.paciente.id}`);
   }
 
-  const ordenados = useMemo(
-    () =>
-      [...(pacientes ?? [])].sort((a, b) =>
-        primerNombreParaOrdenar(a.nombre).localeCompare(primerNombreParaOrdenar(b.nombre), "es", {
-          sensitivity: "base",
-        })
-      ),
-    [pacientes]
-  );
+  function ordenarPorNombre(lista: Paciente[]) {
+    return [...lista].sort((a, b) =>
+      primerNombreParaOrdenar(a.nombre).localeCompare(primerNombreParaOrdenar(b.nombre), "es", {
+        sensitivity: "base",
+      })
+    );
+  }
+
+  // Un paciente dado de baja (NOM-024: nunca se borra) no desaparece
+  // del listado, pero sí se separa al final y en gris para no
+  // confundirlo con los pacientes activos del día a día.
+  const activos = useMemo(() => (pacientes ?? []).filter((p) => p.activo), [pacientes]);
+  const inactivos = useMemo(() => (pacientes ?? []).filter((p) => !p.activo), [pacientes]);
+
+  const ordenados = useMemo(() => ordenarPorNombre(activos), [activos]);
+  const inactivosOrdenados = useMemo(() => ordenarPorNombre(inactivos), [inactivos]);
 
   const pendientesDeConfirmar = useMemo(
-    () => (pacientes ?? []).filter((p) => p.historial_pendiente),
-    [pacientes]
+    () => activos.filter((p) => p.historial_pendiente),
+    [activos]
   );
 
   // Agrupa por la inicial del primer nombre — ya viene ordenado, así
@@ -189,10 +196,24 @@ export default function PacientesPage() {
             {busqueda ? "Sin resultados." : "Aún no hay pacientes registrados."}
           </p>
         ) : busqueda.trim() ? (
-          <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-            {ordenados.map((p, i) => (
-              <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[i % PALETA_AVATAR.length]} />
-            ))}
+          <div className="space-y-4">
+            <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+              {ordenados.map((p, i) => (
+                <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[i % PALETA_AVATAR.length]} />
+              ))}
+            </div>
+            {inactivosOrdenados.length > 0 && (
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+                  Dados de baja
+                </p>
+                <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+                  {inactivosOrdenados.map((p) => (
+                    <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[0]} inactivo />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -213,6 +234,21 @@ export default function PacientesPage() {
                 </div>
               </div>
             ))}
+
+            {inactivosOrdenados.length > 0 && (
+              <div>
+                <div className="sticky top-0 z-10 -mx-4 flex items-center gap-2 bg-[#FBF9F5]/95 px-4 py-1.5 backdrop-blur">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+                    Dados de baja · {inactivosOrdenados.length}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+                  {inactivosOrdenados.map((p) => (
+                    <TarjetaPaciente key={p.id} paciente={p} color={PALETA_AVATAR[0]} inactivo />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -220,19 +256,33 @@ export default function PacientesPage() {
   );
 }
 
-function TarjetaPaciente({ paciente: p, color }: { paciente: Paciente; color: (typeof PALETA_AVATAR)[number] }) {
+function TarjetaPaciente({
+  paciente: p,
+  color,
+  inactivo = false,
+}: {
+  paciente: Paciente;
+  color: (typeof PALETA_AVATAR)[number];
+  inactivo?: boolean;
+}) {
   return (
     <Link
       href={`/dashboard/pacientes/${p.id}`}
-      className="flex items-center gap-3 rounded-2xl border border-[#EFE9DC] bg-white px-4 py-3 shadow-sm transition-colors hover:bg-[#FBF9F5] active:bg-[#FBF9F5]"
+      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-sm transition-colors ${
+        inactivo
+          ? "border-[#EFE9DC] bg-[#F5F1EA] opacity-70 hover:bg-[#EFE9DC]/60"
+          : "border-[#EFE9DC] bg-white hover:bg-[#FBF9F5] active:bg-[#FBF9F5]"
+      }`}
     >
       <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${color.bg} ${color.text}`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${
+          inactivo ? "bg-[#E3DFD4] text-[#8a8272]" : `${color.bg} ${color.text}`
+        }`}
       >
         {iniciales(p.nombre)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-[#2b2118]">
+        <div className={`truncate text-sm font-semibold ${inactivo ? "text-[#8a8272]" : "text-[#2b2118]"}`}>
           {p.nombre} {p.historial_pendiente && "🚨"}
         </div>
         <div className="truncate text-xs text-[#a49c8a]">
@@ -240,9 +290,15 @@ function TarjetaPaciente({ paciente: p, color }: { paciente: Paciente; color: (t
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="rounded-full bg-[#F5E7E9] px-2.5 py-1 text-[11px] font-bold text-[#803449]">
-          {p.puntos} pts
-        </span>
+        {inactivo ? (
+          <span className="rounded-full bg-[#E3DFD4] px-2.5 py-1 text-[11px] font-semibold text-[#8a8272]">
+            Dado de baja
+          </span>
+        ) : (
+          <span className="rounded-full bg-[#F5E7E9] px-2.5 py-1 text-[11px] font-bold text-[#803449]">
+            {p.puntos} pts
+          </span>
+        )}
         <ChevronRight size={16} className="text-[#a49c8a]" />
       </div>
     </Link>

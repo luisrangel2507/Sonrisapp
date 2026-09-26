@@ -31,17 +31,17 @@ export async function GET(req: NextRequest) {
       FROM pacientes
     `;
 
-    // Un paciente dado de baja no se borra (NOM-024), solo deja de
-    // aparecer en el listado activo del consultorio.
+    // Un paciente dado de baja no se borra (NOM-024) ni se oculta del
+    // todo — sigue en el listado (marcado como inactivo en la UI) para
+    // no perder de vista que existió, solo se ordena al final.
     const { rows } = q
       ? await query(
           `${SELECT_PACIENTES}
-           WHERE pacientes.activo = true
-             AND (pacientes.nombre ILIKE $1 OR pacientes.folio ILIKE $1 OR pacientes.telefono ILIKE $1)
-           ORDER BY pacientes.id DESC`,
+           WHERE pacientes.nombre ILIKE $1 OR pacientes.folio ILIKE $1 OR pacientes.telefono ILIKE $1
+           ORDER BY pacientes.activo DESC, pacientes.id DESC`,
           [`%${q}%`]
         )
-      : await query(`${SELECT_PACIENTES} WHERE pacientes.activo = true ORDER BY pacientes.id DESC`);
+      : await query(`${SELECT_PACIENTES} ORDER BY pacientes.activo DESC, pacientes.id DESC`);
 
     const pacientes = rows.map((fila) => {
       const copia = { ...fila };
