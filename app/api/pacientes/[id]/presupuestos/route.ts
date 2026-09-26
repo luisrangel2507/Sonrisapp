@@ -20,7 +20,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const { rows: presupuestos } = await query(
-      `SELECT id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes
+      `SELECT id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes,
+              vigente, motivo_anulacion, anulado_por_nombre, anulado_en
        FROM presupuestos WHERE paciente_id = $1 ORDER BY creado_en DESC`,
       [pacienteId]
     );

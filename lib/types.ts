@@ -21,6 +21,13 @@ export interface Paciente {
   // solo paciente (solo se calcula en la lista) — el objeto Paciente
   // ahí no lo incluye, pero se agrega vía intersección donde se usa.
   historial_pendiente?: boolean;
+  // NOM-024: dar de baja a un paciente no borra su expediente, solo lo
+  // desactiva (activo=false) — se excluye del listado pero el registro
+  // y su historial siguen intactos para auditoría.
+  activo: boolean;
+  motivo_baja: string | null;
+  dado_de_baja_por_nombre: string | null;
+  dado_de_baja_en: string | null;
 }
 
 export interface PacienteNota {
@@ -67,6 +74,9 @@ export interface Consentimiento {
   nombre_firma: string | null;
   firmado_en: string | null;
   creado_en: string;
+  vigente: boolean;
+  motivo_anulacion: string | null;
+  anulado_por_nombre: string | null;
 }
 
 export type EstadoPresupuesto = "pendiente" | "aprobado" | "rechazado";
@@ -90,6 +100,9 @@ export interface Presupuesto {
   creado_en: string;
   items: PresupuestoItem[];
   dientes: number[];
+  vigente: boolean;
+  motivo_anulacion: string | null;
+  anulado_por_nombre: string | null;
 }
 
 export type EstadoCita = "agendada" | "completada" | "cancelada";

@@ -18,6 +18,7 @@ export const config = {
     "/api/push/:path*",
     "/api/auth/webauthn/registro/:path*",
     "/api/auth/webauthn/passkeys",
+    "/api/auth/sesion",
   ],
 };
 

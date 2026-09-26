@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { identidadDesdeRequest } from "@/lib/auth";
 
+// "Eliminar" no borra (NOM-024: un consentimiento firmado es evidencia
+// legal) — marca el documento vigente=false con el motivo y quién lo
+// anuló. Sigue existiendo en la base para auditoría.
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   props: { params: Promise<{ id: string; consentId: string }> }
 ) {
   const params = await props.params;
@@ -14,11 +18,22 @@ export async function DELETE(
       return NextResponse.json({ error: "id inválido" }, { status: 400 });
     }
 
-    const { rowCount } = await query(
-      `DELETE FROM consentimientos WHERE id = $1 AND paciente_id = $2`,
-      [consentId, pacienteId]
+    const body = await req.json().catch(() => ({}));
+    const motivo = typeof body?.motivo === "string" ? body.motivo.trim() : "";
+    if (!motivo) {
+      return NextResponse.json({ error: "motivo es requerido" }, { status: 400 });
+    }
+
+    const identidad = await identidadDesdeRequest(req);
+
+    const { rows } = await query<{ id: number }>(
+      `UPDATE consentimientos
+       SET vigente = false, motivo_anulacion = $1, anulado_por_nombre = $2, anulado_en = now()
+       WHERE id = $3 AND paciente_id = $4 AND vigente = true
+       RETURNING id`,
+      [motivo, identidad.nombre, consentId, pacienteId]
     );
-    if (rowCount === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ error: "consentimiento no encontrado" }, { status: 404 });
     }
 

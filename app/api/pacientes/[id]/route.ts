@@ -4,6 +4,7 @@ import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
 import { cifrar, descifrar } from "@/lib/crypto";
+import { identidadDesdeRequest } from "@/lib/auth";
 
 // Texto libre clínico de la ficha rápida del paciente — se cifra en
 // reposo (NOM-024) igual que la historia clínica y el formulario público.
@@ -37,7 +38,12 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+// "Eliminar" un paciente no borra su expediente (NOM-024: el registro
+// clínico nunca se pierde) — solo lo da de baja (activo=false) con un
+// motivo y quién lo hizo. Un DELETE real destruiría en cascada todo su
+// historial, incluidas las versiones vigente=false guardadas para
+// auditoría. Solo un admin puede dar de baja a un paciente.
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
     const id = Number(params.id);
@@ -45,7 +51,23 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
       return NextResponse.json({ error: "id inválido" }, { status: 400 });
     }
 
-    const { rowCount } = await query(`DELETE FROM pacientes WHERE id = $1`, [id]);
+    const identidad = await identidadDesdeRequest(req);
+    if (identidad.rol !== "admin") {
+      return NextResponse.json({ error: "solo un administrador puede dar de baja a un paciente" }, { status: 403 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const motivo = typeof body?.motivo === "string" ? body.motivo.trim() : "";
+    if (!motivo) {
+      return NextResponse.json({ error: "motivo es requerido" }, { status: 400 });
+    }
+
+    const { rowCount } = await query(
+      `UPDATE pacientes
+       SET activo = false, motivo_baja = $1, dado_de_baja_por_nombre = $2, dado_de_baja_en = now()
+       WHERE id = $3 AND activo = true`,
+      [motivo, identidad.nombre, id]
+    );
     if (rowCount === 0) {
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }

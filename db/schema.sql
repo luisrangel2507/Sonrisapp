@@ -545,3 +545,28 @@ ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS dientes INTEGER[] NOT NULL DEF
 -- aprueba desde el dashboard (evita que una cita rara o un horario
 -- mal elegido se cuele directo a la agenda sin que nadie la vea).
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS pendiente_aprobacion BOOLEAN NOT NULL DEFAULT false;
+
+-- Auditoría NOM-024 para consentimientos y presupuestos: igual que
+-- recetas/paciente_notas/diente_historial, "eliminar" ya no borra el
+-- documento — lo marca vigente=false con motivo y quién lo anuló, para
+-- que un consentimiento firmado o un presupuesto no puedan desaparecer
+-- sin dejar rastro.
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS vigente BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS motivo_anulacion TEXT;
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS anulado_por_nombre VARCHAR(160);
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS anulado_en TIMESTAMPTZ;
+
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS vigente BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS motivo_anulacion TEXT;
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS anulado_por_nombre VARCHAR(160);
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS anulado_en TIMESTAMPTZ;
+
+-- Baja de un paciente (NOM-024: el expediente nunca se borra de
+-- verdad) — "eliminar" desactiva la ficha en vez de un DELETE que,
+-- por el ON DELETE CASCADE de citas/pagos/historia_clinica/etc.,
+-- destruiría también las versiones vigente=false que se guardaban
+-- para auditoría.
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS motivo_baja TEXT;
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dado_de_baja_por_nombre VARCHAR(160);
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dado_de_baja_en TIMESTAMPTZ;

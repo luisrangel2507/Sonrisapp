@@ -97,6 +97,9 @@ export default function PacienteDetallePage() {
 
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  // Solo un admin puede dar de baja pacientes — el servidor también lo
+  // rechaza, esto es nada más para no ofrecer un botón que va a fallar.
+  const [miRol, setMiRol] = useState<"admin" | "asistente">("admin");
   const [notas, setNotas] = useState<PacienteNota[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -191,6 +194,13 @@ export default function PacienteDetallePage() {
     if (Number.isInteger(pacienteId)) cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pacienteId]);
+
+  useEffect(() => {
+    fetch("/api/auth/sesion")
+      .then((res) => res.json())
+      .then((data) => setMiRol(data.rol === "asistente" ? "asistente" : "admin"))
+      .catch(() => {});
+  }, []);
 
   async function guardarCambios() {
     setGuardando(true);
@@ -379,11 +389,21 @@ export default function PacienteDetallePage() {
 
   async function eliminarConsentimiento(id: number) {
     if (eliminandoConsentId) return;
-    const ok = window.confirm("¿Eliminar este consentimiento?");
-    if (!ok) return;
+    // NOM-024: nada se borra de verdad — "eliminar" anula el
+    // documento con un motivo, pero se sigue viendo (marcado) en el historial.
+    const motivo = window.prompt(
+      "Motivo de la anulación (el consentimiento no se borra, queda marcado como anulado en el historial):"
+    );
+    if (!motivo || !motivo.trim()) return;
     setEliminandoConsentId(id);
-    await fetch(`/api/pacientes/${pacienteId}/consentimientos/${id}`, { method: "DELETE" });
-    setConsentimientos((prev) => prev.filter((c) => c.id !== id));
+    await fetch(`/api/pacientes/${pacienteId}/consentimientos/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
+    const res = await fetch(`/api/pacientes/${pacienteId}/consentimientos`);
+    const data = await res.json();
+    setConsentimientos(data.consentimientos ?? []);
     setEliminandoConsentId(null);
   }
 
@@ -453,11 +473,21 @@ export default function PacienteDetallePage() {
 
   async function eliminarPresupuesto(id: number) {
     if (eliminandoPresupuestoId) return;
-    const ok = window.confirm("¿Eliminar este presupuesto?");
-    if (!ok) return;
+    // NOM-024: nada se borra de verdad — "eliminar" anula el
+    // presupuesto con un motivo, pero se sigue viendo (marcado) en el historial.
+    const motivo = window.prompt(
+      "Motivo de la anulación (el presupuesto no se borra, queda marcado como anulado en el historial):"
+    );
+    if (!motivo || !motivo.trim()) return;
     setEliminandoPresupuestoId(id);
-    await fetch(`/api/pacientes/${pacienteId}/presupuestos/${id}`, { method: "DELETE" });
-    setPresupuestos((prev) => prev.filter((p) => p.id !== id));
+    await fetch(`/api/pacientes/${pacienteId}/presupuestos/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
+    const res = await fetch(`/api/pacientes/${pacienteId}/presupuestos`);
+    const data = await res.json();
+    setPresupuestos(data.presupuestos ?? []);
     setEliminandoPresupuestoId(null);
   }
 
@@ -532,12 +562,19 @@ export default function PacienteDetallePage() {
 
   async function eliminarPaciente() {
     if (eliminando || !paciente) return;
-    const ok = window.confirm(
-      `¿Eliminar a ${paciente.nombre}? Esto borra su ficha, citas, pagos, historial clínico y odontograma. No se puede deshacer.`
+    // NOM-024: el expediente nunca se borra de verdad — "eliminar" da
+    // de baja al paciente (deja de aparecer en el listado), pero su
+    // ficha, citas, pagos e historial clínico siguen intactos.
+    const motivo = window.prompt(
+      `Motivo para dar de baja a ${paciente.nombre} (su expediente no se borra, solo deja de aparecer en el listado):`
     );
-    if (!ok) return;
+    if (!motivo || !motivo.trim()) return;
     setEliminando(true);
-    const res = await fetch(`/api/pacientes/${pacienteId}`, { method: "DELETE" });
+    const res = await fetch(`/api/pacientes/${pacienteId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
     if (res.ok) {
       router.push("/dashboard/pacientes");
     } else {
@@ -654,10 +691,21 @@ export default function PacienteDetallePage() {
             <p className="text-sm text-[#8a8272]">Sin consentimientos todavía.</p>
           ) : (
             consentimientos.map((c) => (
-              <div key={c.id} className="rounded-2xl border border-[#EFE9DC] bg-white p-3">
+              <div
+                key={c.id}
+                className={`rounded-2xl border p-3 ${
+                  c.vigente ? "border-[#EFE9DC] bg-white" : "border-[#EFE9DC] bg-[#FBF9F5] opacity-70"
+                }`}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-[#2b2118]">{c.titulo}</div>
+                    <div
+                      className={`truncate text-sm font-medium ${
+                        c.vigente ? "text-[#2b2118]" : "text-[#8a8272] line-through"
+                      }`}
+                    >
+                      {c.titulo}
+                    </div>
                     {c.estado === "firmado" ? (
                       <span className="mt-1 inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
                         Firmado
@@ -668,15 +716,23 @@ export default function PacienteDetallePage() {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => eliminarConsentimiento(c.id)}
-                    disabled={eliminandoConsentId === c.id}
-                    className="shrink-0 text-[#c9a99a] disabled:opacity-50"
-                    aria-label="Eliminar consentimiento"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {c.vigente && (
+                    <button
+                      onClick={() => eliminarConsentimiento(c.id)}
+                      disabled={eliminandoConsentId === c.id}
+                      className="shrink-0 text-[#c9a99a] disabled:opacity-50"
+                      aria-label="Anular consentimiento"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
+
+                {!c.vigente && c.motivo_anulacion && (
+                  <p className="mt-1 text-[10px] text-[#B0503A]">
+                    Anulado por {c.anulado_por_nombre}: {c.motivo_anulacion}
+                  </p>
+                )}
 
                 {c.estado === "firmado" ? (
                   <div className="mt-2 flex items-center gap-3">
@@ -823,10 +879,21 @@ export default function PacienteDetallePage() {
             <p className="text-sm text-[#8a8272]">Sin presupuestos todavía.</p>
           ) : (
             presupuestos.map((p) => (
-              <div key={p.id} className="rounded-2xl border border-[#EFE9DC] bg-white p-3">
+              <div
+                key={p.id}
+                className={`rounded-2xl border p-3 ${
+                  p.vigente ? "border-[#EFE9DC] bg-white" : "border-[#EFE9DC] bg-[#FBF9F5] opacity-70"
+                }`}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-[#2b2118]">{p.titulo}</div>
+                    <div
+                      className={`truncate text-sm font-medium ${
+                        p.vigente ? "text-[#2b2118]" : "text-[#8a8272] line-through"
+                      }`}
+                    >
+                      {p.titulo}
+                    </div>
                     {p.estado === "aprobado" ? (
                       <span className="mt-1 inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
                         Aprobado
@@ -854,16 +921,24 @@ export default function PacienteDetallePage() {
                     >
                       <FileDown size={14} />
                     </a>
-                    <button
-                      onClick={() => eliminarPresupuesto(p.id)}
-                      disabled={eliminandoPresupuestoId === p.id}
-                      className="text-[#c9a99a] disabled:opacity-50"
-                      aria-label="Eliminar presupuesto"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    {p.vigente && (
+                      <button
+                        onClick={() => eliminarPresupuesto(p.id)}
+                        disabled={eliminandoPresupuestoId === p.id}
+                        className="text-[#c9a99a] disabled:opacity-50"
+                        aria-label="Anular presupuesto"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
+
+                {!p.vigente && p.motivo_anulacion && (
+                  <p className="mt-1 text-[10px] text-[#B0503A]">
+                    Anulado por {p.anulado_por_nombre}: {p.motivo_anulacion}
+                  </p>
+                )}
 
                 <div className="mt-2 space-y-1">
                   {p.items.map((it) => (
@@ -1303,13 +1378,15 @@ export default function PacienteDetallePage() {
 
       <LoyaltyCard paciente={paciente} onRegistrarReferido={registrarReferido} />
 
-      <button
-        onClick={eliminarPaciente}
-        disabled={eliminando}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EABDB0] bg-[#F7E5E0] py-2.5 text-[13px] font-semibold text-[#B0503A] disabled:opacity-50"
-      >
-        <Trash2 size={14} /> {eliminando ? "Eliminando…" : "Eliminar paciente"}
-      </button>
+      {miRol === "admin" && (
+        <button
+          onClick={eliminarPaciente}
+          disabled={eliminando}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EABDB0] bg-[#F7E5E0] py-2.5 text-[13px] font-semibold text-[#B0503A] disabled:opacity-50"
+        >
+          <Trash2 size={14} /> {eliminando ? "Dando de baja…" : "Dar de baja al paciente"}
+        </button>
+      )}
     </div>
   );
 }

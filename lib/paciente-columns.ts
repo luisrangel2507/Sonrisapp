@@ -3,5 +3,6 @@
 export const PACIENTE_COLUMNAS = `
   id, nombre, telefono, email, folio, puntos, meta_premio, premio_actual,
   fecha_nacimiento, visitas_totales, creado_en, alergias, alergias_cual,
-  medicamentos, antecedentes_medicos, antecedentes_medicos_cual, historial_token
+  medicamentos, antecedentes_medicos, antecedentes_medicos_cual, historial_token,
+  activo, motivo_baja, dado_de_baja_por_nombre, dado_de_baja_en
 `;

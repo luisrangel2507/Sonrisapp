@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { hashContrasena } from "@/lib/auth";
+import { hashContrasena, identidadDesdeRequest } from "@/lib/auth";
 import { errorJson } from "@/lib/api-error";
 
 const ROLES_VALIDOS = ["admin", "asistente"];
@@ -16,8 +16,15 @@ export async function GET() {
   }
 }
 
+// Solo un admin puede dar de alta usuarios (un asistente podría, si
+// no, crearse a sí mismo otra cuenta admin).
 export async function POST(req: NextRequest) {
   try {
+    const identidad = await identidadDesdeRequest(req);
+    if (identidad.rol !== "admin") {
+      return NextResponse.json({ error: "solo un administrador puede crear usuarios" }, { status: 403 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const nombre = typeof body?.nombre === "string" ? body.nombre.trim() : "";
     const usuario = typeof body?.usuario === "string" ? body.usuario.trim() : "";

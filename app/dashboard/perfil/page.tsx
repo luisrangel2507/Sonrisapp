@@ -86,6 +86,11 @@ export default function PerfilPage() {
   const [notifProbando, setNotifProbando] = useState(false);
   const [notifPruebaMsg, setNotifPruebaMsg] = useState("");
 
+  // Solo un admin puede dar de alta/quitar usuarios — un asistente ve
+  // la lista pero no el formulario ni el botón de quitar (el servidor
+  // también lo rechaza, esto es nada más para no ofrecer un botón que
+  // va a fallar).
+  const [miRol, setMiRol] = useState<"admin" | "asistente">("admin");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -226,6 +231,11 @@ export default function PerfilPage() {
         if (!nombreTocadoRef.current) setNombreBienvenida(data.nombre_bienvenida ?? "");
         if (!telefonoTocadoRef.current) setTelefonoTarjeta(data.telefono ?? "");
       });
+
+    fetch("/api/auth/sesion")
+      .then((res) => res.json())
+      .then((data) => setMiRol(data.rol === "asistente" ? "asistente" : "admin"))
+      .catch(() => {});
 
     cargarUsuarios();
     cargarPasskeys();
@@ -775,19 +785,28 @@ export default function PerfilPage() {
                       </div>
                       <div className="truncate text-xs text-[#a49c8a]">@{u.usuario}</div>
                     </div>
-                    <button
-                      onClick={() => borrarUsuario(u.id)}
-                      disabled={borrandoId === u.id}
-                      aria-label="Quitar usuario"
-                      className="shrink-0 rounded-full p-2 text-[#B0503A] disabled:opacity-50"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    {miRol === "admin" && (
+                      <button
+                        onClick={() => borrarUsuario(u.id)}
+                        disabled={borrandoId === u.id}
+                        aria-label="Quitar usuario"
+                        className="shrink-0 rounded-full p-2 text-[#B0503A] disabled:opacity-50"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
+            {miRol !== "admin" && (
+              <p className="mb-4 text-[12px] text-[#a49c8a]">
+                Solo un administrador puede dar de alta o quitar usuarios.
+              </p>
+            )}
+
+            {miRol === "admin" && (
             <form onSubmit={crearUsuario} className="space-y-3">
               <input
                 value={nuevoNombre}
@@ -829,6 +848,7 @@ export default function PerfilPage() {
                 <UserPlus size={15} /> {creandoUsuario ? "Creando…" : "Crear usuario"}
               </button>
             </form>
+            )}
           </>
         )}
       </div>

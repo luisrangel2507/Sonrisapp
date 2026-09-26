@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { cifrar, descifrar } from "@/lib/crypto";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra con
 // el link que le comparte la clínica y firma sin necesitar cuenta.
 export const dynamic = "force-dynamic";
 
 const FIRMA_MAX_BYTES = 500_000;
+
+// contenido y firma (dato biométrico) se guardan cifrados (NOM-024) —
+// ver app/api/pacientes/[id]/consentimientos/route.ts.
+const CAMPOS_CIFRABLES = ["contenido", "firma"] as const;
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
@@ -24,7 +29,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }
 
-    return NextResponse.json({ consentimiento: rows[0] });
+    const consentimiento = { ...rows[0] };
+    for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo]);
+
+    return NextResponse.json({ consentimiento });
   } catch (err) {
     return errorJson(err);
   }
@@ -62,10 +70,13 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
        SET estado = 'firmado', firma = $2, nombre_firma = $3, firmado_en = now()
        WHERE token = $1
        RETURNING id, titulo, contenido, estado, firma, nombre_firma, firmado_en`,
-      [params.token, firma, nombre_firma]
+      [params.token, cifrar(firma), nombre_firma]
     );
 
-    return NextResponse.json({ consentimiento: rows[0] });
+    const consentimiento = { ...rows[0] };
+    for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo]);
+
+    return NextResponse.json({ consentimiento });
   } catch (err) {
     return errorJson(err);
   }

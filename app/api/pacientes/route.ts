@@ -31,14 +31,17 @@ export async function GET(req: NextRequest) {
       FROM pacientes
     `;
 
+    // Un paciente dado de baja no se borra (NOM-024), solo deja de
+    // aparecer en el listado activo del consultorio.
     const { rows } = q
       ? await query(
           `${SELECT_PACIENTES}
-           WHERE pacientes.nombre ILIKE $1 OR pacientes.folio ILIKE $1 OR pacientes.telefono ILIKE $1
+           WHERE pacientes.activo = true
+             AND (pacientes.nombre ILIKE $1 OR pacientes.folio ILIKE $1 OR pacientes.telefono ILIKE $1)
            ORDER BY pacientes.id DESC`,
           [`%${q}%`]
         )
-      : await query(`${SELECT_PACIENTES} ORDER BY pacientes.id DESC`);
+      : await query(`${SELECT_PACIENTES} WHERE pacientes.activo = true ORDER BY pacientes.id DESC`);
 
     const pacientes = rows.map((fila) => {
       const copia = { ...fila };
