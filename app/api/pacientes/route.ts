@@ -36,7 +36,11 @@ export async function GET(req: NextRequest) {
         NOT EXISTS (
           SELECT 1 FROM consentimientos c
           WHERE c.paciente_id = pacientes.id AND c.vigente = true AND c.estado = 'firmado'
-        ) AS consentimiento_pendiente
+        ) AS consentimiento_pendiente,
+        EXISTS (
+          SELECT 1 FROM solicitudes_paciente sp
+          WHERE sp.paciente_id = pacientes.id AND sp.estado = 'pendiente'
+        ) AS solicitud_pendiente
       FROM pacientes
     `;
 

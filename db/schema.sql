@@ -579,3 +579,56 @@ ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dado_de_baja_en TIMESTAMPTZ;
 -- el panel, y es el registro de lo que se acordó.
 ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS expira_en TIMESTAMPTZ DEFAULT (now() + interval '90 days');
 ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS expira_en TIMESTAMPTZ DEFAULT (now() + interval '90 days');
+
+-- Derechos ARCO (NOM-024 / protección de datos personales): que el
+-- paciente pueda pedir acceso, corrección o cancelación de su
+-- información desde su propio portal, sin depender de escribirle por
+-- WhatsApp a la clínica y que se pierda el registro. El mensaje es
+-- texto libre que puede incluir datos personales, así que se cifra
+-- igual que el resto del contenido clínico.
+CREATE TABLE IF NOT EXISTS solicitudes_paciente (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  mensaje TEXT NOT NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'pendiente', -- 'pendiente' | 'resuelta'
+  respuesta TEXT,
+  resuelta_por_nombre VARCHAR(160),
+  resuelta_en TIMESTAMPTZ,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_paciente_paciente ON solicitudes_paciente(paciente_id);
+
+-- Bitácora de accesos (NOM-024: trazabilidad de quién consulta el
+-- expediente, no solo de quién lo modifica). usuario_nombre = NULL
+-- significa que fue el propio paciente entrando con su link público.
+CREATE TABLE IF NOT EXISTS bitacora_accesos (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  tipo VARCHAR(40) NOT NULL, -- 'expediente' | 'consentimiento' | 'presupuesto' | 'portal' | 'formulario'
+  usuario_nombre VARCHAR(160),
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_bitacora_accesos_paciente ON bitacora_accesos(paciente_id, creado_en DESC);
+
+-- Igual que con paciente_notas/diente_historial: "deshacer" un pago no
+-- lo hace desaparecer sin dejar rastro. Se sigue borrando de la tabla
+-- pagos (para no tocar las sumas de ingresos/por-cobrar que ya se
+-- calculan en varios reportes), pero el motivo y quién lo deshizo
+-- quedan aquí.
+CREATE TABLE IF NOT EXISTS pagos_revertidos (
+  id SERIAL PRIMARY KEY,
+  pago_id INTEGER NOT NULL,
+  cita_id INTEGER,
+  paciente_id INTEGER,
+  monto NUMERIC(10,2) NOT NULL,
+  metodo VARCHAR(30),
+  motivo TEXT NOT NULL,
+  revertido_por_nombre VARCHAR(160),
+  revertido_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Concepto de un ítem de presupuesto es texto libre que puede
+-- describir el diagnóstico/tratamiento — se cifra en reposo (NOM-024)
+-- igual que el resto del contenido clínico. Se ensancha de VARCHAR(160)
+-- a TEXT porque cifrado ocupa más espacio que el texto plano original.
+ALTER TABLE presupuesto_items ALTER COLUMN concepto TYPE TEXT;

@@ -924,12 +924,18 @@ export default function CitasPage() {
 
   async function deshacerPago(cita: Cita) {
     if (deshaciendoPagoId) return;
-    const ok = window.confirm(
-      `¿Deshacer el último pago registrado de ${cita.paciente_nombre}? Esto no se puede recuperar.`
+    // NOM-024: el pago se sigue borrando (no afecta el historial
+    // clínico), pero el motivo queda registrado — ver pagos_revertidos.
+    const motivo = window.prompt(
+      `Motivo para deshacer el último pago registrado de ${cita.paciente_nombre} (esto no se puede recuperar):`
     );
-    if (!ok) return;
+    if (!motivo || !motivo.trim()) return;
     setDeshaciendoPagoId(cita.id);
-    await fetch(`/api/pagos?cita_id=${cita.id}`, { method: "DELETE" });
+    await fetch(`/api/pagos?cita_id=${cita.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
     setDeshaciendoPagoId(null);
     await cargar();
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CalendarClock, History, Pill } from "lucide-react";
+import { CalendarClock, FileDown, History, Pill, Send } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 
@@ -54,6 +54,10 @@ export default function PortalPacientePage() {
   const [recetas, setRecetas] = useState<PortalReceta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [invalido, setInvalido] = useState(false);
+  const [mensajeSolicitud, setMensajeSolicitud] = useState("");
+  const [enviandoSolicitud, setEnviandoSolicitud] = useState(false);
+  const [solicitudEnviada, setSolicitudEnviada] = useState(false);
+  const [errorSolicitud, setErrorSolicitud] = useState("");
 
   useEffect(() => {
     if (!token) return;
@@ -77,6 +81,26 @@ export default function PortalPacientePage() {
       }
     })();
   }, [token]);
+
+  async function enviarSolicitud() {
+    if (!mensajeSolicitud.trim() || enviandoSolicitud) return;
+    setEnviandoSolicitud(true);
+    setErrorSolicitud("");
+    try {
+      const res = await fetch(`/api/portal/${token}/solicitud`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mensaje: mensajeSolicitud.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      setMensajeSolicitud("");
+      setSolicitudEnviada(true);
+    } catch {
+      setErrorSolicitud("No se pudo enviar tu solicitud. Intenta de nuevo.");
+    } finally {
+      setEnviandoSolicitud(false);
+    }
+  }
 
   if (cargando) {
     return (
@@ -162,6 +186,48 @@ export default function PortalPacientePage() {
                   <span className="text-xs text-[#a49c8a]">{formatearFecha(c.fecha_hora)}</span>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        <a
+          href={`/api/portal/${token}/reporte`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[13px] font-semibold text-[#2b2118]"
+        >
+          <FileDown size={15} /> Descargar mi expediente en PDF
+        </a>
+
+        <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            ¿Algo que corregir?
+          </div>
+          <p className="mb-3 text-[12px] text-[#8a8272]">
+            Si algo de tu información está mal, o quieres pedir acceso, corrección o eliminación de tus datos,
+            escríbelo aquí — le llega directo a tu clínica.
+          </p>
+          {solicitudEnviada ? (
+            <p className="rounded-xl bg-[#E8F0E3] px-3 py-2 text-[13px] text-[#3F6B33]">
+              Listo, tu solicitud fue enviada. Tu clínica la va a revisar.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                value={mensajeSolicitud}
+                onChange={(e) => setMensajeSolicitud(e.target.value)}
+                placeholder="Escribe tu solicitud…"
+                rows={3}
+                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+              />
+              {errorSolicitud && <p className="text-[12px] text-[#B0503A]">{errorSolicitud}</p>}
+              <button
+                onClick={enviarSolicitud}
+                disabled={!mensajeSolicitud.trim() || enviandoSolicitud}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+              >
+                <Send size={14} /> {enviandoSolicitud ? "Enviando…" : "Enviar solicitud"}
+              </button>
             </div>
           )}
         </div>

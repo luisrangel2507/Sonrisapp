@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { cifrar, descifrar } from "@/lib/crypto";
+import { registrarAcceso } from "@/lib/bitacora";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra con
 // el link que le comparte la clínica y firma sin necesitar cuenta.
@@ -18,6 +19,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
   try {
     const { rows } = await query<{
       id: number;
+      paciente_id: number;
       titulo: string;
       contenido: string;
       estado: string;
@@ -27,7 +29,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       paciente_nombre: string;
       expira_en: string | null;
     }>(
-      `SELECT c.id, c.titulo, c.contenido, c.estado, c.firma, c.nombre_firma, c.firmado_en, c.expira_en,
+      `SELECT c.id, c.paciente_id, c.titulo, c.contenido, c.estado, c.firma, c.nombre_firma, c.firmado_en, c.expira_en,
               p.nombre AS paciente_nombre
        FROM consentimientos c
        JOIN pacientes p ON p.id = c.paciente_id
@@ -42,13 +44,15 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
     // Un consentimiento ya firmado nunca expira (es el registro de lo
     // acordado, y la doctora reutiliza este mismo link para "Ver" desde
     // el panel) — solo importa la expiración mientras sigue pendiente.
-    const { expira_en, ...resto } = rows[0];
+    const { expira_en, paciente_id, ...resto } = rows[0];
     if (resto.estado === "pendiente" && expira_en && new Date(expira_en) < new Date()) {
       return NextResponse.json({ error: "expirado" }, { status: 410 });
     }
 
     const consentimiento: Record<string, unknown> = { ...resto };
     for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo] as string | null);
+
+    void registrarAcceso(paciente_id, "consentimiento", null);
 
     return NextResponse.json({ consentimiento });
   } catch (err) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { descifrar } from "@/lib/crypto";
+import { registrarAcceso } from "@/lib/bitacora";
 import type { PresupuestoItem } from "@/lib/types";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra con
@@ -12,6 +14,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
   try {
     const { rows } = await query<{
       id: number;
+      paciente_id: number;
       titulo: string;
       notas: string | null;
       estado: string;
@@ -22,7 +25,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       paciente_nombre: string;
       expira_en: string | null;
     }>(
-      `SELECT pr.id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
+      `SELECT pr.id, pr.paciente_id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
               pr.expira_en, p.nombre AS paciente_nombre
        FROM presupuestos pr
        JOIN pacientes p ON p.id = pr.paciente_id
@@ -33,7 +36,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
     if (rows.length === 0) {
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }
-    const { expira_en, ...presupuesto } = rows[0];
+    const { expira_en, paciente_id, ...presupuesto } = rows[0];
     // Un presupuesto ya respondido nunca expira (queda como el
     // registro de lo aprobado/rechazado) — solo importa mientras sigue
     // pendiente de respuesta.
@@ -46,8 +49,13 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
        FROM presupuesto_items WHERE presupuesto_id = $1 ORDER BY id`,
       [presupuesto.id]
     );
+    const itemsDescifrados = items.map((it) => ({ ...it, concepto: descifrar(it.concepto) ?? it.concepto }));
 
-    return NextResponse.json({ presupuesto: { ...presupuesto, items } });
+    void registrarAcceso(paciente_id, "presupuesto", null);
+
+    return NextResponse.json({
+      presupuesto: { ...presupuesto, notas: descifrar(presupuesto.notas), items: itemsDescifrados },
+    });
   } catch (err) {
     return errorJson(err);
   }

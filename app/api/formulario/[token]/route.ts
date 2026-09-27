@@ -4,6 +4,7 @@ import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
 import { guardarHistoriaClinica, obtenerHistoriaClinicaVigente } from "@/lib/historia-clinica";
 import { cifrar, descifrar } from "@/lib/crypto";
+import { registrarAcceso } from "@/lib/bitacora";
 
 // alergias_cual y antecedentes_medicos_cual son texto libre clínico —
 // se cifran en reposo (NOM-024) igual que la historia clínica.
@@ -53,6 +54,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       antecedentes_medicos_cual: descifrar(pacienteRows[0].antecedentes_medicos_cual),
     };
     const historiaClinica = await obtenerHistoriaClinicaVigente(paciente.id);
+
+    void registrarAcceso(paciente.id, "formulario", null);
 
     return NextResponse.json({ paciente, historiaClinica });
   } catch (err) {

@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { generarHistorialToken } from "@/lib/historial-token";
 import { NUMEROS_FDI } from "@/lib/dental";
+import { cifrar, descifrar } from "@/lib/crypto";
 import type { PresupuestoItem } from "@/lib/types";
 
 interface ItemEntrada {
@@ -40,11 +41,15 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const itemsPorPresupuesto = new Map<number, PresupuestoItem[]>();
     for (const { presupuesto_id, ...item } of items) {
       const lista = itemsPorPresupuesto.get(presupuesto_id) ?? [];
-      lista.push(item);
+      lista.push({ ...item, concepto: descifrar(item.concepto) ?? item.concepto });
       itemsPorPresupuesto.set(presupuesto_id, lista);
     }
 
-    const resultado = presupuestos.map((p) => ({ ...p, items: itemsPorPresupuesto.get(p.id) ?? [] }));
+    const resultado = presupuestos.map((p) => ({
+      ...p,
+      notas: descifrar(p.notas),
+      items: itemsPorPresupuesto.get(p.id) ?? [],
+    }));
 
     return NextResponse.json({ presupuestos: resultado });
   } catch (err) {
@@ -107,9 +112,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       `INSERT INTO presupuestos (paciente_id, titulo, notas, token, dientes)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes`,
-      [pacienteId, titulo.trim(), notas || null, token, dientesValidos]
+      [pacienteId, titulo.trim(), notas ? cifrar(notas) : null, token, dientesValidos]
     );
-    const presupuesto = rows[0];
+    const presupuestoId = rows[0].id;
+    const presupuesto = { ...rows[0], notas: descifrar(rows[0].notas) };
 
     const itemsGuardados: PresupuestoItem[] = [];
     for (const it of itemsValidos) {
@@ -117,9 +123,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         `INSERT INTO presupuesto_items (presupuesto_id, concepto, cantidad, precio_unitario)
          VALUES ($1, $2, $3, $4)
          RETURNING id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario`,
-        [presupuesto.id, it.concepto, it.cantidad, it.precio_unitario]
+        [presupuestoId, cifrar(it.concepto), it.cantidad, it.precio_unitario]
       );
-      itemsGuardados.push(itemRows[0]);
+      itemsGuardados.push({ ...itemRows[0], concepto: descifrar(itemRows[0].concepto) ?? itemRows[0].concepto });
     }
 
     return NextResponse.json({ presupuesto: { ...presupuesto, items: itemsGuardados } }, { status: 201 });

@@ -7,6 +7,7 @@ import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@
 import { formatearDinero } from "@/lib/dinero";
 import { obtenerDatosReporte, ReporteClinicoPdf, formatearFecha } from "@/lib/pdf/reporte-clinico";
 import { NUMEROS_FDI, POLIGONOS_DIENTE } from "@/lib/dental";
+import { descifrar } from "@/lib/crypto";
 import type { PresupuestoItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -168,13 +169,14 @@ export async function GET(
     if (presupuestoRows.length === 0) {
       return NextResponse.json({ error: "presupuesto no encontrado" }, { status: 404 });
     }
-    const presupuesto = presupuestoRows[0];
+    const presupuesto = { ...presupuestoRows[0], notas: descifrar(presupuestoRows[0].notas) };
 
-    const { rows: items } = await query<PresupuestoItem>(
+    const { rows: itemsRows } = await query<PresupuestoItem>(
       `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario
        FROM presupuesto_items WHERE presupuesto_id = $1 ORDER BY id`,
       [presupuestoId]
     );
+    const items = itemsRows.map((it) => ({ ...it, concepto: descifrar(it.concepto) ?? it.concepto }));
 
     const datosReporte = await obtenerDatosReporte(pacienteId);
     if (!datosReporte) {

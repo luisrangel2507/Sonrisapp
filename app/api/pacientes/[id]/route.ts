@@ -5,12 +5,13 @@ import { errorJson } from "@/lib/api-error";
 import { esFechaFutura } from "@/lib/fechas";
 import { cifrar, descifrar } from "@/lib/crypto";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { registrarAcceso } from "@/lib/bitacora";
 
 // Texto libre clínico de la ficha rápida del paciente — se cifra en
 // reposo (NOM-024) igual que la historia clínica y el formulario público.
 const CAMPOS_CIFRABLES = new Set(["alergias_cual", "medicamentos", "antecedentes_medicos_cual"]);
 
-export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
     const id = Number(params.id);
@@ -31,6 +32,9 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     for (const campo of Array.from(CAMPOS_CIFRABLES)) {
       if (campo in paciente) paciente[campo] = descifrar(paciente[campo]);
     }
+
+    const identidad = await identidadDesdeRequest(req);
+    void registrarAcceso(id, "expediente", identidad.nombre);
 
     return NextResponse.json({ paciente });
   } catch (err) {

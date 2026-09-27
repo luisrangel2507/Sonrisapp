@@ -26,6 +26,10 @@ export interface Paciente {
   // que tenía fue anulado). Igual que historial_pendiente, solo se
   // calcula en la lista.
   consentimiento_pendiente?: boolean;
+  // true si el paciente tiene una solicitud (derechos ARCO) sin
+  // resolver, mandada desde su portal. Igual que los otros, solo se
+  // calcula en la lista.
+  solicitud_pendiente?: boolean;
   // NOM-024: dar de baja a un paciente no borra su expediente, solo lo
   // desactiva (activo=false) — deja de contar como paciente activo del
   // día a día, pero el registro y su historial siguen intactos.
@@ -108,6 +112,28 @@ export interface Presupuesto {
   vigente: boolean;
   motivo_anulacion: string | null;
   anulado_por_nombre: string | null;
+}
+
+export type EstadoSolicitud = "pendiente" | "resuelta";
+
+// Derechos ARCO — solicitud de acceso/corrección/cancelación que el
+// paciente manda desde su propio portal (/portal/[token]).
+export interface SolicitudPaciente {
+  id: number;
+  paciente_id: number;
+  mensaje: string;
+  estado: EstadoSolicitud;
+  respuesta: string | null;
+  resuelta_por_nombre: string | null;
+  resuelta_en: string | null;
+  creado_en: string;
+}
+
+export interface AccesoBitacora {
+  id: number;
+  tipo: "expediente" | "consentimiento" | "presupuesto" | "portal" | "formulario";
+  usuario_nombre: string | null;
+  creado_en: string;
 }
 
 export type EstadoCita = "agendada" | "completada" | "cancelada";

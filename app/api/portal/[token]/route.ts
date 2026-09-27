@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { descifrar } from "@/lib/crypto";
+import { registrarAcceso } from "@/lib/bitacora";
 
 // Ruta pública (fuera del middleware de sesión): el paciente entra con
 // el link que le comparte la clínica — mismo historial_token que usa
@@ -64,6 +65,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       medicamentos: descifrar(r.medicamentos) ?? "",
       indicaciones: descifrar(r.indicaciones),
     }));
+
+    void registrarAcceso(paciente.id, "portal", null);
 
     return NextResponse.json({
       paciente: {

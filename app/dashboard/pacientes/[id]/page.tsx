@@ -6,10 +6,12 @@ import Link from "next/link";
 import {
   ChevronLeft,
   ClipboardList,
+  Eye,
   ExternalLink,
   FileDown,
   FileSignature,
   FileText,
+  Mail,
   Paperclip,
   Pill,
   Plus,
@@ -21,7 +23,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { Consentimiento, Paciente, PacienteNota, Presupuesto, Receta } from "@/lib/types";
+import type { AccesoBitacora, Consentimiento, Paciente, PacienteNota, Presupuesto, Receta, SolicitudPaciente } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
@@ -156,20 +158,31 @@ export default function PacienteDetallePage() {
   const [creandoReceta, setCreandoReceta] = useState(false);
   const [eliminandoRecetaId, setEliminandoRecetaId] = useState<number | null>(null);
 
+  const [solicitudes, setSolicitudes] = useState<SolicitudPaciente[]>([]);
+  const [resolviendoSolicitudId, setResolviendoSolicitudId] = useState<number | null>(null);
+
+  const [accesos, setAccesos] = useState<AccesoBitacora[]>([]);
+  const [bitacoraAbierta, setBitacoraAbierta] = useState(false);
+
   async function cargar() {
     setCargando(true);
-    const [resPaciente, resNotas, resConsent, resPresupuestos, resRecetas] = await Promise.all([
-      fetch(`/api/pacientes/${pacienteId}`),
-      fetch(`/api/pacientes/${pacienteId}/notas`),
-      fetch(`/api/pacientes/${pacienteId}/consentimientos`),
-      fetch(`/api/pacientes/${pacienteId}/presupuestos`),
-      fetch(`/api/pacientes/${pacienteId}/recetas`),
-    ]);
+    const [resPaciente, resNotas, resConsent, resPresupuestos, resRecetas, resSolicitudes, resAccesos] =
+      await Promise.all([
+        fetch(`/api/pacientes/${pacienteId}`),
+        fetch(`/api/pacientes/${pacienteId}/notas`),
+        fetch(`/api/pacientes/${pacienteId}/consentimientos`),
+        fetch(`/api/pacientes/${pacienteId}/presupuestos`),
+        fetch(`/api/pacientes/${pacienteId}/recetas`),
+        fetch(`/api/pacientes/${pacienteId}/solicitudes`),
+        fetch(`/api/pacientes/${pacienteId}/bitacora`),
+      ]);
     const dataPaciente = await resPaciente.json();
     const dataNotas = await resNotas.json();
     const dataConsent = await resConsent.json();
     const dataPresupuestos = await resPresupuestos.json();
     const dataRecetas = await resRecetas.json();
+    const dataSolicitudes = await resSolicitudes.json();
+    const dataAccesos = await resAccesos.json();
     const p: Paciente = dataPaciente.paciente;
     setPaciente(p);
     setNombre(p.nombre);
@@ -180,7 +193,27 @@ export default function PacienteDetallePage() {
     setConsentimientos(dataConsent.consentimientos ?? []);
     setPresupuestos(dataPresupuestos.presupuestos ?? []);
     setRecetas(dataRecetas.recetas ?? []);
+    setSolicitudes(dataSolicitudes.solicitudes ?? []);
+    setAccesos(dataAccesos.accesos ?? []);
     setCargando(false);
+  }
+
+  async function resolverSolicitud(id: number) {
+    if (resolviendoSolicitudId) return;
+    const respuesta = window.prompt(
+      "¿Cómo se resolvió? (opcional — queda como nota para el registro de esta solicitud)"
+    );
+    if (respuesta === null) return;
+    setResolviendoSolicitudId(id);
+    await fetch(`/api/pacientes/${pacienteId}/solicitudes/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ respuesta: respuesta.trim() }),
+    });
+    const res = await fetch(`/api/pacientes/${pacienteId}/solicitudes`);
+    const data = await res.json();
+    setSolicitudes(data.solicitudes ?? []);
+    setResolviendoSolicitudId(null);
   }
 
   async function registrarReferido(puntos: number) {
@@ -1407,7 +1440,88 @@ export default function PacienteDetallePage() {
         )}
       </div>
 
+      {solicitudes.length > 0 && (
+        <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+          <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+            <Mail size={13} /> Solicitudes del paciente
+          </div>
+          <div className="space-y-3">
+            {solicitudes.map((s) => (
+              <div key={s.id} className="rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                <div className="flex items-start justify-between gap-2">
+                  {s.estado === "pendiente" ? (
+                    <span className="inline-block rounded-full bg-[#E3EEF7] px-2 py-0.5 text-[10px] font-semibold text-[#3D6C97]">
+                      Pendiente
+                    </span>
+                  ) : (
+                    <span className="inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
+                      Resuelta
+                    </span>
+                  )}
+                  {s.estado === "pendiente" && (
+                    <button
+                      onClick={() => resolverSolicitud(s.id)}
+                      disabled={resolviendoSolicitudId === s.id}
+                      className="text-[12px] font-medium text-[#803449] disabled:opacity-50"
+                    >
+                      Marcar resuelta
+                    </button>
+                  )}
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-[13px] text-[#2b2118]">{s.mensaje}</p>
+                <p className="mt-1 text-[10px] text-[#a49c8a]">
+                  {new Date(s.creado_en).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+                {s.estado === "resuelta" && (
+                  <div className="mt-2 border-t border-[#EFE9DC] pt-2 text-[12px] text-[#8a8272]">
+                    {s.respuesta && <p className="whitespace-pre-wrap">{s.respuesta}</p>}
+                    <p className="mt-0.5 text-[10px] text-[#a49c8a]">
+                      Resuelta por {s.resuelta_por_nombre}
+                      {s.resuelta_en &&
+                        ` el ${new Date(s.resuelta_en).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <LoyaltyCard paciente={paciente} onRegistrarReferido={registrarReferido} />
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <button
+          onClick={() => setBitacoraAbierta((v) => !v)}
+          className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]"
+        >
+          <span className="flex items-center gap-1.5">
+            <Eye size={13} /> Quién ha consultado este expediente
+          </span>
+          <span>{bitacoraAbierta ? "Ocultar" : "Ver"}</span>
+        </button>
+        {bitacoraAbierta && (
+          <div className="mt-3 space-y-1.5">
+            {accesos.length === 0 ? (
+              <p className="text-sm text-[#8a8272]">Sin accesos registrados todavía.</p>
+            ) : (
+              accesos.map((a) => (
+                <div key={a.id} className="flex items-center justify-between text-[12px] text-[#8a8272]">
+                  <span>{a.usuario_nombre ?? "El paciente (link público)"}</span>
+                  <span className="text-[#a49c8a]">
+                    {new Date(a.creado_en).toLocaleString("es-MX", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
       {miRol === "admin" && (
         <button
