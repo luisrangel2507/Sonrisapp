@@ -157,6 +157,8 @@ export default function PacienteDetallePage() {
   const [pesoReceta, setPesoReceta] = useState("");
   const [creandoReceta, setCreandoReceta] = useState(false);
   const [eliminandoRecetaId, setEliminandoRecetaId] = useState<number | null>(null);
+  const [compartiendoRecetaId, setCompartiendoRecetaId] = useState<number | null>(null);
+  const [linkRecetaCopiadoId, setLinkRecetaCopiadoId] = useState<number | null>(null);
 
   const [solicitudes, setSolicitudes] = useState<SolicitudPaciente[]>([]);
   const [resolviendoSolicitudId, setResolviendoSolicitudId] = useState<number | null>(null);
@@ -563,6 +565,36 @@ export default function PacienteDetallePage() {
       }
     } finally {
       setCompartiendoPresupuestoId(null);
+    }
+  }
+
+  async function compartirReceta(r: Receta) {
+    if (compartiendoRecetaId || !paciente) return;
+    setCompartiendoRecetaId(r.id);
+    try {
+      const res = await fetch(`/api/pacientes/${pacienteId}/historial-token`);
+      const data = await res.json();
+      if (!data.token) return;
+
+      const url = `${window.location.origin}/api/portal/${data.token}/recetas/${r.id}`;
+      const texto = `Hola ${paciente.nombre.split(" ")[0]}, te comparto tu receta aquí: ${url}`;
+
+      if (navigator.share) {
+        try {
+          // No mandar `url` aparte: ya va dentro de `texto`, y en
+          // iOS/WhatsApp el share sheet lo pega otra vez al final
+          // (queda el link duplicado en el mensaje).
+          await navigator.share({ title: "Receta — Viña Sonrisas", text: texto });
+        } catch {
+          // el usuario canceló el share, no hacer nada
+        }
+      } else {
+        await navigator.clipboard.writeText(texto);
+        setLinkRecetaCopiadoId(r.id);
+        setTimeout(() => setLinkRecetaCopiadoId(null), 2500);
+      }
+    } finally {
+      setCompartiendoRecetaId(null);
     }
   }
 
@@ -1363,6 +1395,19 @@ export default function PacienteDetallePage() {
                     >
                       <FileDown size={14} />
                     </a>
+                    {r.vigente && (
+                      <button
+                        onClick={() => compartirReceta(r)}
+                        disabled={compartiendoRecetaId === r.id}
+                        className={`disabled:opacity-50 ${
+                          linkRecetaCopiadoId === r.id ? "text-[#3F6B33]" : "text-[#803449]"
+                        }`}
+                        aria-label="Compartir receta por WhatsApp"
+                        title={linkRecetaCopiadoId === r.id ? "Link copiado ✓" : "Compartir por WhatsApp"}
+                      >
+                        <Share2 size={13} />
+                      </button>
+                    )}
                     {r.vigente && (
                       <button
                         onClick={() => eliminarReceta(r.id)}
