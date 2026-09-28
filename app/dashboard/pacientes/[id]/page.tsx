@@ -15,6 +15,7 @@ import {
   Paperclip,
   Pill,
   Plus,
+  Printer,
   Receipt,
   RefreshCw,
   Save,
@@ -596,6 +597,33 @@ export default function PacienteDetallePage() {
     } finally {
       setCompartiendoRecetaId(null);
     }
+  }
+
+  // Abre el PDF en una pestaña nueva y dispara el diálogo de imprimir
+  // en cuanto carga — no se puede usar un <iframe> oculto porque
+  // X-Frame-Options: DENY (next.config.mjs, parte del endurecimiento
+  // NOM-024) bloquea embeber cualquier página del sitio, PDFs
+  // incluidos; una pestaña nueva no cuenta como "embeber" así que no
+  // choca con ese header. Se abre primero (sync, en el propio click)
+  // para que el navegador no lo trate como popup bloqueado.
+  function imprimirPdf(url: string) {
+    const ventana = window.open(url, "_blank");
+    if (!ventana) return; // navegador bloqueó la ventana — igual puede usar "Descargar".
+    let impreso = false;
+    const imprimirUnaVez = () => {
+      if (impreso) return;
+      impreso = true;
+      try {
+        ventana.focus();
+        ventana.print();
+      } catch {
+        // el PDF ya quedó abierto en la pestaña; puede imprimir desde el visor.
+      }
+    };
+    ventana.addEventListener("load", imprimirUnaVez);
+    // Respaldo: algunos visores nativos de PDF no disparan "load" de
+    // forma confiable.
+    setTimeout(imprimirUnaVez, 1200);
   }
 
   async function crearReceta() {
@@ -1395,6 +1423,14 @@ export default function PacienteDetallePage() {
                     >
                       <FileDown size={14} />
                     </a>
+                    <button
+                      onClick={() => imprimirPdf(`/api/pacientes/${pacienteId}/recetas/${r.id}/pdf`)}
+                      className="text-[#803449]"
+                      aria-label="Imprimir receta"
+                      title="Imprimir"
+                    >
+                      <Printer size={14} />
+                    </button>
                     {r.vigente && (
                       <button
                         onClick={() => compartirReceta(r)}
