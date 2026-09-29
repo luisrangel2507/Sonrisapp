@@ -712,17 +712,27 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             </label>
             {!aplicarTodos && (
               <>
-                <select
-                  value={estadoNuevo || info?.estado || "sano"}
-                  onChange={(e) => setEstadoNuevo(e.target.value as EstadoDiente)}
-                  className="w-full rounded-xl border border-white/15 bg-[#15101f] px-3 py-2 text-sm text-white outline-none"
-                >
-                  {Object.entries(mapaEstados).map(([key, v]) => (
-                    <option key={key} value={key}>
-                      {v.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {Object.entries(mapaEstados).map(([key, v]) => {
+                    const activo = (estadoNuevo || info?.estado || "sano") === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setEstadoNuevo(key as EstadoDiente)}
+                        className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-left text-[11px] transition-colors ${
+                          activo ? "border-white/60 bg-white/10 text-white" : "border-white/10 text-white/70"
+                        }`}
+                      >
+                        <span
+                          className="h-3 w-3 shrink-0 rounded-full border border-white/30"
+                          style={{ backgroundColor: v.ring }}
+                        />
+                        <span className="truncate">{v.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
                 {formEstadoAbierto ? (
                   <div className="flex gap-1.5">

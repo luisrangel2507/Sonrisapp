@@ -27,7 +27,10 @@ type EstadoDienteFijo =
   | "anquilosis"
   | "protesis"
   | "implante"
-  | "ausente";
+  | "ausente"
+  | "obturacion"
+  | "sellador"
+  | "extraccion_indicada";
 
 // Además de los 15 fijos de abajo, la doctora puede dar de alta estados
 // propios (ver estados_diente_personalizados) — por eso el tipo admite
@@ -56,6 +59,9 @@ export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: strin
   protesis: { ring: "#9B9BC7", glow: "155,155,199", label: "Prótesis" },
   implante: { ring: "#7C5CE0", glow: "124,92,224", label: "Implante" },
   ausente: { ring: "#6B6575", glow: "107,101,117", label: "Ausente" },
+  obturacion: { ring: "#3E6FD9", glow: "62,111,217", label: "Obturación" },
+  sellador: { ring: "#3FAE6B", glow: "63,174,107", label: "Sellador" },
+  extraccion_indicada: { ring: "#D62839", glow: "214,40,57", label: "Extracción indicada" },
 };
 
 // "#RRGGBB" -> "r,g,b", mismo formato que .glow arriba, para poder
