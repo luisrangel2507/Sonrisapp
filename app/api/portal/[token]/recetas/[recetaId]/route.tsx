@@ -61,14 +61,9 @@ export async function GET(
       peso: descifrar(recetaRows[0].peso),
     };
 
-    const { rows: perfilRows } = await query<{ telefono: string | null }>(
-      `SELECT telefono FROM perfil_dentista WHERE id = 1`
-    );
-    const telefono = perfilRows[0]?.telefono ?? null;
-
     void registrarAcceso(paciente.id, "portal", null);
 
-    const documento = construirRecetaPdfDocumento(receta, paciente, telefono);
+    const documento = construirRecetaPdfDocumento(receta, paciente);
 
     const buffer = await renderToBuffer(documento);
     return new NextResponse(new Uint8Array(buffer), {
