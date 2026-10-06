@@ -7,11 +7,13 @@ import {
   ARCO_INFERIOR,
   ESTADO_DIENTE,
   POLIGONOS_DIENTE,
+  SIMBOLO_DIENTE,
   construirMapaEstados,
   type EstadoDiente,
   type EstadoDientePersonalizado,
   type HistorialDental,
   type HistorialEntrada,
+  type SimboloEstado,
 } from "@/lib/dental";
 
 type MapaEstados = Record<string, { ring: string; glow: string; label: string }>;
@@ -172,6 +174,149 @@ function CasillaCarta({
   );
 }
 
+// Dibuja el símbolo oficial de la convención (X, triángulo, doble
+// círculo, letra, etc.) en vez de solo un color — para la vista de
+// prueba del odontograma. Un estado sin forma registrada (p. ej. uno
+// personalizado) cae en círculo relleno.
+function GlifoEstado({ estado, color, tamano = 16 }: { estado: EstadoDiente; color: string; tamano?: number }) {
+  const s = (SIMBOLO_DIENTE as Record<string, SimboloEstado>)[estado] ?? { forma: "circulo_relleno" };
+  if (s.forma === "ninguno") return null;
+  return (
+    <svg viewBox="0 0 24 24" width={tamano} height={tamano} style={{ overflow: "visible" }}>
+      {s.forma === "linea" && <line x1={4} y1={12} x2={20} y2={12} stroke={color} strokeWidth={2.4} strokeLinecap="round" />}
+      {s.forma === "linea_punteada" && (
+        <line x1={12} y1={4} x2={12} y2={20} stroke={color} strokeWidth={2} strokeDasharray="2,2.2" strokeLinecap="round" />
+      )}
+      {s.forma === "x" && (
+        <>
+          <line x1={6} y1={6} x2={18} y2={18} stroke={color} strokeWidth={2.4} strokeLinecap="round" />
+          <line x1={18} y1={6} x2={6} y2={18} stroke={color} strokeWidth={2.4} strokeLinecap="round" />
+        </>
+      )}
+      {s.forma === "circulo_relleno" && <circle cx={12} cy={12} r={6.5} fill={color} />}
+      {s.forma === "circulo_relleno_halo" && (
+        <>
+          <circle cx={12} cy={12} r={8.5} fill="none" stroke={color} strokeWidth={2.2} />
+          <circle cx={12} cy={12} r={5} fill={s.interior ?? "#3E6FD9"} />
+        </>
+      )}
+      {s.forma === "circulo_hueco" && <circle cx={12} cy={12} r={6.5} fill="none" stroke={color} strokeWidth={2} />}
+      {s.forma === "doble_circulo" && (
+        <>
+          <circle cx={6.5} cy={12} r={3.4} fill="none" stroke={color} strokeWidth={1.8} />
+          <line x1={9.7} y1={12} x2={14.3} y2={12} stroke={color} strokeWidth={1.8} />
+          <circle cx={17.5} cy={12} r={3.4} fill="none" stroke={color} strokeWidth={1.8} />
+        </>
+      )}
+      {s.forma === "doble_linea" && (
+        <>
+          <line x1={4} y1={9.5} x2={20} y2={9.5} stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+          <line x1={4} y1={14.5} x2={20} y2={14.5} stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+        </>
+      )}
+      {s.forma === "triangulo" && <path d="M12,5 L19,19 L5,19 Z" fill="none" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />}
+      {s.forma === "triangulo_relleno" && (
+        <path d="M12,5 L19,19 L5,19 Z" fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
+      )}
+      {s.forma === "flecha" && (
+        <>
+          <line x1={12} y1={19} x2={12} y2={6} stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+          <path d="M7.5,10.5 L12,4.5 L16.5,10.5" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+      {s.forma === "letra" && (
+        <text x={12} y={16} textAnchor="middle" fontSize={s.letra && s.letra.length > 1 ? 8 : 11} fontWeight={700} fill={color}>
+          {s.letra}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+// Casilla de la vista "Símbolos (prueba)": contorno de diente neutro
+// (el color ya no indica el estado) + el símbolo oficial encima —
+// igual que en un odontograma de papel. No reemplaza "Carta clínica":
+// es una vista adicional para ir probándola sin cambiar cómo la
+// doctora ya trabaja.
+function CasillaSimbolo({
+  numero,
+  arriba,
+  estado,
+  activo,
+  onClick,
+  mapaEstados,
+}: {
+  numero: number;
+  arriba: boolean;
+  estado: EstadoDiente;
+  activo: boolean;
+  onClick: () => void;
+  mapaEstados: MapaEstados;
+}) {
+  const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
+  const etiqueta = (
+    <span className={`text-[9px] font-semibold ${activo ? "text-white" : "text-white/50"}`}>{numero}</span>
+  );
+  return (
+    <button onClick={onClick} aria-label={`Diente ${numero}`} className="flex shrink-0 flex-col items-center gap-1">
+      {arriba && etiqueta}
+      <div
+        className="relative flex shrink-0 items-center justify-center"
+        style={{
+          width: 22,
+          height: 58,
+          color: activo ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.28)",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: activo ? 1.1 : 0.6,
+        }}
+      >
+        <IconoDiente numero={numero} />
+        {estado !== "sano" && (
+          <div className="absolute" style={{ top: "16%" }}>
+            <GlifoEstado estado={estado} color={est.ring} tamano={16} />
+          </div>
+        )}
+      </div>
+      {!arriba && etiqueta}
+    </button>
+  );
+}
+
+function FilaSimbolos({
+  numeros,
+  arriba,
+  historial,
+  seleccionado,
+  onSeleccionar,
+  mapaEstados,
+}: {
+  numeros: number[];
+  arriba: boolean;
+  historial: HistorialDental;
+  seleccionado: number;
+  onSeleccionar: (n: number) => void;
+  mapaEstados: MapaEstados;
+}) {
+  return (
+    <div className="flex w-max items-stretch justify-center gap-[3px]">
+      {numeros.map((n, i) => (
+        <Fragment key={n}>
+          {i === 8 && <div className="mx-2 w-px self-stretch bg-white/20" />}
+          <CasillaSimbolo
+            numero={n}
+            arriba={arriba}
+            estado={historial[n]?.estado ?? "sano"}
+            activo={n === seleccionado}
+            onClick={() => onSeleccionar(n)}
+            mapaEstados={mapaEstados}
+          />
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
 function estiloPoligono(estado: EstadoDiente, activo: boolean, mapaEstados: MapaEstados): CSSProperties {
   const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
   if (activo) {
@@ -316,7 +461,7 @@ function FilaCarta({
 }
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
-  const [vista, setVista] = useState<"foto" | "carta">("foto");
+  const [vista, setVista] = useState<"foto" | "carta" | "simbolos">("foto");
   const [seleccionado, setSeleccionado] = useState<number>(16);
   const [historial, setHistorial] = useState<HistorialDental>({});
   const [cargando, setCargando] = useState(true);
@@ -473,8 +618,8 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               {paciente.nombre} {paciente.folio ? `· ficha ${paciente.folio}` : ""}
             </div>
           </div>
-          <div className="flex rounded-full border border-white/15 bg-white/5 p-0.5 text-[11px]">
-            {(["foto", "carta"] as const).map((v) => (
+          <div className="flex flex-wrap justify-end gap-0.5 rounded-full border border-white/15 bg-white/5 p-0.5 text-[11px]">
+            {(["foto", "carta", "simbolos"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setVista(v)}
@@ -482,7 +627,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                   vista === v ? "bg-[#7C5CE0] text-white" : "text-white/50"
                 }`}
               >
-                {v === "foto" ? "Foto" : "Carta clínica"}
+                {v === "foto" ? "Foto" : v === "carta" ? "Carta clínica" : "Símbolos · prueba"}
               </button>
             ))}
           </div>
@@ -537,7 +682,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               mapaEstados={mapaEstados}
             />
           </div>
-        ) : (
+        ) : vista === "carta" ? (
           <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
             <FilaCarta
               numeros={ARCO_SUPERIOR}
@@ -549,6 +694,30 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             />
             <div className="border-t border-dashed border-white/15" />
             <FilaCarta
+              numeros={ARCO_INFERIOR_VISUAL}
+              arriba={false}
+              historial={historial}
+              seleccionado={seleccionado}
+              onSeleccionar={seleccionar}
+              mapaEstados={mapaEstados}
+            />
+          </div>
+        ) : (
+          <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] leading-snug text-white/40">
+              <span className="shrink-0 rounded-full bg-[#7C5CE0]/25 px-2 py-0.5 font-semibold text-[#C7B8F7]">Beta</span>
+              Vista de prueba con los símbolos oficiales del cartel. La vista &quot;Carta clínica&quot; sigue igual para seguir trabajando como siempre.
+            </div>
+            <FilaSimbolos
+              numeros={ARCO_SUPERIOR}
+              arriba
+              historial={historial}
+              seleccionado={seleccionado}
+              onSeleccionar={seleccionar}
+              mapaEstados={mapaEstados}
+            />
+            <div className="border-t border-dashed border-white/15" />
+            <FilaSimbolos
               numeros={ARCO_INFERIOR_VISUAL}
               arriba={false}
               historial={historial}

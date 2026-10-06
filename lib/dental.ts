@@ -89,6 +89,63 @@ export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: strin
   para_corona: estado("#CE3F52", "Diente para corona"),
 };
 
+// Forma del símbolo oficial de cada condición (cartel "CONVENCIONES
+// PARA EL ODONTOGRAMA") — usado solo por la vista de prueba del
+// odontograma (ver components/Odontograma.tsx), que dibuja el símbolo
+// real en vez de solo colorear el diente. Un estado personalizado (sin
+// entrada aquí) cae en "circulo_relleno" por defecto.
+export type FormaSimbolo =
+  | "ninguno"
+  | "linea"
+  | "linea_punteada"
+  | "x"
+  | "circulo_relleno"
+  | "circulo_relleno_halo"
+  | "circulo_hueco"
+  | "doble_circulo"
+  | "doble_linea"
+  | "triangulo"
+  | "triangulo_relleno"
+  | "flecha"
+  | "letra";
+
+export interface SimboloEstado {
+  forma: FormaSimbolo;
+  letra?: string;
+  // Color de relleno interior cuando difiere del color del símbolo —
+  // solo lo usa "Caries recurrente o restauración en mal estado": halo
+  // rojo (alerta) con relleno azul (ya tiene restauración).
+  interior?: string;
+}
+
+export const SIMBOLO_DIENTE: Record<EstadoDienteFijo, SimboloEstado> = {
+  sano: { forma: "ninguno" },
+  ausente: { forma: "linea" },
+  extraido: { forma: "x" },
+  extraccion_indicada: { forma: "x" },
+  caries_recurrente: { forma: "circulo_relleno_halo", interior: "#3E6FD9" },
+  caries: { forma: "circulo_relleno" },
+  restauracion_buena: { forma: "circulo_relleno" },
+  sellante_mal: { forma: "letra", letra: "S" },
+  sellante_bueno: { forma: "letra", letra: "S" },
+  endodoncia_mal: { forma: "triangulo_relleno" },
+  endodoncia_buena: { forma: "triangulo" },
+  corona_buena: { forma: "circulo_hueco" },
+  corona_mala: { forma: "circulo_hueco" },
+  protesis_fija_mala: { forma: "doble_circulo" },
+  protesis_fija_buena: { forma: "doble_circulo" },
+  protesis_removible_mala: { forma: "doble_linea" },
+  protesis_removible_buena: { forma: "doble_linea" },
+  implante_malo: { forma: "flecha" },
+  implante_bueno: { forma: "flecha" },
+  superficie_resina: { forma: "circulo_relleno" },
+  superficie_amalgama: { forma: "circulo_relleno" },
+  incrustacion_buena: { forma: "letra", letra: "INC" },
+  incrustacion_mala: { forma: "letra", letra: "INC" },
+  perdido: { forma: "linea_punteada" },
+  para_corona: { forma: "letra", letra: "C" },
+};
+
 // Mezcla el catálogo fijo de 15 estados con los que la doctora haya
 // dado de alta — todo el resto del odontograma (colores, leyenda,
 // selector) lee de aquí en vez de ESTADO_DIENTE directo, para que un
