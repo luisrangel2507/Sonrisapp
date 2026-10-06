@@ -4,35 +4,49 @@ export const ARCO_SUPERIOR = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25
 export const ARCO_INFERIOR = [38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48];
 export const NUMEROS_FDI = [...ARCO_SUPERIOR, ...ARCO_INFERIOR];
 
-// Catálogo de afectaciones que puede tener un diente — reemplaza al set
-// genérico anterior (sano/observación/caries/fractura/tratado/extraído)
-// por las 14 condiciones específicas por diente del cartel de la
-// doctora. "sano" se conserva como estado base (ningún diente marcado):
-// no es una afectación, es la ausencia de una. Mal aliento, bruxismo y
-// sarro quedaron fuera a propósito — son condiciones de toda la boca,
-// no de un diente en particular, así que solo se documentan como nota
-// en el historial y no aparecen aquí ni se pueden "marcar" en un diente.
+// "#RRGGBB" -> "r,g,b", mismo formato que .glow abajo, para poder
+// armar el rgba() de los estados (fijos y personalizados) a partir de
+// su color hex.
+export function hexARgb(hex: string): string {
+  const limpio = hex.replace("#", "");
+  const entero = parseInt(limpio, 16);
+  return `${(entero >> 16) & 255},${(entero >> 8) & 255},${entero & 255}`;
+}
+
+// Catálogo de afectaciones que puede tener un diente — las 24
+// convenciones oficiales del odontograma (cartel "CONVENCIONES PARA EL
+// ODONTOGRAMA" de la doctora): rojo = mal estado / requiere atención,
+// azul = buen estado / resuelto, gris = material neutro (resina,
+// amalgama). "sano" se conserva como estado base (ningún diente
+// marcado): no es una afectación, es la ausencia de una.
 type EstadoDienteFijo =
   | "sano"
-  | "caries"
-  | "sensibilidad"
-  | "periodontal"
-  | "erosion"
-  | "abrasion"
-  | "endodoncia"
-  | "pulpitis"
-  | "necrosis"
-  | "fractura"
-  | "movilidad"
-  | "anquilosis"
-  | "protesis"
-  | "implante"
   | "ausente"
-  | "obturacion"
-  | "sellador"
-  | "extraccion_indicada";
+  | "extraido"
+  | "extraccion_indicada"
+  | "caries_recurrente"
+  | "caries"
+  | "restauracion_buena"
+  | "sellante_mal"
+  | "sellante_bueno"
+  | "endodoncia_mal"
+  | "endodoncia_buena"
+  | "corona_buena"
+  | "corona_mala"
+  | "protesis_fija_mala"
+  | "protesis_fija_buena"
+  | "protesis_removible_mala"
+  | "protesis_removible_buena"
+  | "implante_malo"
+  | "implante_bueno"
+  | "superficie_resina"
+  | "superficie_amalgama"
+  | "incrustacion_buena"
+  | "incrustacion_mala"
+  | "perdido"
+  | "para_corona";
 
-// Además de los 15 fijos de abajo, la doctora puede dar de alta estados
+// Además de los 25 fijos de abajo, la doctora puede dar de alta estados
 // propios (ver estados_diente_personalizados) — por eso el tipo admite
 // cualquier string, no solo los literales conocidos.
 export type EstadoDiente = EstadoDienteFijo | (string & {});
@@ -43,34 +57,37 @@ export interface EstadoDientePersonalizado {
   color: string;
 }
 
-export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: string; label: string }> = {
-  sano: { ring: "#5DC9E8", glow: "93,201,232", label: "Sano" },
-  caries: { ring: "#E8508C", glow: "232,80,140", label: "Caries" },
-  sensibilidad: { ring: "#6FD8F2", glow: "111,216,242", label: "Sensibilidad" },
-  periodontal: { ring: "#E85050", glow: "232,80,80", label: "Enf. periodontal" },
-  erosion: { ring: "#D4A24C", glow: "212,162,76", label: "Erosión" },
-  abrasion: { ring: "#C2703D", glow: "194,112,61", label: "Abrasión" },
-  endodoncia: { ring: "#5FE0A0", glow: "95,224,160", label: "Endodoncia" },
-  pulpitis: { ring: "#B33951", glow: "179,57,81", label: "Pulpitis irreversible" },
-  necrosis: { ring: "#5C4C66", glow: "92,76,102", label: "Necrosis pulpar" },
-  fractura: { ring: "#F2703D", glow: "242,112,61", label: "Fractura" },
-  movilidad: { ring: "#F0C24E", glow: "240,194,78", label: "Movilidad" },
-  anquilosis: { ring: "#8B6B4A", glow: "139,107,74", label: "Anquilosis" },
-  protesis: { ring: "#9B9BC7", glow: "155,155,199", label: "Prótesis" },
-  implante: { ring: "#7C5CE0", glow: "124,92,224", label: "Implante" },
-  ausente: { ring: "#6B6575", glow: "107,101,117", label: "Ausente" },
-  obturacion: { ring: "#3E6FD9", glow: "62,111,217", label: "Obturación" },
-  sellador: { ring: "#3FAE6B", glow: "63,174,107", label: "Sellador" },
-  extraccion_indicada: { ring: "#D62839", glow: "214,40,57", label: "Extracción indicada" },
-};
-
-// "#RRGGBB" -> "r,g,b", mismo formato que .glow arriba, para poder
-// armar el rgba() de los estados personalizados a partir de su color hex.
-export function hexARgb(hex: string): string {
-  const limpio = hex.replace("#", "");
-  const entero = parseInt(limpio, 16);
-  return `${(entero >> 16) & 255},${(entero >> 8) & 255},${entero & 255}`;
+function estado(ring: string, label: string) {
+  return { ring, glow: hexARgb(ring), label };
 }
+
+export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: string; label: string }> = {
+  sano: estado("#5DC9E8", "Sano"),
+  ausente: estado("#6B6575", "Diente ausente"),
+  extraido: estado("#7A7488", "Diente extraído"),
+  extraccion_indicada: estado("#D62839", "Extracción indicada"),
+  caries_recurrente: estado("#C81E3A", "Caries recurrente o restauración en mal estado"),
+  caries: estado("#E8508C", "Caries"),
+  restauracion_buena: estado("#3E6FD9", "Restauración u obturación en buen estado"),
+  sellante_mal: estado("#D6455B", "Sellante en mal estado"),
+  sellante_bueno: estado("#4C7FE0", "Sellante en buen estado"),
+  endodoncia_mal: estado("#C23B4E", "Endodoncia en mal estado"),
+  endodoncia_buena: estado("#4A7FE0", "Endodoncia en buen estado"),
+  corona_buena: estado("#3E72D6", "Corona completa en buen estado"),
+  corona_mala: estado("#D1495B", "Corona completa en mal estado"),
+  protesis_fija_mala: estado("#C94C5B", "Prótesis fija con póntico en mal estado"),
+  protesis_fija_buena: estado("#3F76DB", "Prótesis fija con póntico en buen estado"),
+  protesis_removible_mala: estado("#CB4257", "Prótesis removible en mal estado"),
+  protesis_removible_buena: estado("#4178DD", "Prótesis removible en buen estado"),
+  implante_malo: estado("#D23C50", "Implante en mal estado"),
+  implante_bueno: estado("#3D73D8", "Implante en buen estado"),
+  superficie_resina: estado("#9AA3AE", "Superficie resina"),
+  superficie_amalgama: estado("#2E4C87", "Superficie amalgama"),
+  incrustacion_buena: estado("#4280E0", "Incrustación en buen estado"),
+  incrustacion_mala: estado("#D94A5D", "Incrustación en mal estado"),
+  perdido: estado("#8893A6", "Diente perdido"),
+  para_corona: estado("#CE3F52", "Diente para corona"),
+};
 
 // Mezcla el catálogo fijo de 15 estados con los que la doctora haya
 // dado de alta — todo el resto del odontograma (colores, leyenda,
