@@ -64,7 +64,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
 
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">{label}</label>
       {children}
     </div>
@@ -170,7 +170,7 @@ export function CamposHistoriaClinica({
               type="date"
               value={form.fecha}
               onChange={(e) => set("fecha", e.target.value)}
-              className={inputClase}
+              className={`${inputClase} min-w-0`}
             />
           </Campo>
           <Campo label="Fecha de nacimiento">
