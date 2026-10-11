@@ -67,7 +67,16 @@ export async function GET() {
       FROM limites
     `);
 
-    return NextResponse.json({ resumen: rows[0] });
+    // Servicios más realizados del mes (citas completadas), en horario
+    // de México igual que el resto del resumen.
+    const { rows: top } = await query<{ tratamiento: string; total: number }>(`
+      SELECT tratamiento, COUNT(*)::int AS total FROM citas
+      WHERE estado = 'completada'
+        AND fecha_hora >= (date_trunc('month', (now() AT TIME ZONE 'America/Mexico_City'))::timestamp AT TIME ZONE 'America/Mexico_City')
+      GROUP BY tratamiento ORDER BY total DESC, tratamiento LIMIT 3
+    `);
+
+    return NextResponse.json({ resumen: { ...rows[0], top_servicios_mes: top } });
   } catch (err) {
     return errorJson(err);
   }

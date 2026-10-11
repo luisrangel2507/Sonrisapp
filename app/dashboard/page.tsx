@@ -17,6 +17,7 @@ import {
   UserPlus,
   Users,
   Wallet,
+  Award,
 } from "lucide-react";
 import { Hero } from "@/components/Hero";
 import { StatCard } from "@/components/StatCard";
@@ -487,12 +488,17 @@ export default function PanelPage() {
           sub={resumen ? <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado} /> : undefined}
         />
         <StatCard
-          icon={Wallet}
+          icon={Award}
           iconBg="bg-[#FCEFD2] text-[#B08419]"
-          label="Por cobrar"
-          value={resumen ? formatearDinero(resumen.por_cobrar) : "…"}
-          sub={resumen && resumen.por_cobrar > 0 ? "pendiente de pago" : undefined}
-          subColor="text-[#B0503A]"
+          label="Top del mes"
+          value={!resumen ? "…" : resumen.top_servicios_mes[0]?.tratamiento ?? "—"}
+          sub={
+            resumen && resumen.top_servicios_mes.length > 0
+              ? resumen.top_servicios_mes.map((t, i) => `${i + 1}. ${t.tratamiento} (${t.total})`).join(" · ")
+              : resumen
+                ? "sin servicios aún"
+                : undefined
+          }
         />
       </div>
 

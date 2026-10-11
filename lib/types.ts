@@ -171,6 +171,7 @@ export interface ResumenDashboard {
   ingresos_mes_pasado: number;
   por_cobrar: number;
   pacientes_activos: number;
+  top_servicios_mes: { tratamiento: string; total: number }[];
 }
 
 export interface Usuario {
