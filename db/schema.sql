@@ -632,3 +632,57 @@ CREATE TABLE IF NOT EXISTS pagos_revertidos (
 -- igual que el resto del contenido clínico. Se ensancha de VARCHAR(160)
 -- a TEXT porque cifrado ocupa más espacio que el texto plano original.
 ALTER TABLE presupuesto_items ALTER COLUMN concepto TYPE TEXT;
+
+-- Historia clínica ampliada al formato completo de la doctora (4
+-- páginas en papel). Dos grupos:
+--  1) Las preguntas nuevas que llena el PACIENTE desde el link público
+--     (antecedentes heredofamiliares detallados, resto de antecedentes
+--     personales patológicos/no patológicos, antecedentes
+--     odontológicos) — se agregan a HISTORIA_CLINICA_CAMPOS igual que
+--     las que ya existían, así entran solas al wizard y al guardado
+--     genérico.
+--  2) Exploración física/signos vitales y cabeza-cuello-cavidad bucal,
+--     que llena la DOCTORA cuando el paciente llega a consulta — nunca
+--     se exponen en el link público, solo en el formulario del
+--     dashboard.
+-- Todo texto libre/identificable queda cifrado (NOM-024), igual que el
+-- resto de la tabla; ver HISTORIA_CLINICA_CAMPOS_CIFRABLES.
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS fam_detalle TEXT; -- JSON: [{parentesco, vive, enfermedades}]
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS esquema_vacunacion BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS otros_antecedentes TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS tipo_alimentacion TEXT; -- vegetariana | vegana | mixta | sin_restricciones
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS cepilla_dientes BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS cepilla_momento TEXT; -- "manana,tarde,noche"
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS higiene_utiliza TEXT; -- "pasta_dental,hilo_dental,enjuague,cepillo"
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS cepillo_consistencia TEXT; -- suave | mediano | duro
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS bruxismo BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ejercicio TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ultima_consulta_dentista TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS motivo_ultima_consulta TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ansiedad_dental BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ansiedad_dental_descripcion TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS tratamientos_previos TEXT; -- "ortodoncia,endodoncia,cirugia,protesis,implantes,periodoncia"
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS traumatismos_dentales BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS traumatismos_dentales_cual TEXT;
+
+-- Exploración física y signos vitales — solo doctora.
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ta TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS fc TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS fr TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS temperatura TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS peso_exploracion TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS talla TEXT;
+
+-- Cabeza, cuello y cavidad bucal — solo doctora.
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS cabeza_cara_normal BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS cabeza_cara_hallazgos TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS atm TEXT; -- "normal,dolor,chasquidos,crepitacion,limitaciones"
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ganglios_cuello_normal BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS ganglios_cuello_hallazgos TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS labios_mucosa_normal BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS labios_mucosa_hallazgos TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS lengua_piso_boca_normal BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS lengua_piso_boca_hallazgos TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS paladar_orofaringe_normal BOOLEAN;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS paladar_orofaringe_hallazgos TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS encia_periodonto TEXT; -- "normal,gingivitis,periodontitis,recesion,movilidad"

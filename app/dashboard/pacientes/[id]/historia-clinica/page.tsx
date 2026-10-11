@@ -7,6 +7,7 @@ import { ChevronLeft, Save, ShieldCheck } from "lucide-react";
 import type { Paciente } from "@/lib/types";
 import { DOCTORA } from "@/lib/panel-data";
 import {
+  CamposExploracionFisica,
   CamposHistoriaClinica,
   HISTORIA_CLINICA_VACIA,
   SiNo,
@@ -176,6 +177,8 @@ export default function HistoriaClinicaPage() {
           )}
         </div>
       </div>
+
+      <CamposExploracionFisica form={form} set={set} />
 
       <button
         onClick={guardar}

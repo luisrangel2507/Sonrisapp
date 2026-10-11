@@ -4,13 +4,25 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil, Save } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
-import { calcularEdad, type FormStateHistoriaClinica, type FrecuenciaConsumo } from "@/components/HistoriaClinicaFormulario";
+import {
+  calcularEdad,
+  listaDesdeTexto,
+  parsearFamDetalle,
+  serializarFamDetalle,
+  textoDesdeLista,
+  TablaFamiliares,
+  MultiSelect,
+  Opciones,
+  type FormStateHistoriaClinica,
+  type FrecuenciaConsumo,
+} from "@/components/HistoriaClinicaFormulario";
 
 type Seccion =
   | "Ficha de identificación"
   | "Antecedentes heredofamiliares"
   | "Antecedentes personales"
   | "Antecedentes personales no patológicos"
+  | "Antecedentes odontológicos"
   | "Antecedentes médicos";
 
 // Teléfono/email/alergias/antecedentes médicos generales viven en la
@@ -97,6 +109,29 @@ type Paso =
       seccion: Seccion;
       inputType?: "tel" | "email";
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
+    }
+  | {
+      key: "fam_detalle";
+      tipo: "familiares";
+      pregunta: string;
+      seccion: Seccion;
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
+    }
+  | {
+      key: keyof FormStateHistoriaClinica;
+      tipo: "opciones";
+      pregunta: string;
+      seccion: Seccion;
+      opciones: { valor: string; label: string }[];
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
+    }
+  | {
+      key: keyof FormStateHistoriaClinica;
+      tipo: "multi";
+      pregunta: string;
+      seccion: Seccion;
+      opciones: { valor: string; label: string }[];
+      mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     };
 
 const PASOS: Paso[] = [
@@ -145,9 +180,15 @@ const PASOS: Paso[] = [
     seccion: "Ficha de identificación",
   },
   {
+    key: "fam_detalle",
+    tipo: "familiares",
+    pregunta: "¿Viven tus familiares directos? ¿Alguno tiene o tuvo alguna enfermedad?",
+    seccion: "Antecedentes heredofamiliares",
+  },
+  {
     key: "fam_enfermedad_sistemica",
     tipo: "bool",
-    pregunta: "¿Algún familiar tiene alguna enfermedad sistémica?",
+    pregunta: "¿Algún otro familiar tiene alguna enfermedad sistémica?",
     seccion: "Antecedentes heredofamiliares",
   },
   {
@@ -243,6 +284,22 @@ const PASOS: Paso[] = [
     mostrarSi: (f) => f.sexo === "F",
   },
   {
+    key: "esquema_vacunacion",
+    tipo: "opciones",
+    pregunta: "¿Tu esquema de vacunación está completo?",
+    seccion: "Antecedentes personales",
+    opciones: [
+      { valor: "completo", label: "Completo" },
+      { valor: "incompleto", label: "Incompleto" },
+    ],
+  },
+  {
+    key: "otros_antecedentes",
+    tipo: "texto",
+    pregunta: "¿Algún otro antecedente relevante que quieras contarnos?",
+    seccion: "Antecedentes personales",
+  },
+  {
     key: "consume_alcohol",
     tipo: "frecuencia",
     pregunta: "¿Consumes alcohol?",
@@ -266,6 +323,124 @@ const PASOS: Paso[] = [
     pregunta: "¿Cuál?",
     seccion: "Antecedentes personales no patológicos",
     mostrarSi: (f) => f.ets === true,
+  },
+  {
+    key: "tipo_alimentacion",
+    tipo: "opciones",
+    pregunta: "¿Cómo es tu tipo de alimentación?",
+    seccion: "Antecedentes personales no patológicos",
+    opciones: [
+      { valor: "vegetariana", label: "Vegetariana" },
+      { valor: "vegana", label: "Vegana" },
+      { valor: "mixta", label: "Mixta" },
+      { valor: "sin_restricciones", label: "Sin restricciones" },
+    ],
+  },
+  {
+    key: "cepilla_dientes",
+    tipo: "bool",
+    pregunta: "¿Te cepillas los dientes?",
+    seccion: "Antecedentes personales no patológicos",
+  },
+  {
+    key: "cepilla_momento",
+    tipo: "multi",
+    pregunta: "¿Cuándo te cepillas?",
+    seccion: "Antecedentes personales no patológicos",
+    opciones: [
+      { valor: "manana", label: "Mañana" },
+      { valor: "tarde", label: "Tarde" },
+      { valor: "noche", label: "Noche" },
+    ],
+    mostrarSi: (f) => f.cepilla_dientes === true,
+  },
+  {
+    key: "higiene_utiliza",
+    tipo: "multi",
+    pregunta: "¿Qué utilizas para tu higiene bucal?",
+    seccion: "Antecedentes personales no patológicos",
+    opciones: [
+      { valor: "pasta_dental", label: "Pasta dental" },
+      { valor: "hilo_dental", label: "Hilo dental" },
+      { valor: "enjuague", label: "Enjuague" },
+      { valor: "cepillo", label: "Cepillo" },
+    ],
+  },
+  {
+    key: "cepillo_consistencia",
+    tipo: "opciones",
+    pregunta: "¿De qué consistencia es tu cepillo?",
+    seccion: "Antecedentes personales no patológicos",
+    opciones: [
+      { valor: "suave", label: "Suave" },
+      { valor: "mediano", label: "Mediano" },
+      { valor: "duro", label: "Duro" },
+    ],
+  },
+  {
+    key: "bruxismo",
+    tipo: "bool",
+    pregunta: "¿Aprietas o rechinas los dientes (bruxismo)?",
+    seccion: "Antecedentes personales no patológicos",
+  },
+  {
+    key: "ejercicio",
+    tipo: "texto",
+    pregunta: "¿Realizas algún tipo de ejercicio?",
+    seccion: "Antecedentes personales no patológicos",
+  },
+  {
+    key: "ultima_consulta_dentista",
+    tipo: "texto",
+    pregunta: "¿Cuándo fue tu última consulta con el dentista?",
+    seccion: "Antecedentes odontológicos",
+  },
+  {
+    key: "motivo_ultima_consulta",
+    tipo: "texto",
+    pregunta: "¿Cuál fue el motivo?",
+    seccion: "Antecedentes odontológicos",
+    mostrarSi: (f) => !!f.ultima_consulta_dentista,
+  },
+  {
+    key: "ansiedad_dental",
+    tipo: "bool",
+    pregunta: "¿Sientes ansiedad o has tenido una mala experiencia dental?",
+    seccion: "Antecedentes odontológicos",
+  },
+  {
+    key: "ansiedad_dental_descripcion",
+    tipo: "texto",
+    pregunta: "Cuéntanos un poco más",
+    seccion: "Antecedentes odontológicos",
+    mostrarSi: (f) => f.ansiedad_dental === true,
+  },
+  {
+    key: "tratamientos_previos",
+    tipo: "multi",
+    pregunta: "¿Qué tratamientos dentales te has hecho antes?",
+    seccion: "Antecedentes odontológicos",
+    opciones: [
+      { valor: "ortodoncia", label: "Ortodoncia" },
+      { valor: "endodoncia", label: "Endodoncia" },
+      { valor: "cirugia", label: "Cirugía" },
+      { valor: "protesis", label: "Prótesis" },
+      { valor: "implantes", label: "Implantes" },
+      { valor: "periodoncia", label: "Periodoncia" },
+    ],
+  },
+  {
+    key: "traumatismos_dentales",
+    tipo: "bool",
+    pregunta: "¿Has tenido algún traumatismo dental (golpe, fractura)?",
+    seccion: "Antecedentes odontológicos",
+  },
+  {
+    key: "traumatismos_dentales_cual",
+    tipo: "texto",
+    pregunta: "¿Cuál y cuándo?",
+    seccion: "Antecedentes odontológicos",
+    mostrarSi: (f) => f.traumatismos_dentales === true,
   },
   {
     key: "alergias",
@@ -300,6 +475,7 @@ const SECCIONES: Seccion[] = [
   "Antecedentes heredofamiliares",
   "Antecedentes personales",
   "Antecedentes personales no patológicos",
+  "Antecedentes odontológicos",
   "Antecedentes médicos",
 ];
 
@@ -380,6 +556,22 @@ function valorLegible(paso: Paso, form: FormStateHistoriaClinica, datosPaciente:
   }
   if (paso.tipo === "paciente_texto") {
     return (datosPaciente[paso.key] as string | null) || "—";
+  }
+  if (paso.tipo === "familiares") {
+    const lista = parsearFamDetalle(form.fam_detalle).filter((f) => f.vive !== null || f.enfermedades);
+    return lista.length ? lista.map((f) => `${f.parentesco}: ${f.vive === true ? "vive" : f.vive === false ? "finado" : "—"}`).join(" · ") : "—";
+  }
+  if (paso.tipo === "opciones") {
+    if (paso.key === "esquema_vacunacion") {
+      return form.esquema_vacunacion === true ? "Completo" : form.esquema_vacunacion === false ? "Incompleto" : "—";
+    }
+    const v = form[paso.key] as string | null;
+    return paso.opciones.find((o) => o.valor === v)?.label ?? "—";
+  }
+  if (paso.tipo === "multi") {
+    const lista = listaDesdeTexto(form[paso.key] as string | null);
+    if (lista.length === 0) return "—";
+    return lista.map((v) => paso.opciones.find((o) => o.valor === v)?.label ?? v).join(", ");
   }
   const v = form[paso.key];
   if (paso.tipo === "sexo") return v === "F" ? "Femenino" : v === "M" ? "Masculino" : "—";
@@ -609,6 +801,31 @@ export function HistoriaClinicaWizard({
               onChange={(e) => onChangeDatosPaciente(paso.key, (e.target.value || null) as DatosPacienteWizard[typeof paso.key])}
               placeholder="Escribe tu respuesta…"
               className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+            />
+          ) : paso.tipo === "familiares" ? (
+            <TablaFamiliares
+              valor={parsearFamDetalle(form.fam_detalle)}
+              onChange={(v) => set("fam_detalle", serializarFamDetalle(v))}
+            />
+          ) : paso.tipo === "opciones" ? (
+            paso.key === "esquema_vacunacion" ? (
+              <Opciones
+                valor={form.esquema_vacunacion === true ? "completo" : form.esquema_vacunacion === false ? "incompleto" : null}
+                opciones={paso.opciones}
+                onChange={(v) => set("esquema_vacunacion", v === "completo")}
+              />
+            ) : (
+              <Opciones
+                valor={form[paso.key] as string | null}
+                opciones={paso.opciones}
+                onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+              />
+            )
+          ) : paso.tipo === "multi" ? (
+            <MultiSelect
+              seleccionados={listaDesdeTexto(form[paso.key] as string | null)}
+              opciones={paso.opciones}
+              onChange={(v) => set(paso.key, textoDesdeLista(v) as FormStateHistoriaClinica[typeof paso.key])}
             />
           ) : paso.tipo === "fecha_nacimiento" ? (
             <input

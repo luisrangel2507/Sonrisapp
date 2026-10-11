@@ -230,5 +230,44 @@ export interface HistoriaClinica {
   consume_tabaco: "si" | "no" | "a_veces" | null;
   ets: boolean | null;
   ets_cual: string | null;
+  // Antecedentes heredofamiliares/personales/odontológicos ampliados
+  // (llenados por el paciente desde el link público).
+  fam_detalle: string | null;
+  esquema_vacunacion: boolean | null;
+  otros_antecedentes: string | null;
+  tipo_alimentacion: "vegetariana" | "vegana" | "mixta" | "sin_restricciones" | null;
+  cepilla_dientes: boolean | null;
+  cepilla_momento: string | null;
+  higiene_utiliza: string | null;
+  cepillo_consistencia: "suave" | "mediano" | "duro" | null;
+  bruxismo: boolean | null;
+  ejercicio: string | null;
+  ultima_consulta_dentista: string | null;
+  motivo_ultima_consulta: string | null;
+  ansiedad_dental: boolean | null;
+  ansiedad_dental_descripcion: string | null;
+  tratamientos_previos: string | null;
+  traumatismos_dentales: boolean | null;
+  traumatismos_dentales_cual: string | null;
+  // Exploración física/signos vitales y cabeza-cuello-cavidad bucal —
+  // solo los llena la doctora, nunca el paciente.
+  ta: string | null;
+  fc: string | null;
+  fr: string | null;
+  temperatura: string | null;
+  peso_exploracion: string | null;
+  talla: string | null;
+  cabeza_cara_normal: boolean | null;
+  cabeza_cara_hallazgos: string | null;
+  atm: string | null;
+  ganglios_cuello_normal: boolean | null;
+  ganglios_cuello_hallazgos: string | null;
+  labios_mucosa_normal: boolean | null;
+  labios_mucosa_hallazgos: string | null;
+  lengua_piso_boca_normal: boolean | null;
+  lengua_piso_boca_hallazgos: string | null;
+  paladar_orofaringe_normal: boolean | null;
+  paladar_orofaringe_hallazgos: string | null;
+  encia_periodonto: string | null;
   actualizado_en: string;
 }
