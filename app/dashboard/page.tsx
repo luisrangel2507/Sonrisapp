@@ -19,7 +19,6 @@ import {
   Wallet,
 } from "lucide-react";
 import { Hero } from "@/components/Hero";
-import { Pill } from "@/components/Pill";
 import { StatCard } from "@/components/StatCard";
 import { BotChat } from "@/components/BotChat";
 import { formatearDinero } from "@/lib/dinero";
@@ -306,7 +305,7 @@ export default function PanelPage() {
       <div className="flex items-start justify-between border-y border-[#EFE9DC] px-5 py-4">
         <div>
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            {nombreBienvenida ? `Bienvenida, ${nombreBienvenida} ❤️` : "Bienvenida"}
+            {nombreBienvenida ? `Bienvenida, ${nombreBienvenida}` : "Bienvenida"}
           </h2>
           <p className="mt-1 text-sm text-[#8a8272]">We&apos;ll be glowing in the dark ✨</p>
         </div>
@@ -365,15 +364,6 @@ export default function PanelPage() {
 
       <div className="mt-5">
         <Hero />
-      </div>
-
-      <div className="mt-4 flex gap-3 px-4">
-        <Pill tone="dark" icon={Calendar} onClick={() => router.push("/dashboard/citas?nuevo=1")}>
-          Agendar cita
-        </Pill>
-        <Pill tone="rose" icon={UserPlus} onClick={() => router.push("/dashboard/pacientes?nuevo=1")}>
-          Nuevo paciente
-        </Pill>
       </div>
 
       <div className="mx-4 mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
