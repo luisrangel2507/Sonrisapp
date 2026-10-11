@@ -620,8 +620,8 @@ export default function PanelPage() {
           />
         </div>
 
-        {/* Agenda de hoy + calendario/acciones/pacientes recientes */}
-        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
+        {/* Agenda de hoy + pacientes recientes + calendario/acciones */}
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_280px_320px]">
           <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-[15px] font-bold text-[#2b2118]">
@@ -691,6 +691,46 @@ export default function PanelPage() {
             )}
           </div>
 
+          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[13px] font-bold text-[#2b2118]">Pacientes recientes</div>
+              <Link href="/dashboard/pacientes" className="text-[11px] font-semibold text-[#803449]">
+                Ver todos →
+              </Link>
+            </div>
+            {pacientesRecientes === null ? (
+              <p className="mt-3 text-[13px] text-[#8a8272]">Cargando…</p>
+            ) : pacientesRecientes.length === 0 ? (
+              <p className="mt-3 text-[13px] text-[#8a8272]">Sin pacientes registrados.</p>
+            ) : (
+              <div className="mt-2 divide-y divide-[#EFE9DC]">
+                {pacientesRecientes.map((p, i) => {
+                  const paleta = PALETA_AVATAR[i % PALETA_AVATAR.length];
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/dashboard/pacientes/${p.id}`}
+                      className="flex items-center gap-2.5 py-2.5 first:pt-0 last:pb-0"
+                    >
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${paleta.bg} ${paleta.text}`}
+                      >
+                        {iniciales(p.nombre)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-medium text-[#2b2118]">{p.nombre}</div>
+                        <div className="truncate text-[11px] text-[#a49c8a]">{p.folio ?? "Sin folio"}</div>
+                      </div>
+                      <div className="shrink-0 text-[11px] text-[#a49c8a]">
+                        {new Date(p.creado_en).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-5">
             <MiniCalendario citasHoy={citasHoy} />
 
@@ -707,46 +747,6 @@ export default function PanelPage() {
               >
                 <UserPlus size={15} /> Nuevo paciente
               </button>
-            </div>
-
-            <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-[13px] font-bold text-[#2b2118]">Pacientes recientes</div>
-                <Link href="/dashboard/pacientes" className="text-[11px] font-semibold text-[#803449]">
-                  Ver todos →
-                </Link>
-              </div>
-              {pacientesRecientes === null ? (
-                <p className="mt-3 text-[13px] text-[#8a8272]">Cargando…</p>
-              ) : pacientesRecientes.length === 0 ? (
-                <p className="mt-3 text-[13px] text-[#8a8272]">Sin pacientes registrados.</p>
-              ) : (
-                <div className="mt-2 divide-y divide-[#EFE9DC]">
-                  {pacientesRecientes.map((p, i) => {
-                    const paleta = PALETA_AVATAR[i % PALETA_AVATAR.length];
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/dashboard/pacientes/${p.id}`}
-                        className="flex items-center gap-2.5 py-2.5 first:pt-0 last:pb-0"
-                      >
-                        <span
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${paleta.bg} ${paleta.text}`}
-                        >
-                          {iniciales(p.nombre)}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] font-medium text-[#2b2118]">{p.nombre}</div>
-                          <div className="truncate text-[11px] text-[#a49c8a]">{p.folio ?? "Sin folio"}</div>
-                        </div>
-                        <div className="shrink-0 text-[11px] text-[#a49c8a]">
-                          {new Date(p.creado_en).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>
