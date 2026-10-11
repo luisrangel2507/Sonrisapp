@@ -17,12 +17,16 @@ import {
   Share2,
   Lock,
   CalendarClock,
+  Calendar,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 import { formatearDinero } from "@/lib/dinero";
 import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { pagoConfirmado } from "@/lib/citas";
 import { TRATAMIENTOS } from "@/lib/panel-data";
+import { StatCard } from "@/components/StatCard";
 
 const NUEVO_PACIENTE = "__nuevo__";
 
@@ -275,6 +279,111 @@ function SelectorMes({
       <p className="mt-3 border-t border-[#EFE9DC] pt-3 text-center text-[11px] text-[#a49c8a]">
         Toca un día para ver sus citas
       </p>
+    </div>
+  );
+}
+
+// Paleta de tarjetas del calendario de escritorio — rota por posición,
+// igual que los avatares del resto de la app (no indica tratamiento).
+const PALETA_CITA = [
+  { bg: "#FBE7E4", border: "#EAB3AB", text: "#9C4A3B" },
+  { bg: "#E3F0E9", border: "#A9D3BE", text: "#2F6B49" },
+  { bg: "#E8E2F5", border: "#C3B2E8", text: "#5B3F9C" },
+  { bg: "#FBEFD8", border: "#E8CB92", text: "#9C7A2F" },
+];
+
+const HORA_INICIO_GRID = 9;
+const HORA_FIN_GRID = 19;
+const ALTURA_HORA_GRID = 64;
+const DURACION_DEFECTO_MIN = 45;
+
+// Calendario semanal estilo "agenda de consultorio" — solo para
+// escritorio. Como una cita no guarda duración, cada tarjeta se
+// dibuja con una altura fija (45 min) a partir de su hora de inicio;
+// no inventa una hora de fin que la app no conoce.
+function GridSemana({
+  dias,
+  citas,
+  onClickCita,
+}: {
+  dias: Date[];
+  citas: Cita[];
+  onClickCita: (c: Cita) => void;
+}) {
+  const horas = Array.from({ length: HORA_FIN_GRID - HORA_INICIO_GRID + 1 }, (_, i) => HORA_INICIO_GRID + i);
+  const hoyClave = claveDia(new Date());
+
+  return (
+    <div className="overflow-x-auto rounded-3xl border border-[#EFE9DC] bg-white/70">
+      <div className="flex" style={{ minWidth: 760 }}>
+        <div className="w-14 shrink-0 border-r border-[#EFE9DC]">
+          <div className="h-[52px] border-b border-[#EFE9DC]" />
+          {horas.map((h) => (
+            <div key={h} style={{ height: ALTURA_HORA_GRID }} className="relative">
+              <span className="absolute -top-2 right-2 text-[11px] text-[#a49c8a]">{String(h).padStart(2, "0")}:00</span>
+            </div>
+          ))}
+        </div>
+
+        {dias.map((dia) => {
+          const clave = claveDia(dia);
+          const esHoy = clave === hoyClave;
+          const citasDia = citas
+            .filter((c) => c.estado !== "cancelada" && claveDia(c.fecha_hora) === clave)
+            .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+
+          return (
+            <div key={clave} className="min-w-[150px] flex-1 border-r border-[#EFE9DC] last:border-r-0">
+              <div className={`flex h-[52px] flex-col items-center justify-center border-b border-[#EFE9DC] ${esHoy ? "bg-[#F7E5E0]" : ""}`}>
+                <div className="text-[10px] font-semibold uppercase text-[#a49c8a]">
+                  {dia.toLocaleDateString("es-MX", { weekday: "short" }).replace(".", "")}
+                </div>
+                <div className={`text-[15px] font-bold ${esHoy ? "text-[#803449]" : "text-[#2b2118]"}`}>
+                  {dia.getDate()} {dia.toLocaleDateString("es-MX", { month: "short" }).replace(".", "")}
+                </div>
+              </div>
+
+              <div className="relative" style={{ height: ALTURA_HORA_GRID * horas.length }}>
+                {horas.map((h, i) => (
+                  <div
+                    key={h}
+                    className="absolute left-0 right-0 border-t border-[#F3EFE6]"
+                    style={{ top: i * ALTURA_HORA_GRID }}
+                  />
+                ))}
+
+                {citasDia.map((c, i) => {
+                  const d = new Date(c.fecha_hora);
+                  const horaFrac = d.getHours() + d.getMinutes() / 60;
+                  const top = Math.max(0, (horaFrac - HORA_INICIO_GRID)) * ALTURA_HORA_GRID;
+                  const alto = (DURACION_DEFECTO_MIN / 60) * ALTURA_HORA_GRID;
+                  const paleta = PALETA_CITA[i % PALETA_CITA.length];
+                  const fueraDeRango = horaFrac < HORA_INICIO_GRID || horaFrac >= HORA_FIN_GRID;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => onClickCita(c)}
+                      className="absolute left-1 right-1 overflow-hidden rounded-lg border px-2 py-1 text-left"
+                      style={{
+                        top: fueraDeRango ? (horaFrac < HORA_INICIO_GRID ? 0 : horas.length * ALTURA_HORA_GRID - alto) : top,
+                        height: alto,
+                        backgroundColor: paleta.bg,
+                        borderColor: paleta.border,
+                      }}
+                    >
+                      <div className="text-[10px] font-semibold" style={{ color: paleta.text }}>
+                        {formatearHora(c.fecha_hora)}
+                      </div>
+                      <div className="truncate text-[11px] font-semibold text-[#2b2118]">{c.paciente_nombre}</div>
+                      <div className="truncate text-[10px] text-[#2b2118]/60">{c.tratamiento}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -978,8 +1087,131 @@ export default function CitasPage() {
       .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
   }, [citas, diasDeLaSemana]);
 
+  // Lun–Sáb (la clínica no abre domingo) — solo para el calendario de
+  // escritorio, que dibuja columnas en vez de una lista por día.
+  const diasLaboralesSemana = useMemo(() => diasDeLaSemana.slice(1), [diasDeLaSemana]);
+
+  const rangoSemanaLabel = useMemo(() => {
+    const inicio = diasLaboralesSemana[0];
+    const fin = diasLaboralesSemana[diasLaboralesSemana.length - 1];
+    if (!inicio || !fin) return "";
+    const mesInicio = inicio.toLocaleDateString("es-MX", { month: "short" }).replace(".", "");
+    const mesFin = fin.toLocaleDateString("es-MX", { month: "short" }).replace(".", "");
+    const anio = fin.getFullYear();
+    return mesInicio === mesFin
+      ? `${inicio.getDate()} – ${fin.getDate()} ${mesFin} ${anio}`
+      : `${inicio.getDate()} ${mesInicio} – ${fin.getDate()} ${mesFin} ${anio}`;
+  }, [diasLaboralesSemana]);
+
+  function moverSemanaAncla(delta: number) {
+    setDiaSeleccionado((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta * 7));
+  }
+
+  // Tarjetas de resumen del encabezado de escritorio — siempre sobre
+  // el día de hoy real, sin importar qué semana/mes se esté viendo.
+  const citasHoyTotal = useMemo(() => (citas ?? []).filter((c) => claveDia(c.fecha_hora) === claveDia(new Date())), [citas]);
+  const confirmadasHoy = citasHoyTotal.filter((c) => c.estado !== "cancelada" && !c.pendiente_aprobacion).length;
+  const pendientesHoy = citasHoyTotal.filter((c) => c.pendiente_aprobacion).length;
+  const canceladasHoy = citasHoyTotal.filter((c) => c.estado === "cancelada").length;
+
   const esNuevo = pacienteId === NUEVO_PACIENTE;
   const puedeAgendar = (esNuevo ? nombreNuevo.trim() : pacienteId) && tratamiento.trim() && fechaHora && !guardando;
+
+  // Mismo formulario de alta de cita para la vista de celular y la de
+  // escritorio (solo cambia el botón/contenedor que lo abre).
+  function formularioNuevaCita(className = "") {
+    return (
+      <div className={`space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm ${className}`}>
+        <select
+          value={pacienteId}
+          onChange={(e) => setPacienteId(e.target.value)}
+          className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+        >
+          <option value="">Selecciona paciente…</option>
+          <option value={NUEVO_PACIENTE}>+ Paciente nuevo (dar de alta)</option>
+          {pacientes.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre} {p.folio ? `· ${p.folio}` : ""}
+            </option>
+          ))}
+        </select>
+
+        {esNuevo && (
+          <div className="space-y-2 rounded-xl border border-[#803449]/30 bg-[#F5E7E9] p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+              <UserPlus size={13} /> Datos del paciente nuevo
+            </div>
+            <input
+              value={nombreNuevo}
+              onChange={(e) => setNombreNuevo(e.target.value)}
+              placeholder="Nombre completo *"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <input
+              value={telefonoNuevo}
+              onChange={(e) => setTelefonoNuevo(e.target.value)}
+              placeholder="Teléfono (con WhatsApp)"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <p className="text-[11px] text-[#a49c8a]">
+              Se le da de alta y se le crea su ficha automáticamente al agendar.
+            </p>
+          </div>
+        )}
+
+        <select
+          value={tratamiento}
+          onChange={(e) => elegirTratamiento(e.target.value)}
+          className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+        >
+          <option value="">Selecciona tratamiento…</option>
+          {TRATAMIENTOS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+        <div>
+          <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">Fecha</label>
+          <input
+            type="datetime-local"
+            value={fechaHora}
+            onChange={(e) => setFechaHora(e.target.value)}
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+          />
+        </div>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#a49c8a]">$</span>
+          <input
+            type="number"
+            min="0"
+            value={monto}
+            onChange={(e) => {
+              setMonto(e.target.value);
+              setMontoTocado(true);
+            }}
+            placeholder="Monto (opcional)"
+            className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-7 pr-3 text-sm outline-none focus:border-[#803449]"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={crearCita}
+            disabled={!puedeAgendar}
+            className="flex-1 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+          >
+            {guardando ? "Guardando…" : "Agendar"}
+          </button>
+          <button
+            onClick={resetForm}
+            className="rounded-full border border-[#EFE9DC] px-4 py-2.5 text-[13px] font-medium text-[#8a8272]"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   function propsTimelineItem(c: Cita) {
     return {
@@ -1042,7 +1274,8 @@ export default function CitasPage() {
   }
 
   return (
-    <div className="mx-4 mt-2 space-y-3 pb-6">
+    <>
+    <div className="mx-4 mt-2 space-y-3 pb-6 md:hidden">
       {error && (
         <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
           {error}
@@ -1066,102 +1299,12 @@ export default function CitasPage() {
       {!formAbierto ? (
         <button
           onClick={() => setFormAbierto(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white md:w-auto md:px-8"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white"
         >
           <Plus size={15} /> Agendar cita
         </button>
       ) : (
-        <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm md:max-w-md">
-          <select
-            value={pacienteId}
-            onChange={(e) => setPacienteId(e.target.value)}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-          >
-            <option value="">Selecciona paciente…</option>
-            <option value={NUEVO_PACIENTE}>+ Paciente nuevo (dar de alta)</option>
-            {pacientes.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre} {p.folio ? `· ${p.folio}` : ""}
-              </option>
-            ))}
-          </select>
-
-          {esNuevo && (
-            <div className="space-y-2 rounded-xl border border-[#803449]/30 bg-[#F5E7E9] p-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
-                <UserPlus size={13} /> Datos del paciente nuevo
-              </div>
-              <input
-                value={nombreNuevo}
-                onChange={(e) => setNombreNuevo(e.target.value)}
-                placeholder="Nombre completo *"
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-              />
-              <input
-                value={telefonoNuevo}
-                onChange={(e) => setTelefonoNuevo(e.target.value)}
-                placeholder="Teléfono (con WhatsApp)"
-                className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-              />
-              <p className="text-[11px] text-[#a49c8a]">
-                Se le da de alta y se le crea su ficha automáticamente al agendar.
-              </p>
-            </div>
-          )}
-
-          <select
-            value={tratamiento}
-            onChange={(e) => elegirTratamiento(e.target.value)}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-          >
-            <option value="">Selecciona tratamiento…</option>
-            {TRATAMIENTOS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <div>
-            <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">Fecha</label>
-            <input
-              type="datetime-local"
-              value={fechaHora}
-              onChange={(e) => setFechaHora(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            />
-          </div>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#a49c8a]">
-              $
-            </span>
-            <input
-              type="number"
-              min="0"
-              value={monto}
-              onChange={(e) => {
-                setMonto(e.target.value);
-                setMontoTocado(true);
-              }}
-              placeholder="Monto (opcional)"
-              className="w-full rounded-xl border border-[#EFE9DC] bg-white py-2 pl-7 pr-3 text-sm outline-none focus:border-[#803449]"
-            />
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={crearCita}
-              disabled={!puedeAgendar}
-              className="flex-1 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
-            >
-              {guardando ? "Guardando…" : "Agendar"}
-            </button>
-            <button
-              onClick={resetForm}
-              className="rounded-full border border-[#EFE9DC] px-4 py-2.5 text-[13px] font-medium text-[#8a8272]"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        formularioNuevaCita()
       )}
 
       {citas === null ? (
@@ -1219,5 +1362,129 @@ export default function CitasPage() {
         </>
       )}
     </div>
+
+      {/* ---- Vista de escritorio ---- */}
+      <div className="hidden md:block">
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <h1 className="text-[26px] font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+              Agenda
+            </h1>
+            <p className="mt-0.5 text-sm text-[#8a8272]">Gestiona las citas de tu consultorio</p>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setFormAbierto((v) => !v)}
+              className="flex items-center gap-2 rounded-full bg-[#5C2235] px-5 py-2.5 text-[14px] font-semibold text-white"
+            >
+              <Plus size={15} /> Nueva cita
+            </button>
+            {formAbierto && (
+              <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-96">{formularioNuevaCita()}</div>
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+            {error}
+          </div>
+        )}
+        {citasVencidas.length > 0 && (
+          <button
+            onClick={() => seleccionarDia(inicioDelDia(new Date(citasVencidas[0].fecha_hora)))}
+            className="mb-4 flex w-full items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-left text-[13px] text-[#B0503A]"
+          >
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span>
+              <strong>
+                {citasVencidas.length} cita{citasVencidas.length === 1 ? "" : "s"} sin marcar como completada
+                {citasVencidas.length === 1 ? "" : "s"}
+              </strong>{" "}
+              — ya pasaron más de 2 horas. Tócalo para ir a la más antigua.
+            </span>
+          </button>
+        )}
+
+        {citas === null ? (
+          <p className="text-sm text-[#8a8272]">Cargando…</p>
+        ) : (
+          <>
+            <div className="mb-5 grid grid-cols-4 gap-4">
+              <StatCard icon={Calendar} iconBg="bg-[#F7E5E0] text-[#B0503A]" label="Citas de hoy" value={citasHoyTotal.length} />
+              <StatCard icon={Check} iconBg="bg-[#E8F0E3] text-[#3F6B33]" label="Confirmadas" value={confirmadasHoy} />
+              <StatCard icon={Clock} iconBg="bg-[#FCEFD2] text-[#B08419]" label="Pendientes" value={pendientesHoy} />
+              <StatCard icon={XCircle} iconBg="bg-[#EFE9DC] text-[#8a8272]" label="Canceladas" value={canceladasHoy} />
+            </div>
+
+            <div className="mb-4 flex items-center justify-between gap-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-3">
+              <SelectorVista vista={vista} onCambiar={setVista} />
+              {vista !== "mes" && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => moverSemanaAncla(-1)}
+                    className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
+                    aria-label="Semana anterior"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-[14px] font-semibold capitalize text-[#2b2118]">{rangoSemanaLabel}</span>
+                  <button
+                    onClick={() => moverSemanaAncla(1)}
+                    className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
+                    aria-label="Semana siguiente"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => seleccionarDia(inicioDelDia(new Date()))}
+                className="rounded-full border border-[#EFE9DC] px-4 py-1.5 text-[13px] font-semibold text-[#2b2118] hover:bg-[#EFE9DC]/40"
+              >
+                Hoy
+              </button>
+            </div>
+
+            {vista === "semana" && (
+              <GridSemana dias={diasLaboralesSemana} citas={citasDeLaSemana} onClickCita={(c) => seleccionarDia(new Date(c.fecha_hora))} />
+            )}
+
+            {vista === "mes" && (
+              <div className="grid grid-cols-[320px_1fr] gap-5">
+                <SelectorMes ancla={diaSeleccionado} citasPorDia={citasPorDia} onSeleccionarDia={seleccionarDia} />
+                <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+                  <div className="mb-3 text-[13px] font-bold capitalize text-[#2b2118]">
+                    {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                  </div>
+                  {citasDelDia.length === 0 ? (
+                    <p className="text-sm text-[#8a8272]">Sin citas para este día.</p>
+                  ) : (
+                    citasDelDia.map((c, i) => (
+                      <CitaTimelineItem key={c.id} esUltimo={i === citasDelDia.length - 1} {...propsTimelineItem(c)} />
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {vista === "dia" && (
+              <div className="mx-auto max-w-2xl rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+                <div className="mb-3 text-[13px] font-bold capitalize text-[#2b2118]">
+                  {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                </div>
+                {citasDelDia.length === 0 ? (
+                  <p className="text-sm text-[#8a8272]">Sin citas para este día.</p>
+                ) : (
+                  citasDelDia.map((c, i) => (
+                    <CitaTimelineItem key={c.id} esUltimo={i === citasDelDia.length - 1} {...propsTimelineItem(c)} />
+                  ))
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </>
   );
 }
