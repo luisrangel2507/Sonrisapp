@@ -25,7 +25,7 @@ import { formatearDinero } from "@/lib/dinero";
 import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { pagoConfirmado } from "@/lib/citas";
 import { DOCTORA } from "@/lib/panel-data";
-import type { Cita, Paciente, ResumenDashboard } from "@/lib/types";
+import type { Cita, ResumenDashboard } from "@/lib/types";
 
 function formatearHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
@@ -187,8 +187,10 @@ export default function PanelPage() {
   const [metodoPago, setMetodoPago] = useState("efectivo");
   const [guardandoCompletar, setGuardandoCompletar] = useState(false);
 
-  // Solo para la vista de escritorio (tarjeta "Pacientes recientes").
-  const [pacientesRecientes, setPacientesRecientes] = useState<Paciente[] | null>(null);
+  // Solo para la vista de escritorio (tarjeta "Pacientes recientes") —
+  // la cita más reciente de cada paciente, para mostrar qué tratamiento
+  // se hizo en vez de solo la fecha en que se dio de alta.
+  const [actividadReciente, setActividadReciente] = useState<Cita[] | null>(null);
 
   function cargarCitas() {
     fetch("/api/citas")
@@ -210,6 +212,19 @@ export default function PanelPage() {
         setCitasPendientesAprobacion(
           citas.filter((c) => c.pendiente_aprobacion).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
         );
+
+        // citas ya viene ordenado por fecha_hora DESC (API) — basta con
+        // quedarse con la primera cita (no cancelada) que aparezca de
+        // cada paciente para tener su visita más reciente.
+        const vistos = new Set<number>();
+        const recientes: Cita[] = [];
+        for (const c of citas) {
+          if (c.estado === "cancelada" || vistos.has(c.paciente_id)) continue;
+          vistos.add(c.paciente_id);
+          recientes.push(c);
+          if (recientes.length >= 4) break;
+        }
+        setActividadReciente(recientes);
       })
       .catch((err) => setErrorCitas(`No se pudieron cargar las citas: ${err.message}`));
   }
@@ -229,11 +244,6 @@ export default function PanelPage() {
       })
       .then((data) => setResumen(data.resumen ?? null))
       .catch((err) => setErrorResumen(`No se pudo cargar el resumen: ${err.message}`));
-
-    fetch("/api/pacientes")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setPacientesRecientes((data?.pacientes ?? []).filter((p: Paciente) => p.activo).slice(0, 4)))
-      .catch(() => {});
 
     cargarCitas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -698,31 +708,31 @@ export default function PanelPage() {
                 Ver todos →
               </Link>
             </div>
-            {pacientesRecientes === null ? (
+            {actividadReciente === null ? (
               <p className="mt-3 text-[13px] text-[#8a8272]">Cargando…</p>
-            ) : pacientesRecientes.length === 0 ? (
+            ) : actividadReciente.length === 0 ? (
               <p className="mt-3 text-[13px] text-[#8a8272]">Sin pacientes registrados.</p>
             ) : (
               <div className="mt-2 divide-y divide-[#EFE9DC]">
-                {pacientesRecientes.map((p, i) => {
+                {actividadReciente.map((c, i) => {
                   const paleta = PALETA_AVATAR[i % PALETA_AVATAR.length];
                   return (
                     <Link
-                      key={p.id}
-                      href={`/dashboard/pacientes/${p.id}`}
+                      key={c.id}
+                      href={`/dashboard/pacientes/${c.paciente_id}`}
                       className="flex items-center gap-2.5 py-2.5 first:pt-0 last:pb-0"
                     >
                       <span
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${paleta.bg} ${paleta.text}`}
                       >
-                        {iniciales(p.nombre)}
+                        {iniciales(c.paciente_nombre)}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-medium text-[#2b2118]">{p.nombre}</div>
-                        <div className="truncate text-[11px] text-[#a49c8a]">{p.folio ?? "Sin folio"}</div>
+                        <div className="truncate text-[13px] font-medium text-[#2b2118]">{c.paciente_nombre}</div>
+                        <div className="truncate text-[11px] text-[#a49c8a]">{c.tratamiento}</div>
                       </div>
                       <div className="shrink-0 text-[11px] text-[#a49c8a]">
-                        {new Date(p.creado_en).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                        {new Date(c.fecha_hora).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
                       </div>
                     </Link>
                   );
