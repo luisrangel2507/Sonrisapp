@@ -606,7 +606,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 md:mx-auto md:max-w-xl">
       <div
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
         style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
