@@ -200,7 +200,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Barra inferior — solo celular */}
-      <div className="fixed inset-x-0 bottom-0 z-20 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div className="fixed inset-x-0 bottom-0 z-20 md:hidden">
         {accionesAbierto && (
           <div className="mx-auto flex max-w-md justify-center px-5 pb-3">
             <div className="flex gap-2 rounded-2xl border border-[#EFE9DC] bg-white p-2 shadow-lg">
@@ -238,7 +238,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        <div className="mx-auto flex max-w-md items-center justify-between border-t border-[#EFE9DC] bg-white px-6 pb-2 pt-1.5">
+        {/* El fondo blanco cubre también la zona segura del iPhone (la
+            barrita de inicio) — si no, el contenido se asoma por debajo. */}
+        <div className="border-t border-[#EFE9DC] bg-white" style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}>
+        <div className="mx-auto flex max-w-md items-center justify-between px-6 pt-1.5">
           {NAV_INFERIOR_IZQ.map((t) => (
             <Link
               key={t.href}
@@ -291,6 +294,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </span>
             {(masAbierto || NAV_MAS.some((t) => esActivo(t.href))) && <span className="h-1 w-1 rounded-full bg-[#803449]" />}
           </button>
+        </div>
         </div>
       </div>
     </div>

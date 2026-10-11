@@ -490,10 +490,11 @@ export default function PanelPage() {
           icon={Award}
           iconBg="bg-[#FCEFD2] text-[#B08419]"
           label="Top del mes"
+            valueClassName="text-[15px] leading-snug"
           value={!resumen ? "…" : resumen.top_servicios_mes[0]?.tratamiento ?? "—"}
           sub={
             resumen && resumen.top_servicios_mes.length > 0
-              ? resumen.top_servicios_mes.map((t, i) => `${i + 1}. ${t.tratamiento} (${t.total})`).join(" · ")
+              ? resumen.top_servicios_mes.map((t, i) => <div key={t.tratamiento} className="truncate">{`${i + 1}. ${t.tratamiento} (${t.total})`}</div>)
               : resumen
                 ? "sin servicios aún"
                 : undefined
@@ -621,10 +622,11 @@ export default function PanelPage() {
             icon={Award}
             iconBg="bg-[#FCEFD2] text-[#B08419]"
             label="Top del mes"
+            valueClassName="text-[15px] leading-snug"
             value={!resumen ? "…" : resumen.top_servicios_mes[0]?.tratamiento ?? "—"}
             sub={
               resumen && resumen.top_servicios_mes.length > 0
-                ? resumen.top_servicios_mes.map((t, i) => `${i + 1}. ${t.tratamiento} (${t.total})`).join(" · ")
+                ? resumen.top_servicios_mes.map((t, i) => <div key={t.tratamiento} className="truncate">{`${i + 1}. ${t.tratamiento} (${t.total})`}</div>)
                 : resumen
                   ? "sin servicios aún"
                   : undefined
