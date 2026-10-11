@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserCog, Activity, Users, Calendar, Package, BarChart3, Search, Bell } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package, BarChart3, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 
 const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
@@ -20,12 +20,28 @@ const TABS = [
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
 ];
 
+// Barra inferior — solo celular. "Inicio"/"Agenda" van directo; el resto
+// de las secciones (Inventario, Reportes, Perfil) vive detrás de "Más"
+// para no saturar la barra.
+const NAV_INFERIOR_IZQ = [
+  { href: "/dashboard", label: "Inicio", icon: Home },
+  { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
+];
+const NAV_INFERIOR_DER = [{ href: "/dashboard/citas", label: "Agenda", icon: Calendar }];
+const NAV_MAS = [
+  { href: "/dashboard/inventario", label: "Inventario", icon: Package },
+  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/dashboard/perfil", label: "Perfil", icon: UserCog },
+];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [foto, setFoto] = useState<string | null>(null);
   const [nombre, setNombre] = useState<string>(NOMBRE_CORTO_DOCTORA);
   const [busqueda, setBusqueda] = useState("");
+  const [masAbierto, setMasAbierto] = useState(false);
+  const [accionesAbierto, setAccionesAbierto] = useState(false);
 
   useEffect(() => {
     fetch("/api/perfil")
@@ -35,6 +51,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setNombre(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
       })
       .catch(() => {});
+  }, [pathname]);
+
+  // Cierra los popovers de la barra inferior (celular) al navegar —
+  // el layout no se desmonta entre páginas, así que si no, se quedarían
+  // abiertos al cambiar de pestaña.
+  useEffect(() => {
+    setMasAbierto(false);
+    setAccionesAbierto(false);
   }, [pathname]);
 
   function buscar(e: React.FormEvent) {
@@ -155,7 +179,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Encabezado + tabs — solo celular */}
+        {/* Encabezado — solo celular */}
         <div className="mx-auto max-w-md md:hidden">
           <div className="flex items-center justify-between px-5 pb-4 pt-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -164,35 +188,110 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/dashboard/perfil"
               aria-label="Perfil"
               title="Perfil"
-              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#EFE9DC] bg-white"
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full"
             >
-              {foto ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={foto} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <UserCog size={17} className="text-[#2b2118]" />
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={foto || "/icon.png"} alt="" className="h-full w-full object-cover" />
             </Link>
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto px-5 pb-4">
-            {TABS.map((t) => (
-              <Link
-                key={t.href}
-                href={t.href}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium ${
-                  esActivo(t.href)
-                    ? "border-[#2b2118] bg-[#2b2118] text-white"
-                    : "border-[#EFE9DC] bg-white text-[#8a8272]"
-                }`}
-              >
-                <t.icon size={13} /> {t.label}
-              </Link>
-            ))}
           </div>
         </div>
 
-        <div className="mx-auto max-w-md pb-10 md:mx-0 md:max-w-none md:px-8 md:py-8">{children}</div>
+        <div className="mx-auto max-w-md pb-28 md:mx-0 md:max-w-none md:px-8 md:py-8 md:pb-8">{children}</div>
+      </div>
+
+      {/* Barra inferior — solo celular */}
+      <div className="fixed inset-x-0 bottom-0 z-20 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        {accionesAbierto && (
+          <div className="mx-auto flex max-w-md justify-center px-5 pb-3">
+            <div className="flex gap-2 rounded-2xl border border-[#EFE9DC] bg-white p-2 shadow-lg">
+              <Link
+                href="/dashboard/citas?nuevo=1"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#5C2235] px-3.5 py-2.5 text-[13px] font-semibold text-white"
+              >
+                <Calendar size={14} /> Nueva cita
+              </Link>
+              <Link
+                href="/dashboard/pacientes?nuevo=1"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#EFE9DC] px-3.5 py-2.5 text-[13px] font-semibold text-[#2b2118]"
+              >
+                <UserPlus size={14} /> Nuevo paciente
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {masAbierto && (
+          <div className="mx-auto max-w-md px-5 pb-3">
+            <div className="rounded-2xl border border-[#EFE9DC] bg-white p-2 shadow-lg">
+              {NAV_MAS.map((t) => (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium ${
+                    esActivo(t.href) ? "bg-[#F7E5E0] text-[#803449]" : "text-[#2b2118]"
+                  }`}
+                >
+                  <t.icon size={16} /> {t.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mx-auto flex max-w-md items-center justify-between border-t border-[#EFE9DC] bg-white px-6 pb-2 pt-1.5">
+          {NAV_INFERIOR_IZQ.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className="flex w-14 flex-col items-center gap-0.5 py-1"
+            >
+              <t.icon size={20} strokeWidth={esActivo(t.href) ? 2.4 : 1.8} className={esActivo(t.href) ? "text-[#803449]" : "text-[#a49c8a]"} />
+              <span className={`text-[10px] font-medium ${esActivo(t.href) ? "text-[#803449]" : "text-[#a49c8a]"}`}>{t.label}</span>
+              {esActivo(t.href) && <span className="h-1 w-1 rounded-full bg-[#803449]" />}
+            </Link>
+          ))}
+
+          <button
+            onClick={() => {
+              setAccionesAbierto((v) => !v);
+              setMasAbierto(false);
+            }}
+            aria-label="Acciones rápidas"
+            className="-mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#5C2235] text-white shadow-lg"
+          >
+            {accionesAbierto ? <X size={22} /> : <Plus size={22} />}
+          </button>
+
+          {NAV_INFERIOR_DER.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className="flex w-14 flex-col items-center gap-0.5 py-1"
+            >
+              <t.icon size={20} strokeWidth={esActivo(t.href) ? 2.4 : 1.8} className={esActivo(t.href) ? "text-[#803449]" : "text-[#a49c8a]"} />
+              <span className={`text-[10px] font-medium ${esActivo(t.href) ? "text-[#803449]" : "text-[#a49c8a]"}`}>{t.label}</span>
+              {esActivo(t.href) && <span className="h-1 w-1 rounded-full bg-[#803449]" />}
+            </Link>
+          ))}
+
+          <button
+            onClick={() => {
+              setMasAbierto((v) => !v);
+              setAccionesAbierto(false);
+            }}
+            className="flex w-14 flex-col items-center gap-0.5 py-1"
+          >
+            <MoreHorizontal
+              size={20}
+              strokeWidth={masAbierto || NAV_MAS.some((t) => esActivo(t.href)) ? 2.4 : 1.8}
+              className={masAbierto || NAV_MAS.some((t) => esActivo(t.href)) ? "text-[#803449]" : "text-[#a49c8a]"}
+            />
+            <span className={`text-[10px] font-medium ${masAbierto || NAV_MAS.some((t) => esActivo(t.href)) ? "text-[#803449]" : "text-[#a49c8a]"}`}>
+              Más
+            </span>
+            {(masAbierto || NAV_MAS.some((t) => esActivo(t.href))) && <span className="h-1 w-1 rounded-full bg-[#803449]" />}
+          </button>
+        </div>
       </div>
     </div>
   );

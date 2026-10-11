@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
+  MoreVertical,
   Plus,
   TrendingUp,
   TrendingDown,
@@ -305,7 +306,7 @@ export default function PanelPage() {
       <div className="flex items-start justify-between border-y border-[#EFE9DC] px-5 py-4">
         <div>
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            {nombreBienvenida ? `Bienvenida, ${nombreBienvenida}` : "Bienvenida"}
+            {nombreBienvenida ? `Bienvenida, ${nombreBienvenida} ❤️` : "Bienvenida"}
           </h2>
           <p className="mt-1 text-sm text-[#8a8272]">We&apos;ll be glowing in the dark ✨</p>
         </div>
@@ -367,20 +368,31 @@ export default function PanelPage() {
       </div>
 
       <div className="mt-4 flex gap-3 px-4">
-        <Pill tone="green" onClick={() => router.push("/dashboard/citas?nuevo=1")}>
+        <Pill tone="dark" icon={Calendar} onClick={() => router.push("/dashboard/citas?nuevo=1")}>
           Agendar cita
         </Pill>
-        <Pill tone="rose" onClick={() => router.push("/dashboard/pacientes?nuevo=1")}>
+        <Pill tone="rose" icon={UserPlus} onClick={() => router.push("/dashboard/pacientes?nuevo=1")}>
           Nuevo paciente
         </Pill>
       </div>
 
       <div className="mx-4 mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Citas de hoy</div>
+        <div className="flex items-center justify-between">
+          <div className="text-[15px] font-bold text-[#2b2118]">Próximas citas</div>
+          <Link href="/dashboard/citas" className="text-[12px] font-semibold text-[#803449]">
+            Ver todas →
+          </Link>
+        </div>
         {citasHoy === null ? (
-          <p className="mt-2 text-sm text-[#8a8272]">Cargando…</p>
+          <p className="mt-3 text-sm text-[#8a8272]">Cargando…</p>
         ) : citasHoy.length === 0 ? (
-          <p className="mt-2 text-sm text-[#8a8272]">Sin citas registradas por ahora.</p>
+          <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl bg-[#FBF9F5] py-6 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F7E5E0] text-[#B0503A]">
+              <Calendar size={18} />
+            </div>
+            <p className="text-sm font-medium text-[#2b2118]">Sin citas registradas por ahora.</p>
+            <p className="text-[13px] text-[#a49c8a]">¡Disfruta el resto del día!</p>
+          </div>
         ) : (
           <div className="mt-3 space-y-3">
             {citasHoy.map((c) => (
@@ -414,6 +426,13 @@ export default function PanelPage() {
                         Cancelada
                       </span>
                     )}
+                    <Link
+                      href={`/dashboard/citas?ir=${claveDiaLocal(c.fecha_hora)}`}
+                      aria-label="Ver en la agenda"
+                      className="shrink-0 rounded-full p-1 text-[#a49c8a] hover:bg-[#EFE9DC]/70"
+                    >
+                      <MoreVertical size={15} />
+                    </Link>
                   </div>
                 </div>
 
@@ -460,24 +479,22 @@ export default function PanelPage() {
             ))}
           </div>
         )}
-        <Link href="/dashboard/citas" className="mt-3 block text-[12px] font-semibold text-[#803449]">
-          Ver toda la agenda →
-        </Link>
       </div>
 
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mx-4 mt-4 grid grid-cols-3 gap-2">
         <StatCard
           icon={Calendar}
           iconBg="bg-[#F7E5E0] text-[#B0503A]"
           label="Citas esta semana"
           value={resumen ? resumen.citas_semana : "…"}
-          sub={resumen ? `${resumen.citas_semana_confirmadas} confirmadas` : undefined}
+          sub={resumen ? <Tendencia actual={resumen.citas_semana} anterior={resumen.citas_semana_pasada} /> : undefined}
         />
         <StatCard
           icon={TrendingUp}
           iconBg="bg-[#E8F0E3] text-[#3F6B33]"
           label="Ingresos del mes"
           value={resumen ? formatearDinero(resumen.ingresos_mes) : "…"}
+          sub={resumen ? <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado} /> : undefined}
         />
         <StatCard
           icon={Wallet}
@@ -487,15 +504,6 @@ export default function PanelPage() {
           sub={resumen && resumen.por_cobrar > 0 ? "pendiente de pago" : undefined}
           subColor="text-[#B0503A]"
         />
-        <Link href="/dashboard/citas">
-          <StatCard
-            icon={MessageCircle}
-            iconBg="bg-[#EFE3F0] text-[#7A4D8A]"
-            label="Agenda"
-            value="Ver todo"
-            sub="citas, pagos y cancelaciones"
-          />
-        </Link>
       </div>
 
       <div className="mx-4 mt-6">
