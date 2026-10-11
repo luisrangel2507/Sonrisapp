@@ -166,8 +166,11 @@ export interface ResumenDashboard {
   citas_hoy: number;
   citas_semana: number;
   citas_semana_confirmadas: number;
+  citas_semana_pasada: number;
   ingresos_mes: number;
+  ingresos_mes_pasado: number;
   por_cobrar: number;
+  pacientes_activos: number;
 }
 
 export interface Usuario {

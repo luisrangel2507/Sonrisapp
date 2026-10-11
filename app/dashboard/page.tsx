@@ -3,7 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Calendar, Check, MessageCircle, TrendingUp, Wallet } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  UserPlus,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { Hero } from "@/components/Hero";
 import { Pill } from "@/components/Pill";
 import { StatCard } from "@/components/StatCard";
@@ -12,10 +25,137 @@ import { formatearDinero } from "@/lib/dinero";
 import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { pagoConfirmado } from "@/lib/citas";
 import { DOCTORA } from "@/lib/panel-data";
-import type { Cita, ResumenDashboard } from "@/lib/types";
+import type { Cita, Paciente, ResumenDashboard } from "@/lib/types";
 
 function formatearHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
+}
+
+function saludoPorHora() {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Buenos días";
+  if (hora < 19) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+function fechaLarga() {
+  const texto = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+// Mismos tonos que la lista de Pacientes — para que los avatares de
+// "Pacientes recientes" se vean consistentes en toda la app.
+const PALETA_AVATAR = [
+  { bg: "bg-[#F7E5E0]", text: "text-[#B0503A]" },
+  { bg: "bg-[#E8F0E3]", text: "text-[#3F6B33]" },
+  { bg: "bg-[#FCEFD2]", text: "text-[#B08419]" },
+  { bg: "bg-[#EFE3F0]", text: "text-[#7A4D8A]" },
+];
+
+function iniciales(nombreCompleto: string) {
+  const partes = nombreCompleto.trim().split(/\s+/);
+  const primera = partes[0]?.[0] ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primera + ultima).toUpperCase();
+}
+
+// Delta % vs. el periodo anterior — null si no hay con qué comparar
+// (periodo anterior en cero), para no inventar un porcentaje sin sentido.
+function deltaPorcentaje(actual: number, anterior: number): number | null {
+  if (!anterior) return null;
+  return Math.round(((actual - anterior) / anterior) * 100);
+}
+
+function Tendencia({ actual, anterior }: { actual: number; anterior: number }) {
+  const delta = deltaPorcentaje(actual, anterior);
+  if (delta === null) return null;
+  const subio = delta >= 0;
+  return (
+    <span className={`inline-flex items-center gap-0.5 ${subio ? "text-[#3F6B33]" : "text-[#B0503A]"}`}>
+      {subio ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+      {subio ? "+" : ""}
+      {delta}%
+    </span>
+  );
+}
+
+const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
+
+function MiniCalendario({ citasHoy }: { citasHoy: Cita[] | null }) {
+  const hoy = new Date();
+  const [mesVisible, setMesVisible] = useState(() => new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+
+  const primerDiaSemana = (mesVisible.getDay() + 6) % 7; // lunes = 0
+  const diasEnMes = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 0).getDate();
+  const celdas: (number | null)[] = [
+    ...Array(primerDiaSemana).fill(null),
+    ...Array.from({ length: diasEnMes }, (_, i) => i + 1),
+  ];
+
+  const esMesActual = mesVisible.getFullYear() === hoy.getFullYear() && mesVisible.getMonth() === hoy.getMonth();
+  const nombreMes = mesVisible.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+
+  return (
+    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[13px] font-semibold text-[#2b2118]">
+          <Calendar size={14} className="text-[#803449]" />
+          {nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setMesVisible((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-[#a49c8a] hover:bg-[#EFE9DC]"
+            aria-label="Mes anterior"
+          >
+            <ChevronLeft size={13} />
+          </button>
+          <button
+            onClick={() => setMesVisible((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-[#a49c8a] hover:bg-[#EFE9DC]"
+            aria-label="Mes siguiente"
+          >
+            <ChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-7 gap-y-1.5 text-center">
+        {DIAS_SEMANA.map((d, i) => (
+          <div key={i} className="text-[10px] font-semibold uppercase text-[#a49c8a]">
+            {d}
+          </div>
+        ))}
+        {celdas.map((dia, i) => {
+          const esHoy = esMesActual && dia === hoy.getDate();
+          return (
+            <div key={i} className="flex items-center justify-center py-0.5">
+              {dia && (
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] ${
+                    esHoy ? "bg-[#803449] font-semibold text-white" : "text-[#2b2118]"
+                  }`}
+                >
+                  {dia}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {esMesActual && citasHoy && citasHoy.length > 0 && (
+        <p className="mt-2 border-t border-[#EFE9DC] pt-2 text-[11px] text-[#a49c8a]">
+          {citasHoy.length} cita{citasHoy.length === 1 ? "" : "s"} hoy
+        </p>
+      )}
+    </div>
+  );
 }
 
 // "YYYY-MM-DD" en horario local — para mandar a Citas el día exacto
@@ -46,6 +186,9 @@ export default function PanelPage() {
   const [montoPago, setMontoPago] = useState("");
   const [metodoPago, setMetodoPago] = useState("efectivo");
   const [guardandoCompletar, setGuardandoCompletar] = useState(false);
+
+  // Solo para la vista de escritorio (tarjeta "Pacientes recientes").
+  const [pacientesRecientes, setPacientesRecientes] = useState<Paciente[] | null>(null);
 
   function cargarCitas() {
     fetch("/api/citas")
@@ -86,6 +229,11 @@ export default function PanelPage() {
       })
       .then((data) => setResumen(data.resumen ?? null))
       .catch((err) => setErrorResumen(`No se pudo cargar el resumen: ${err.message}`));
+
+    fetch("/api/pacientes")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setPacientesRecientes((data?.pacientes ?? []).filter((p: Paciente) => p.activo).slice(0, 4)))
+      .catch(() => {});
 
     cargarCitas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,6 +291,7 @@ export default function PanelPage() {
 
   return (
     <>
+    <div className="md:hidden">
       <div className="flex items-start justify-between border-y border-[#EFE9DC] px-5 py-4">
         <div>
           <h2 className="text-xl font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -352,6 +501,255 @@ export default function PanelPage() {
             <BotChat />
           </div>
         )}
+      </div>
+    </div>
+
+      {/* ---- Vista de escritorio ---- */}
+      <div className="hidden md:block">
+        {(errorResumen || errorCitas) && (
+          <div className="mb-5 space-y-2">
+            {errorResumen && (
+              <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+                {errorResumen}
+              </div>
+            )}
+            {errorCitas && (
+              <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
+                {errorCitas}
+              </div>
+            )}
+          </div>
+        )}
+
+        {citasVencidas.length > 0 && (
+          <Link
+            href={`/dashboard/citas?ir=${claveDiaLocal(citasVencidas[0].fecha_hora)}`}
+            className="mb-4 flex items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]"
+          >
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span>
+              <strong>
+                {citasVencidas.length} cita{citasVencidas.length === 1 ? "" : "s"} sin marcar como completada
+                {citasVencidas.length === 1 ? "" : "s"}
+              </strong>{" "}
+              — ya pasaron más de 2 horas.
+            </span>
+          </Link>
+        )}
+
+        {citasPendientesAprobacion.length > 0 && (
+          <Link
+            href="/dashboard/citas"
+            className="mb-4 flex items-start gap-2.5 rounded-2xl border border-[#E8CFA0] bg-[#F7ECD9] px-4 py-3 text-[13px] text-[#B0834A]"
+          >
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span>
+              <strong>
+                {citasPendientesAprobacion.length} solicitud{citasPendientesAprobacion.length === 1 ? "" : "es"} de
+                cita en línea sin aprobar
+              </strong>{" "}
+              — se agendaron solas desde el link de Instagram.
+            </span>
+          </Link>
+        )}
+
+        {/* Encabezado de bienvenida */}
+        <div className="flex overflow-hidden rounded-[28px] border border-[#EFE9DC] bg-white/70">
+          <div className="flex-1 p-7">
+            <h1
+              className="text-[26px] font-bold text-[#2b2118]"
+              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+            >
+              ¡{saludoPorHora()}, {nombreBienvenida ?? "…"}! 👋
+            </h1>
+            <p className="mt-1 text-sm text-[#8a8272]">{fechaLarga()}</p>
+            <p className="mt-5 max-w-sm text-[15px] italic leading-relaxed text-[#2b2118]/80">
+              &ldquo;La gente sale de tu consultorio con una sonrisa.
+              <br />
+              Eso no tiene comparación.&rdquo;
+            </p>
+          </div>
+          <div className="relative hidden w-72 shrink-0 lg:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-diente-atardecer.jpg"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/0" />
+          </div>
+        </div>
+
+        {/* Tarjetas de estadísticas */}
+        <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard
+            icon={Calendar}
+            iconBg="bg-[#F7E5E0] text-[#B0503A]"
+            label="Citas esta semana"
+            value={resumen ? resumen.citas_semana : "…"}
+            sub={
+              resumen ? (
+                <Tendencia actual={resumen.citas_semana} anterior={resumen.citas_semana_pasada} />
+              ) : undefined
+            }
+          />
+          <StatCard
+            icon={TrendingUp}
+            iconBg="bg-[#E8F0E3] text-[#3F6B33]"
+            label="Ingresos del mes"
+            value={resumen ? formatearDinero(resumen.ingresos_mes) : "…"}
+            sub={
+              resumen ? (
+                <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado} />
+              ) : undefined
+            }
+          />
+          <StatCard
+            icon={Wallet}
+            iconBg="bg-[#FCEFD2] text-[#B08419]"
+            label="Por cobrar"
+            value={resumen ? formatearDinero(resumen.por_cobrar) : "…"}
+            sub={resumen && resumen.por_cobrar > 0 ? "pendiente de pago" : undefined}
+            subColor="text-[#B0503A]"
+          />
+          <StatCard
+            icon={Users}
+            iconBg="bg-[#EFE3F0] text-[#7A4D8A]"
+            label="Pacientes activos"
+            value={resumen ? resumen.pacientes_activos : "…"}
+          />
+        </div>
+
+        {/* Agenda de hoy + calendario/acciones/pacientes recientes */}
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
+          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[15px] font-bold text-[#2b2118]">
+                <Calendar size={16} className="text-[#803449]" />
+                Agenda de hoy
+              </div>
+              <Link href="/dashboard/citas" className="text-[12px] font-semibold text-[#803449]">
+                Ver agenda completa →
+              </Link>
+            </div>
+
+            {citasHoy === null ? (
+              <p className="mt-4 text-sm text-[#8a8272]">Cargando…</p>
+            ) : citasHoy.length === 0 ? (
+              <p className="mt-4 text-sm text-[#8a8272]">Sin citas registradas por ahora.</p>
+            ) : (
+              <div className="mt-3 divide-y divide-[#EFE9DC]">
+                {citasHoy.map((c, i) => {
+                  const paleta = PALETA_AVATAR[i % PALETA_AVATAR.length];
+                  const estadoPill =
+                    c.estado === "cancelada" ? (
+                      <span className="whitespace-nowrap rounded-full bg-[#EFE9DC] px-2.5 py-1 text-[11px] font-semibold text-[#a49c8a]">
+                        Cancelada
+                      </span>
+                    ) : c.estado === "completada" ? (
+                      pagoConfirmado(c) ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E8F0E3] px-2.5 py-1 text-[11px] font-semibold text-[#3F6B33]">
+                          <Check size={11} /> Completada
+                        </span>
+                      ) : (
+                        <span className="whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
+                          Confirmación pendiente
+                        </span>
+                      )
+                    ) : c.pendiente_aprobacion ? (
+                      <span className="whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
+                        Pendiente
+                      </span>
+                    ) : (
+                      <span className="whitespace-nowrap rounded-full bg-[#E3EEF7] px-2.5 py-1 text-[11px] font-semibold text-[#3E6FD9]">
+                        Confirmada
+                      </span>
+                    );
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/dashboard/citas?ir=${claveDiaLocal(c.fecha_hora)}`}
+                      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${paleta.bg} ${paleta.text}`}
+                      >
+                        {iniciales(c.paciente_nombre)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-[#2b2118]">{c.paciente_nombre}</div>
+                        <div className="truncate text-xs text-[#a49c8a]">{c.tratamiento}</div>
+                      </div>
+                      <div className="shrink-0 text-right text-sm font-semibold text-[#2b2118]">
+                        {formatearHora(c.fecha_hora)}
+                      </div>
+                      {estadoPill}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-5">
+            <MiniCalendario citasHoy={citasHoy} />
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => router.push("/dashboard/citas?nuevo=1")}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5C2235] py-3 text-[14px] font-semibold text-white"
+              >
+                <Plus size={15} /> Nueva cita
+              </button>
+              <button
+                onClick={() => router.push("/dashboard/pacientes?nuevo=1")}
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#2b2118]"
+              >
+                <UserPlus size={15} /> Nuevo paciente
+              </button>
+            </div>
+
+            <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-[13px] font-bold text-[#2b2118]">Pacientes recientes</div>
+                <Link href="/dashboard/pacientes" className="text-[11px] font-semibold text-[#803449]">
+                  Ver todos →
+                </Link>
+              </div>
+              {pacientesRecientes === null ? (
+                <p className="mt-3 text-[13px] text-[#8a8272]">Cargando…</p>
+              ) : pacientesRecientes.length === 0 ? (
+                <p className="mt-3 text-[13px] text-[#8a8272]">Sin pacientes registrados.</p>
+              ) : (
+                <div className="mt-2 divide-y divide-[#EFE9DC]">
+                  {pacientesRecientes.map((p, i) => {
+                    const paleta = PALETA_AVATAR[i % PALETA_AVATAR.length];
+                    return (
+                      <Link
+                        key={p.id}
+                        href={`/dashboard/pacientes/${p.id}`}
+                        className="flex items-center gap-2.5 py-2.5 first:pt-0 last:pb-0"
+                      >
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${paleta.bg} ${paleta.text}`}
+                        >
+                          {iniciales(p.nombre)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13px] font-medium text-[#2b2118]">{p.nombre}</div>
+                          <div className="truncate text-[11px] text-[#a49c8a]">{p.folio ?? "Sin folio"}</div>
+                        </div>
+                        <div className="shrink-0 text-[11px] text-[#a49c8a]">
+                          {new Date(p.creado_en).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

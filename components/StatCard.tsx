@@ -12,7 +12,7 @@ export function StatCard({
   iconBg: string;
   label: string;
   value: string | number;
-  sub?: string;
+  sub?: React.ReactNode;
   subColor?: string;
 }) {
   return (

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserCog, Activity, Users, Calendar, Package, BarChart3 } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package, BarChart3, Search, Bell } from "lucide-react";
+import { DOCTORA } from "@/lib/panel-data";
+
+const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
 
 // Cierra la sesión sola después de 5 minutos sin tocar la pantalla —
 // pensado para un dispositivo compartido del consultorio.
@@ -21,13 +24,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [foto, setFoto] = useState<string | null>(null);
+  const [nombre, setNombre] = useState<string>(NOMBRE_CORTO_DOCTORA);
+  const [busqueda, setBusqueda] = useState("");
 
   useEffect(() => {
     fetch("/api/perfil")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setFoto(data?.foto ?? null))
+      .then((data) => {
+        setFoto(data?.foto ?? null);
+        setNombre(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
+      })
       .catch(() => {});
   }, [pathname]);
+
+  function buscar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!busqueda.trim()) return;
+    router.push(`/dashboard/pacientes?q=${encodeURIComponent(busqueda.trim())}`);
+  }
 
   useEffect(() => {
     let temporizador: ReturnType<typeof setTimeout>;
@@ -60,10 +74,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-dvh bg-[#F5F1EA] md:flex">
       {/* Barra lateral — solo escritorio */}
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-[#EFE9DC] bg-white/60 px-4 py-6 md:flex">
+      <aside
+        className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col px-4 py-6 md:flex"
+        style={{ background: "linear-gradient(180deg, #4A1420 0%, #5C2235 55%, #3D121C 100%)" }}
+      >
         <div className="px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-44" />
+          <img
+            src="/logo-vina-sonrisas.png"
+            alt="Viña Sonrisas"
+            className="h-auto w-44 brightness-0 invert"
+          />
         </div>
 
         <nav className="mt-8 flex flex-1 flex-col gap-1">
@@ -72,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={t.href}
               href={t.href}
               className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
-                esActivo(t.href) ? "bg-[#2b2118] text-white" : "text-[#8a8272] hover:bg-[#EFE9DC]/70"
+                esActivo(t.href) ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
               }`}
             >
               <t.icon size={16} /> {t.label}
@@ -83,7 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Link
           href="/dashboard/perfil"
           className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
-            esActivo("/dashboard/perfil") ? "bg-[#2b2118] text-white" : "text-[#8a8272] hover:bg-[#EFE9DC]/70"
+            esActivo("/dashboard/perfil") ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
           }`}
         >
           {foto ? (
@@ -97,6 +118,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="min-w-0 flex-1">
+        {/* Barra superior — solo escritorio */}
+        <div className="sticky top-0 z-10 hidden items-center justify-between border-b border-[#EFE9DC] bg-[#F5F1EA]/90 px-8 py-4 backdrop-blur md:flex">
+          <form onSubmit={buscar} className="w-full max-w-sm">
+            <div className="flex items-center gap-2 rounded-full border border-[#EFE9DC] bg-white px-4 py-2.5">
+              <Search size={15} className="shrink-0 text-[#a49c8a]" />
+              <input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar pacientes…"
+                className="w-full bg-transparent text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a]"
+              />
+            </div>
+          </form>
+
+          <div className="flex shrink-0 items-center gap-4">
+            <Link
+              href="/dashboard/citas"
+              aria-label="Agenda"
+              title="Agenda"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white text-[#8a8272] hover:text-[#2b2118]"
+            >
+              <Bell size={16} />
+            </Link>
+            <Link href="/dashboard/perfil" className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#EFE9DC] bg-white">
+                {foto ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={foto} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <UserCog size={16} className="text-[#2b2118]" />
+                )}
+              </div>
+              <span className="text-[14px] font-semibold text-[#2b2118]">{nombre}</span>
+            </Link>
+          </div>
+        </div>
+
         {/* Encabezado + tabs — solo celular */}
         <div className="mx-auto max-w-md md:hidden">
           <div className="flex items-center justify-between px-5 pb-4 pt-6">

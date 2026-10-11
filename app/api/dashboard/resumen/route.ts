@@ -48,12 +48,22 @@ export async function GET() {
           WHERE fecha_hora >= limites.semana_inicio
             AND fecha_hora < limites.semana_inicio + interval '7 days'
             AND estado = 'agendada') AS citas_semana_confirmadas,
+        -- Semana/mes anterior — solo para mostrar la flecha de tendencia
+        -- en las tarjetas del panel de escritorio (↑/↓ vs. periodo previo).
+        (SELECT COUNT(*)::int FROM citas
+          WHERE fecha_hora >= limites.semana_inicio - interval '7 days'
+            AND fecha_hora < limites.semana_inicio
+            AND estado <> 'cancelada') AS citas_semana_pasada,
         (SELECT COALESCE(SUM(monto), 0)::float8 FROM pagos
           WHERE fecha >= limites.mes_inicio) AS ingresos_mes,
+        (SELECT COALESCE(SUM(monto), 0)::float8 FROM pagos
+          WHERE fecha >= limites.mes_inicio - interval '1 month'
+            AND fecha < limites.mes_inicio) AS ingresos_mes_pasado,
         (SELECT COALESCE(SUM(c.monto - COALESCE(p.pagado, 0)), 0)::float8
           FROM citas c
           LEFT JOIN pagos_por_cita p ON p.cita_id = c.id
-          WHERE c.estado <> 'cancelada' AND c.monto IS NOT NULL) AS por_cobrar
+          WHERE c.estado <> 'cancelada' AND c.monto IS NOT NULL) AS por_cobrar,
+        (SELECT COUNT(*)::int FROM pacientes WHERE activo = true) AS pacientes_activos
       FROM limites
     `);
 

@@ -59,8 +59,15 @@ export default function PacientesPage() {
   }, [busqueda]);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("nuevo") === "1") {
       setFormAbierto(true);
+    }
+    const q = params.get("q");
+    if (q) {
+      setBusqueda(q);
+    }
+    if (params.toString()) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, []);
