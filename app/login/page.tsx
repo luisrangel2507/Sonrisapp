@@ -115,7 +115,7 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-dvh">
       <div
-        className="fixed inset-0 -z-10 bg-cover bg-center [background-image:url('/login-bg.jpg')] md:[background-image:url('/login-bg-desktop.jpg')]"
+        className="fixed inset-0 -z-10 bg-cover bg-center [background-image:url('/login-bg.webp')] md:[background-image:url('/login-bg-desktop.webp')]"
         style={{ backgroundColor: "#3B0F1C" }}
       />
       <div className="flex min-h-dvh items-center justify-center px-5 py-10">
@@ -137,7 +137,7 @@ export default function LoginPage() {
 
           <div className="flex flex-col items-center gap-2.5 px-6 pb-1 pt-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-60" />
+            <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="h-auto w-60" />
             <p className="text-[12px] text-[#a49c8a]">Inicia sesión para continuar</p>
           </div>
 

@@ -167,37 +167,28 @@ export default function PacienteDetallePage() {
   const [accesos, setAccesos] = useState<AccesoBitacora[]>([]);
   const [bitacoraAbierta, setBitacoraAbierta] = useState(false);
 
+  // La ficha se muestra en cuanto llegan los datos del paciente; notas,
+  // consentimientos, presupuestos, etc. se van llenando en paralelo sin
+  // bloquear la pantalla.
   async function cargar() {
-    setCargando(true);
-    const [resPaciente, resNotas, resConsent, resPresupuestos, resRecetas, resSolicitudes, resAccesos] =
-      await Promise.all([
-        fetch(`/api/pacientes/${pacienteId}`),
-        fetch(`/api/pacientes/${pacienteId}/notas`),
-        fetch(`/api/pacientes/${pacienteId}/consentimientos`),
-        fetch(`/api/pacientes/${pacienteId}/presupuestos`),
-        fetch(`/api/pacientes/${pacienteId}/recetas`),
-        fetch(`/api/pacientes/${pacienteId}/solicitudes`),
-        fetch(`/api/pacientes/${pacienteId}/bitacora`),
-      ]);
-    const dataPaciente = await resPaciente.json();
-    const dataNotas = await resNotas.json();
-    const dataConsent = await resConsent.json();
-    const dataPresupuestos = await resPresupuestos.json();
-    const dataRecetas = await resRecetas.json();
-    const dataSolicitudes = await resSolicitudes.json();
-    const dataAccesos = await resAccesos.json();
-    const p: Paciente = dataPaciente.paciente;
-    setPaciente(p);
-    setNombre(p.nombre);
-    setTelefono(p.telefono ?? "");
-    setEmail(p.email ?? "");
-    setFechaNacimiento(p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "");
-    setNotas(dataNotas.notas ?? []);
-    setConsentimientos(dataConsent.consentimientos ?? []);
-    setPresupuestos(dataPresupuestos.presupuestos ?? []);
-    setRecetas(dataRecetas.recetas ?? []);
-    setSolicitudes(dataSolicitudes.solicitudes ?? []);
-    setAccesos(dataAccesos.accesos ?? []);
+    const json = (url: string) => fetch(url).then((r) => r.json()).catch(() => ({}));
+    const base = `/api/pacientes/${pacienteId}`;
+    void json(`${base}/notas`).then((d) => setNotas(d.notas ?? []));
+    void json(`${base}/consentimientos`).then((d) => setConsentimientos(d.consentimientos ?? []));
+    void json(`${base}/presupuestos`).then((d) => setPresupuestos(d.presupuestos ?? []));
+    void json(`${base}/recetas`).then((d) => setRecetas(d.recetas ?? []));
+    void json(`${base}/solicitudes`).then((d) => setSolicitudes(d.solicitudes ?? []));
+    void json(`${base}/bitacora`).then((d) => setAccesos(d.accesos ?? []));
+
+    const dataPaciente = await json(base);
+    const p: Paciente | undefined = dataPaciente.paciente;
+    if (p) {
+      setPaciente(p);
+      setNombre(p.nombre);
+      setTelefono(p.telefono ?? "");
+      setEmail(p.email ?? "");
+      setFechaNacimiento(p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "");
+    }
     setCargando(false);
   }
 

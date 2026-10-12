@@ -586,7 +586,7 @@ export default function PanelPage() {
           <div className="relative hidden w-72 shrink-0 lg:block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/hero-diente-atardecer.jpg"
+              src="/hero-diente-atardecer.webp"
               alt=""
               className="absolute inset-0 h-full w-full object-cover"
             />

@@ -195,7 +195,7 @@ export default function ConsentimientoPublicoPage() {
             de la clínica (lib/pdf.tsx: EncabezadoPdf). */}
         <div className="rounded-2xl border-b-[3px] border-[#803449] bg-white px-5 pb-4 pt-5 text-center shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-36" />
+          <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="mx-auto h-auto w-36" />
           <p className="mt-2.5 font-serif text-lg font-bold text-[#803449]">Viña Sonrisas</p>
           <p className="text-[11px] text-[#8a8272]">Odontología Estética</p>
           <p className="mt-2 text-[12px] font-medium text-[#2b2118]">

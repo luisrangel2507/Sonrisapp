@@ -433,7 +433,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             <div className="relative overflow-hidden rounded-2xl border border-white/10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/odontograma-hud.jpg"
+                src="/odontograma-hud.webp"
                 alt="Odontograma"
                 className="block w-full select-none"
                 style={{ aspectRatio: "1300 / 799" }}

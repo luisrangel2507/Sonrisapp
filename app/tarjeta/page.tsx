@@ -104,7 +104,7 @@ export default function TarjetaDentistaPage() {
     <div className="min-h-dvh bg-[#F5F1EA]">
       <div className="mx-auto max-w-md space-y-4 px-4 pb-10 pt-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-44" />
+        <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="mx-auto h-auto w-44" />
 
         <div
           className="relative overflow-hidden rounded-[28px] p-6 text-center text-white"

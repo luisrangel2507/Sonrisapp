@@ -3,7 +3,7 @@ export function Hero() {
     <div className="relative mx-4 overflow-hidden rounded-[28px]" style={{ height: 220 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/hero-diente-atardecer.jpg"
+        src="/hero-diente-atardecer.webp"
         alt="Diente descansando en una banca viendo el atardecer"
         className="absolute inset-0 h-full w-full object-cover"
       />

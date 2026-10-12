@@ -126,7 +126,7 @@ export default function PortalPacientePage() {
       <div className="mx-auto max-w-md space-y-4 px-4 pb-10 pt-6">
         <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-52" />
+          <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="mx-auto h-auto w-52" />
           <div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Tu portal</div>
           <div className="mt-1 text-sm font-medium text-[#2b2118]">Hola, {paciente.nombre.split(" ")[0]} 👋</div>
           <div className="mt-1 text-[11px] text-[#a49c8a]">{DOCTORA.nombre}</div>

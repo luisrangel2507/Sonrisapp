@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-vina-sonrisas.png"
+            src="/logo-vina-sonrisas.webp"
             alt="Viña Sonrisas"
             className="h-auto w-44 brightness-0 invert"
           />
@@ -183,7 +183,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mx-auto max-w-md md:hidden">
           <div className="flex items-center justify-between px-5 pb-4 pt-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="h-auto w-48" />
+            <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="h-auto w-48" />
             <Link
               href="/dashboard/perfil"
               aria-label="Perfil"

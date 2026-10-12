@@ -637,7 +637,7 @@ export function HistoriaClinicaWizard({
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-vina-sonrisas.png" alt="Viña Sonrisas" className="mx-auto h-auto w-56" />
+        <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="mx-auto h-auto w-56" />
         <div className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Historia clínica</div>
         <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
         <p className="mt-4 max-w-xs text-[15px] text-[#8a8272]">
