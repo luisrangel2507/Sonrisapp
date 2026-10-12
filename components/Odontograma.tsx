@@ -317,13 +317,13 @@ function FilaCarta({
 }
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
-  const [vista, setVista] = useState<"foto" | "carta" | "marcar">("foto");
+  const [vista, setVista] = useState<"foto" | "carta">("foto");
   const [dienteMarcar, setDienteMarcar] = useState<number | null>(null);
   const raizRef = useRef<HTMLDivElement>(null);
 
   function irAMarcar(n: number) {
     setDienteMarcar(n);
-    setVista("marcar");
+    setVista("carta");
     raizRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   const [seleccionado, setSeleccionado] = useState<number>(16);
@@ -470,7 +470,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   }
 
   return (
-    <div ref={raizRef} className={`scroll-mt-4 space-y-4 md:mx-auto ${vista === "marcar" ? "md:max-w-4xl" : "md:max-w-xl"}`}>
+    <div ref={raizRef} className={`scroll-mt-4 space-y-4 md:mx-auto ${vista === "carta" ? "md:max-w-4xl" : "md:max-w-xl"}`}>
       <div
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
         style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
@@ -483,7 +483,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             </div>
           </div>
           <div className="flex flex-wrap justify-end gap-0.5 rounded-full border border-white/15 bg-white/5 p-0.5 text-[11px]">
-            {(["foto", "carta", "marcar"] as const).map((v) => (
+            {(["foto", "carta"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setVista(v)}
@@ -491,7 +491,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                   vista === v ? "bg-[#7C5CE0] text-white" : "text-white/50"
                 }`}
               >
-                {v === "foto" ? "Foto" : v === "carta" ? "Carta clínica" : "Marcar"}
+                {v === "foto" ? "Foto" : "Carta clínica"}
               </button>
             ))}
           </div>
@@ -546,7 +546,8 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               mapaEstados={mapaEstados}
             />
           </div>
-        ) : vista === "carta" ? (
+        ) : (
+          <>
           <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
             <FilaCarta
               numeros={ARCO_SUPERIOR}
@@ -566,7 +567,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               mapaEstados={mapaEstados}
             />
           </div>
-        ) : (
           <OdontogramaDibujo
             pacienteId={paciente.id}
             historial={historial}
@@ -574,6 +574,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             dienteFoco={dienteMarcar}
             onCambiarFoco={setDienteMarcar}
           />
+          </>
         )}
 
         {estadosPresentes.size > 0 ? (
