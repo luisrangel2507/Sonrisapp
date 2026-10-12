@@ -12,6 +12,12 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Ilustraciones del odontograma: no cambian, el navegador las
+        // guarda un día y las revalida en segundo plano.
+        source: "/:archivo(odontograma-carta-v2.webp|dientes/.*)",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
+      {
         source: "/:path*",
         headers: [
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },

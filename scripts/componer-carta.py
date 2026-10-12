@@ -1,0 +1,26 @@
+# Regenera public/odontograma-carta-v2.webp: la carta original con las
+# ilustraciones realistas de public/dientes/N.webp encajadas en su columna
+# (misma geometría que mapaColumna en components/OdontogramaDibujo.tsx).
+# Uso: python3 scripts/componer-carta.py
+import sys,os
+from PIL import Image, ImageDraw
+S=2
+B=[0,76,151,227,284,341,397,454,511,568,625,682,739,796,872,947,1023]
+FR=44; IMG_H=787; LM=FR+401
+LW,LC,LH=300,150,150+1017+30; IR=(30,150,240,1017)
+SUP=[18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28]
+INF=[48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38]
+base=Image.open('public/odontograma-carta.jpg').convert('RGB').resize((1024*S,787*S),Image.LANCZOS)
+d=ImageDraw.Draw(base)
+for f in sorted(os.listdir('public/dientes')):
+    n=int(f.split('.')[0]); arriba=n in SUP; col=(SUP if arriba else INF).index(n)
+    x=B[col]; w=B[col+1]-B[col]; cx=x+w/2
+    yI=FR+34 if arriba else LM+2; alto=LM-FR-36 if arriba else FR+IMG_H-34-LM-4
+    esc=min((w-2)/LW, alto/(LH-LC)); ox=cx-LW*esc/2; oy=yI+(alto-(LH-LC)*esc)/2-LC*esc
+    r=lambda v: round(v*S)
+    d.rectangle([r(x-1),r(yI-1-FR),r(x+w+1),r(yI+alto+1-FR)],fill='white')
+    t=Image.open('public/dientes/'+f).convert('RGB')
+    px,py,pw,ph=ox+esc*IR[0], oy+esc*IR[1]-FR, esc*IR[2], esc*IR[3]
+    base.paste(t.resize((r(pw),r(ph)),Image.LANCZOS),(r(px),r(py)))
+base.save('public/odontograma-carta-v2.webp',quality=78,method=6)
+print(os.path.getsize('public/odontograma-carta-v2.webp'))

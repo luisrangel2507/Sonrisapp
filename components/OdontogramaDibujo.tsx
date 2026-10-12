@@ -46,7 +46,12 @@ function dienteEn(x: number, y: number): number | null {
   return y < LINEA_MEDIA_Y ? ARCO_SUPERIOR[col] : ARCO_INFERIOR_VISUAL[col];
 }
 
-// Dientes con ilustración realista propia (public/dientes/N.jpg) que
+// Carta con las ilustraciones realistas ya integradas en una sola imagen
+// (se genera recortando public/dientes/N.webp sobre la carta original),
+// para que cargue de una vez en lugar de imagen por imagen.
+const CARTA_URL = "/odontograma-carta-v2.webp";
+
+// Dientes con ilustración realista propia (public/dientes/N.webp) que
 // sustituye al dibujo de línea de la carta en su columna.
 const DIENTES_REALISTAS = new Set<number>([18, 17, 16, 15, 14, 13, 12]);
 
@@ -294,6 +299,14 @@ export function OdontogramaDibujo({
   const [pendiente, setPendiente] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+
+  // Precarga las ilustraciones para que la pantalla completa abra al instante.
+  useEffect(() => {
+    DIENTES_REALISTAS.forEach((n) => {
+      const img = new Image();
+      img.src = `/dientes/${n}.webp`;
+    });
+  }, []);
 
   useEffect(() => {
     let vivo = true;
@@ -614,9 +627,8 @@ export function OdontogramaDibujo({
             const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
             return (
               <>
-                <rect x={x - 1} y={yIni - 1} width={w + 2} height={alto + 2} fill="white" />
+                {/* La ilustración ya viene integrada en la carta (una sola imagen). */}
                 <g transform={`translate(${ox},${oy}) scale(${esc})`}>
-                  <image href={`/dientes/${numero}.jpg`} {...{ x: IMG_REAL.x, y: IMG_REAL.y, width: IMG_REAL.w, height: IMG_REAL.h }} />
                   {elementos.map((el, i) => (el.d === numero ? renderElemento(el, i) : null))}
                 </g>
               </>
@@ -687,7 +699,7 @@ export function OdontogramaDibujo({
     </clipPath>
   </defs>
   <g clipPath={dienteFoco != null ? "url(#recorte-diente)" : undefined}>
-    <image href="/odontograma-carta.jpg" x={0} y={FRANJA} width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
+    <image href={CARTA_URL} x={0} y={FRANJA} width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
     {ARCO_SUPERIOR.map((n, i) => columnaDiente(n, i, true))}
     {ARCO_INFERIOR_VISUAL.map((n, i) => columnaDiente(n, i, false))}
     {elementos.map((el, i) => (el.d == null ? renderElemento(el, i) : null))}
@@ -729,7 +741,7 @@ export function OdontogramaDibujo({
       <text x={150} y={120} textAnchor="middle" fontSize={24} fontWeight={700} fill="white">
         {lienzo}
       </text>
-      <image href={`/dientes/${lienzo}.jpg`} x={IMG_REAL.x} y={IMG_REAL.y} width={IMG_REAL.w} height={IMG_REAL.h} />
+      <image href={`/dientes/${lienzo}.webp`} x={IMG_REAL.x} y={IMG_REAL.y} width={IMG_REAL.w} height={IMG_REAL.h} />
       {(() => {
         const m = mapaColumna(lienzo);
         if (!m) return null;
