@@ -686,3 +686,17 @@ ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS lengua_piso_boca_hallazgos
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS paladar_orofaringe_normal BOOLEAN;
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS paladar_orofaringe_hallazgos TEXT;
 ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS encia_periodonto TEXT; -- "normal,gingivitis,periodontitis,recesion,movilidad"
+
+-- Dibujo libre sobre la carta del odontograma (trazos, líneas, símbolos
+-- y abreviaturas en el recuadro de cada pieza, según la simbología de
+-- la doctora). Igual que historia_clinica, nunca se sobrescribe: cada
+-- guardado inserta una versión nueva y se lee la más reciente. El
+-- contenido va cifrado (NOM-024) porque es información clínica.
+CREATE TABLE IF NOT EXISTS odontograma_dibujos (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  datos TEXT NOT NULL,
+  creado_por_nombre VARCHAR(160),
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_odontograma_dibujos_paciente ON odontograma_dibujos(paciente_id, id DESC);

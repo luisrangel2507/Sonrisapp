@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Plus } from "lucide-react";
+import { OdontogramaDibujo } from "@/components/OdontogramaDibujo";
 import {
   ARCO_SUPERIOR,
   ARCO_INFERIOR,
@@ -116,7 +117,7 @@ function VistaOclusal({ posicion }: { posicion: number }) {
 // Diente completo apilando corona / cara oclusal / raíz, para que se
 // vean sus tres caras principales de un vistazo (como en la carta
 // dental de referencia), en vez de un solo contorno genérico.
-function IconoDiente({ numero }: { numero: number }) {
+export function IconoDiente({ numero }: { numero: number }) {
   const posicion = numero % 10;
   const corona = CORONA_POR_POSICION[posicion] ?? CORONA_POR_POSICION[1];
   const raiz = RAIZ_POR_POSICION[posicion] ?? RAIZ_POR_POSICION[1];
@@ -461,7 +462,7 @@ function FilaCarta({
 }
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
-  const [vista, setVista] = useState<"foto" | "carta" | "simbolos">("foto");
+  const [vista, setVista] = useState<"foto" | "carta" | "simbolos" | "marcar">("foto");
   const [seleccionado, setSeleccionado] = useState<number>(16);
   const [historial, setHistorial] = useState<HistorialDental>({});
   const [cargando, setCargando] = useState(true);
@@ -606,7 +607,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   }
 
   return (
-    <div className="space-y-4 md:mx-auto md:max-w-xl">
+    <div className={`space-y-4 md:mx-auto ${vista === "marcar" ? "md:max-w-4xl" : "md:max-w-xl"}`}>
       <div
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
         style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
@@ -619,7 +620,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             </div>
           </div>
           <div className="flex flex-wrap justify-end gap-0.5 rounded-full border border-white/15 bg-white/5 p-0.5 text-[11px]">
-            {(["foto", "carta", "simbolos"] as const).map((v) => (
+            {(["foto", "carta", "marcar", "simbolos"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setVista(v)}
@@ -627,7 +628,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                   vista === v ? "bg-[#7C5CE0] text-white" : "text-white/50"
                 }`}
               >
-                {v === "foto" ? "Foto" : v === "carta" ? "Carta clínica" : "Símbolos · prueba"}
+                {v === "foto" ? "Foto" : v === "carta" ? "Carta clínica" : v === "marcar" ? "Marcar" : "Símbolos · prueba"}
               </button>
             ))}
           </div>
@@ -702,6 +703,8 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               mapaEstados={mapaEstados}
             />
           </div>
+        ) : vista === "marcar" ? (
+          <OdontogramaDibujo pacienteId={paciente.id} historial={historial} etiquetasEstado={mapaEstados} />
         ) : (
           <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-2 flex items-center gap-1.5 text-[10px] leading-snug text-white/40">
