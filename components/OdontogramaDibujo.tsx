@@ -50,6 +50,14 @@ function dienteEn(x: number, y: number): number | null {
 // sustituye al dibujo de línea de la carta en su columna.
 const DIENTES_REALISTAS = new Set<number>([18]);
 
+// Lienzo propio de un diente realista en pantalla completa: las marcas
+// de ese diente se guardan en estas coordenadas (con d = número) y en
+// la carta completa se dibujan reducidas dentro de su columna.
+const LIENZO_W = 300;
+const LIENZO_CABECERA = 150;
+const LIENZO_H = LIENZO_CABECERA + 1017 + 30;
+const IMG_REAL = { x: 30, y: LIENZO_CABECERA, w: 240, h: 1017 };
+
 // ---- Modelo ----
 export const COLORES = [
   { valor: "#D62839", label: "Rojo" },
@@ -85,7 +93,7 @@ type Elemento = (
   | { t: "linea"; color: string; x1: number; y1: number; x2: number; y2: number }
   | { t: "sello"; color: string; forma: FormaSello; x: number; y: number; e?: number }
   | { t: "texto"; color: string; texto: string; diente: number }
-) & { v?: number };
+) & { v?: number; d?: number };
 
 // Las marcas guardadas antes de usar la carta en imagen (sin v=2) se
 // pasan aproximadamente a las coordenadas nuevas.
@@ -323,6 +331,9 @@ export function OdontogramaDibujo({
     );
   }
 
+  const lienzo = dienteFoco != null && DIENTES_REALISTAS.has(dienteFoco) ? dienteFoco : null;
+  const conD = <T extends Elemento>(el: T): T => (lienzo != null ? { ...el, d: lienzo } : el);
+
   function alPresionar(e: ReactPointerEvent<SVGSVGElement>) {
     if (editando !== null) {
       (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -340,16 +351,16 @@ export function OdontogramaDibujo({
     const [x, y] = punto(e);
     if (herramienta === "lapiz") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
-      setActual({ t: "trazo", color, puntos: [[x, y]], v: 2 });
+      setActual(conD({ t: "trazo", color, puntos: [[x, y]], v: 2 }));
     } else if (herramienta === "linea") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
-      setActual({ t: "linea", color, x1: x, y1: y, x2: x, y2: y, v: 2 });
+      setActual(conD({ t: "linea", color, x1: x, y1: y, x2: x, y2: y, v: 2 }));
     } else if (herramienta === "sello") {
-      cambiar([...elementos, { t: "sello", color, forma: sello, x, y, v: 2 }]);
+      cambiar([...elementos, conD({ t: "sello", color, forma: sello, x, y, v: 2 })]);
       setEditando(elementos.length);
       setDienteSugerido(null);
     } else if (herramienta === "texto") {
-      const diente = dienteEn(x, y);
+      const diente = lienzo ?? dienteEn(x, y);
       if (diente !== null) {
         cambiar([...elementos, { t: "texto", color, texto: abreviatura, diente, v: 2 }]);
         setDienteSugerido(null);
@@ -510,12 +521,21 @@ export function OdontogramaDibujo({
     const alto = arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4;
     return (
       <g key={numero}>
-        {realista && (
-          <>
-            <rect x={x + 1} y={yIni} width={w - 2} height={alto} fill="white" />
-            <image href={`/dientes/${numero}.jpg`} x={x + 1} y={yIni} width={w - 2} height={alto} preserveAspectRatio="xMidYMid meet" />
-          </>
-        )}
+        {realista &&
+          (() => {
+            const esc = Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
+            const ox = cx - (LIENZO_W * esc) / 2;
+            const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
+            return (
+              <>
+                <rect x={x - 1} y={yIni - 1} width={w + 2} height={alto + 2} fill="white" />
+                <g transform={`translate(${ox},${oy}) scale(${esc})`}>
+                  <image href={`/dientes/${numero}.jpg`} {...{ x: IMG_REAL.x, y: IMG_REAL.y, width: IMG_REAL.w, height: IMG_REAL.h }} />
+                  {elementos.map((el, i) => (el.d === numero ? renderElemento(el, i) : null))}
+                </g>
+              </>
+            );
+          })()}
         {resaltado && (
           <rect
             x={x + 2}
@@ -583,17 +603,55 @@ export function OdontogramaDibujo({
     <image href="/odontograma-carta.jpg" x={0} y={FRANJA} width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
     {ARCO_SUPERIOR.map((n, i) => columnaDiente(n, i, true))}
     {ARCO_INFERIOR_VISUAL.map((n, i) => columnaDiente(n, i, false))}
-    {elementos.map((el, i) => renderElemento(el, i))}
+    {elementos.map((el, i) => (el.d == null ? renderElemento(el, i) : null))}
     {actual && renderElemento(actual, -1, true)}
   </g>
 </svg>
+  );
+
+  // Pantalla completa de un diente con ilustración realista: lienzo
+  // propio, más amplio, con su recuadro de abreviaturas y su número.
+  const lienzoSvg = lienzo != null && (
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${LIENZO_W} ${LIENZO_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      className="block h-full w-full select-none"
+      style={{ touchAction: "none" }}
+      onPointerDown={alPresionar}
+      onPointerMove={alMover}
+      onPointerUp={alSoltar}
+      onPointerCancel={alSoltar}
+    >
+      <rect x={0} y={0} width={LIENZO_W} height={LIENZO_H} fill="white" />
+      <rect x={60} y={14} width={180} height={64} rx={14} fill="#FBF8F1" stroke="#CFC6B4" strokeWidth={2} />
+      <text x={150} y={58} textAnchor="middle" fontSize={(textosPorDiente.get(lienzo)?.length ?? 0) > 1 ? 24 : 32} fontWeight={700} fontFamily="Georgia, serif" fontStyle="italic">
+        {(textosPorDiente.get(lienzo) ?? []).map((t, i) => (
+          <tspan
+            key={t.indice}
+            fill={t.color}
+            onPointerDown={herramienta === "borrar" ? () => borrar(t.indice) : undefined}
+          >
+            {i > 0 ? " " : ""}
+            {t.texto}
+          </tspan>
+        ))}
+      </text>
+      <rect x={112} y={92} width={76} height={40} rx={20} fill="#2b2118" />
+      <text x={150} y={120} textAnchor="middle" fontSize={24} fontWeight={700} fill="white">
+        {lienzo}
+      </text>
+      <image href={`/dientes/${lienzo}.jpg`} x={IMG_REAL.x} y={IMG_REAL.y} width={IMG_REAL.w} height={IMG_REAL.h} />
+      {elementos.map((el, i) => (el.d === lienzo ? renderElemento(el, i) : null))}
+      {actual && renderElemento(actual, -1, true)}
+    </svg>
   );
 
   if (dienteFoco != null) {
     return (
       <PantallaCompleta
         diente={dienteFoco}
-        carta={cargando ? <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p> : carta}
+        carta={cargando ? <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p> : lienzoSvg || carta}
         herramienta={herramienta}
         setHerramienta={(h) => {
           setEditando(null);
@@ -855,13 +913,13 @@ function PantallaCompleta(props: {
           )}
 
           {props.editandoSello && (
-            <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 bottom-[72px] flex justify-center">
               <span className="rounded-full bg-[#2b2118]/85 px-3 py-1 text-[12px] text-white">Arrastra el símbolo para acomodarlo</span>
             </div>
           )}
 
           {(herramienta === "sello" || herramienta === "texto") && !mostrarPanel && !props.editandoSello && (
-            <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
               <span className="flex items-center gap-1.5 rounded-full bg-[#2b2118]/85 px-3 py-1 text-[12px] text-white">
                 Toca el diente para poner
                 {herramienta === "sello" ? (
