@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
-import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X, Trash2, Check } from "lucide-react";
+import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X, Trash2, Check, History } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
@@ -402,6 +402,8 @@ export function OdontogramaDibujo({
   const conD = <T extends Elemento>(el: T): T => (lienzo != null ? { ...el, d: lienzo } : el);
 
   function alPresionar(e: ReactPointerEvent<SVGSVGElement>) {
+    // Al marcar algo nuevo se vuelve a ver todo (lo nuevo es de hoy).
+    if (filtroFecha !== null && filtroFecha !== HOY) setFiltroFecha(null);
     if (editando !== null) {
       (e.target as Element).setPointerCapture?.(e.pointerId);
       setPila((p) => [...p.slice(-49), elementos]);
@@ -532,7 +534,7 @@ export function OdontogramaDibujo({
     return `${x0} ${y0} ${ancho} ${alto}`;
   }, [dienteFoco]);
 
-  const filtrando = dienteFoco == null && filtroFecha !== null;
+  const filtrando = filtroFecha !== null;
   const visible = (el: Elemento) => !filtrando || (el.f ?? "antes") === filtroFecha;
 
   const textosPorDiente = useMemo(() => {
@@ -792,6 +794,17 @@ export function OdontogramaDibujo({
           const sg = sugerencias.find((x) => x.diente === dienteFoco);
           if (sg) usarSugerencia(sg);
         }}
+        fechas={(() => {
+          const set = new Set(
+            elementos
+              .filter((el) => el.d === dienteFoco || (el.d == null && dienteDeElemento(el) === dienteFoco))
+              .map((el) => el.f ?? "antes")
+          );
+          return fechas.filter((f) => set.has(f));
+        })()}
+        etiquetaFecha={etiquetaFecha}
+        filtroFecha={filtroFecha}
+        setFiltroFecha={setFiltroFecha}
         editandoSello={editando !== null}
         tamanoSello={tamanoEditando}
         fijarSello={() => setEditando(null)}
@@ -802,6 +815,7 @@ export function OdontogramaDibujo({
         }}
         cerrar={() => {
           setEditando(null);
+          setFiltroFecha(null);
           if (pendiente) guardar();
           onCambiarFoco?.(null);
           setDienteSugerido(null);
@@ -891,11 +905,16 @@ function PantallaCompleta(props: {
   tamanoSello: (delta: number) => void;
   fijarSello: () => void;
   quitarSello: () => void;
+  fechas: string[];
+  etiquetaFecha: (f: string) => string;
+  filtroFecha: string | null;
+  setFiltroFecha: (f: string | null) => void;
   cerrar: () => void;
 }) {
   const { herramienta, setHerramienta, color } = props;
   const [panel, setPanel] = useState(false);
   const [libre, setLibre] = useState("");
+  const [historial, setHistorial] = useState(false);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -1026,6 +1045,37 @@ function PantallaCompleta(props: {
             </div>
           )}
 
+          {historial && (
+            <div className="absolute inset-x-2 top-2 z-20 rounded-2xl border border-white/10 bg-[#211a2e]/95 p-3 shadow-2xl backdrop-blur">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/50">Historial del diente {props.diente}</span>
+                <button onClick={() => setHistorial(false)} aria-label="Cerrar historial" className="text-white/60">
+                  <X size={16} />
+                </button>
+              </div>
+              {props.fechas.length === 0 ? (
+                <p className="text-[12px] text-white/50">Este diente aún no tiene marcas.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {[null, ...props.fechas].map((f) => (
+                    <button
+                      key={f ?? "todas"}
+                      onClick={() => props.setFiltroFecha(f)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] font-medium ${
+                        props.filtroFecha === f ? "bg-[#7C5CE0] text-white" : "bg-white/10 text-white/70"
+                      }`}
+                    >
+                      {f === null ? "Todas" : props.etiquetaFecha(f)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-[11px] leading-snug text-white/40">
+                Elige una consulta para ver solo lo marcado ese día. Lo de visitas pasadas se ve tenue en &quot;Todas&quot;.
+              </p>
+            </div>
+          )}
+
           {props.editandoSello && (
             <div className="absolute inset-x-2 bottom-2 z-10 flex items-center gap-2 rounded-2xl bg-[#211a2e]/95 p-2 shadow-2xl backdrop-blur">
               <button
@@ -1080,6 +1130,14 @@ function PantallaCompleta(props: {
             className="flex w-[50px] flex-col items-center gap-0.5 rounded-2xl bg-white py-2 text-[8px] font-semibold text-[#2b2118] active:scale-95 disabled:opacity-30"
           >
             <Undo2 size={20} /> Deshacer
+          </button>
+          <button
+            onClick={() => setHistorial((v) => !v)}
+            className={`flex w-[50px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[9px] font-medium ${
+              historial || props.filtroFecha ? "bg-[#F0C24E] text-[#2b2118]" : "text-white/60"
+            }`}
+          >
+            <History size={20} /> Historial
           </button>
           <div className="my-0.5 h-px w-8 bg-white/10" />
           {riel.map((b) => (
