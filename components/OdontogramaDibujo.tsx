@@ -284,6 +284,9 @@ export function OdontogramaDibujo({
   // Símbolo recién puesto que todavía se puede arrastrar y cambiar de
   // tamaño; se fija con "Listo".
   const [editando, setEditando] = useState<number | null>(null);
+  // Historial por consulta: en la carta completa se puede ver solo lo
+  // marcado en una fecha ("antes" = marcas sin fecha registrada).
+  const [filtroFecha, setFiltroFecha] = useState<string | null>(null);
   const arrastrando = useRef<{ dx: number; dy: number } | null>(null);
   const [abreviatura, setAbreviatura] = useState("S");
   const [dienteSugerido, setDienteSugerido] = useState<number | null>(null);
@@ -512,19 +515,36 @@ export function OdontogramaDibujo({
     return `${x0} ${y0} ${ancho} ${alto}`;
   }, [dienteFoco]);
 
+  const filtrando = dienteFoco == null && filtroFecha !== null;
+  const visible = (el: Elemento) => !filtrando || (el.f ?? "antes") === filtroFecha;
+
   const textosPorDiente = useMemo(() => {
     const mapa = new Map<number, { texto: string; color: string; indice: number; pasado: boolean }[]>();
     elementos.forEach((el, indice) => {
-      if (el.t !== "texto") return;
+      if (el.t !== "texto" || !visible(el)) return;
       const lista = mapa.get(el.diente) ?? [];
-      lista.push({ texto: el.texto, color: el.color, indice, pasado: esPasado(el) });
+      lista.push({ texto: el.texto, color: el.color, indice, pasado: !filtrando && esPasado(el) });
       mapa.set(el.diente, lista);
     });
     return mapa;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elementos, filtrando, filtroFecha]);
+
+  const fechas = useMemo(() => {
+    const set = new Set(elementos.map((el) => el.f ?? "antes"));
+    return Array.from(set).sort((a, b) => (a === "antes" ? -1 : b === "antes" ? 1 : b.localeCompare(a)));
   }, [elementos]);
 
+  const etiquetaFecha = (f: string) =>
+    f === "antes"
+      ? "Anteriores"
+      : f === HOY
+        ? "Hoy"
+        : new Date(`${f}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+
   function renderElemento(el: Elemento, indice: number, provisional = false) {
-    if (provisional || !esPasado(el)) return renderElementoBase(el, indice, provisional);
+    if (!provisional && !visible(el)) return null;
+    if (provisional || filtrando || !esPasado(el)) return renderElementoBase(el, indice, provisional);
     return (
       <g key={indice} opacity={0.38}>
         {renderElementoBase(el, indice, provisional)}
@@ -773,6 +793,23 @@ export function OdontogramaDibujo({
       <p className="text-[12px] text-white/50">
         Toca un diente de la carta para abrirlo en pantalla completa y marcarlo.
       </p>
+
+      {fechas.length > 0 && (
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+          <span className="shrink-0 self-center text-[11px] font-semibold uppercase tracking-wide text-white/40">Consulta</span>
+          {[null, ...fechas].map((f) => (
+            <button
+              key={f ?? "todas"}
+              onClick={() => setFiltroFecha(f)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium ${
+                filtroFecha === f ? "bg-[#7C5CE0] text-white" : "bg-white/10 text-white/70"
+              }`}
+            >
+              {f === null ? "Todas" : etiquetaFecha(f)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Carta */}
       {dienteFoco != null && (
