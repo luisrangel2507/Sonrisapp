@@ -5,33 +5,36 @@ import { Eraser, Hand, Minus, Pencil, Save, Stamp, Type, Undo2, Trash2 } from "l
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
-const ANCHO_COL = 38;
-const HUECO_LINEA_MEDIA = 14;
-const MARGEN = 10;
-const ANCHO_TOTAL = MARGEN * 2 + 16 * ANCHO_COL + HUECO_LINEA_MEDIA;
-const ALTO_TOTAL = 268;
-const LINEA_MEDIA_Y = 132;
-const DIENTE_W = 28;
-const DIENTE_H = 68;
-const CAJA_SUP = { y: 4, h: 18 };
-const DIENTE_SUP_Y = 40;
-const DIENTE_INF_Y = 158;
-// Círculo de 5 superficies (oclusal al centro; mesial, distal,
-// vestibular y lingual/palatino alrededor), pegado a la línea media.
-const SUPERFICIES_SUP_Y = 117;
-const SUPERFICIES_INF_Y = 147;
-const SUPERFICIES_R = 9;
-const CAJA_INF = { y: 246, h: 18 };
+// El fondo es la carta dental anatómica de la doctora
+// (public/odontograma-carta.jpg, 1024×787), igual que el recetario usa su
+// membrete: así las piezas tienen exactamente la forma del odontograma
+// en papel. Arriba y abajo se agrega una franja para el recuadro de
+// abreviaturas de cada pieza.
+const IMG_W = 1024;
+const IMG_H = 787;
+const FRANJA = 44;
+const ANCHO_TOTAL = IMG_W;
+const ALTO_TOTAL = IMG_H + FRANJA * 2;
+// Bordes de columna medidos sobre la imagen (16 piezas por arcada).
+const BORDES_COL = [0, 76, 151, 227, 284, 341, 397, 454, 511, 568, 625, 682, 739, 796, 872, 947, 1023];
+const LINEA_MEDIA_Y = FRANJA + 401;
+const CAJA_SUP = { y: 6, h: 32 };
+const CAJA_INF = { y: FRANJA + IMG_H + 6, h: 32 };
+// Escala de grosores/tamaños respecto a la carta anterior (642 de ancho).
+const K = 1.6;
 
 const ARCO_INFERIOR_VISUAL = [...ARCO_INFERIOR].reverse();
 
 function colX(i: number) {
-  return MARGEN + i * ANCHO_COL + (i >= 8 ? HUECO_LINEA_MEDIA : 0);
+  return BORDES_COL[i];
+}
+function anchoCol(i: number) {
+  return BORDES_COL[i + 1] - BORDES_COL[i];
 }
 
 function columnaDeX(x: number): number | null {
   for (let i = 0; i < 16; i++) {
-    if (x >= colX(i) && x < colX(i) + ANCHO_COL) return i;
+    if (x >= BORDES_COL[i] && x < BORDES_COL[i + 1]) return i;
   }
   return null;
 }
@@ -72,11 +75,23 @@ type FormaSello =
   | "numeral"
   | "puente";
 
-type Elemento =
+type Elemento = (
   | { t: "trazo"; color: string; puntos: [number, number][] }
   | { t: "linea"; color: string; x1: number; y1: number; x2: number; y2: number }
   | { t: "sello"; color: string; forma: FormaSello; x: number; y: number }
-  | { t: "texto"; color: string; texto: string; diente: number };
+  | { t: "texto"; color: string; texto: string; diente: number }
+) & { v?: number };
+
+// Las marcas guardadas antes de usar la carta en imagen (sin v=2) se
+// pasan aproximadamente a las coordenadas nuevas.
+function migrar(el: Elemento): Elemento {
+  if (el.v === 2 || el.t === "texto") return { ...el, v: 2 };
+  const mx = (x: number) => (x * IMG_W) / 642;
+  const my = (y: number) => FRANJA + (y * IMG_H) / 268;
+  if (el.t === "trazo") return { ...el, v: 2, puntos: el.puntos.map(([x, y]) => [mx(x), my(y)] as [number, number]) };
+  if (el.t === "linea") return { ...el, v: 2, x1: mx(el.x1), y1: my(el.y1), x2: mx(el.x2), y2: my(el.y2) };
+  return { ...el, v: 2, x: mx(el.x), y: my(el.y) };
+}
 
 type Herramienta = "mover" | "lapiz" | "linea" | "sello" | "texto" | "borrar";
 
@@ -132,10 +147,10 @@ const FORMA_DESDE_SIMBOLO: Record<string, FormaSello> = {
 };
 
 // ---- Dibujo de un sello ----
-function Sello({ forma, color, x, y }: { forma: FormaSello; color: string; x: number; y: number }) {
+function Sello({ forma, color, x, y, escala = 1 }: { forma: FormaSello; color: string; x: number; y: number; escala?: number }) {
   const sw = 2;
   const p = { stroke: color, strokeWidth: sw, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  const g = (children: React.ReactNode) => <g transform={`translate(${x},${y})`}>{children}</g>;
+  const g = (children: React.ReactNode) => <g transform={`translate(${x},${y}) scale(${escala})`}>{children}</g>;
   switch (forma) {
     case "x":
       return g(<><line x1={-11} y1={-11} x2={11} y2={11} {...p} /><line x1={11} y1={-11} x2={-11} y2={11} {...p} /></>);
@@ -186,77 +201,6 @@ function MiniSello({ forma, color }: { forma: FormaSello; color: string }) {
   );
 }
 
-// ---- Figuras de diente estilo odontograma médico ----
-// Vista vestibular en un recuadro de 24×58: raíces arriba (0-33) y
-// corona abajo (32-56), como un diente superior. Los inferiores se
-// dibujan con el mismo trazo reflejado (corona arriba, raíces abajo).
-const CORONA_MEDICA: Record<string, string> = {
-  incisivo_central: "M6.5,32 L17.5,32 L18.5,51 Q12,57 5.5,51 Z",
-  incisivo_lateral: "M7.5,32 L16.5,32 L17,50 Q12,55.5 7,50 Z",
-  canino: "M6,32 L18,32 L18.5,47 L12,57 L5.5,47 Z",
-  premolar: "M5,32 L19,32 L19.5,47 Q17,55.5 14.5,51.5 Q12,49.5 9.5,51.5 Q7,55.5 4.5,47 Z",
-  molar:
-    "M2.5,32 L21.5,32 L22,46 Q20.5,55 17.5,51 Q15.5,48.5 14,51.5 Q12,55 10,51.5 Q8.5,48.5 6.5,51 Q3.5,55 2,46 Z",
-};
-const RAIZ_MEDICA: Record<string, string> = {
-  incisivo_central: "M7.5,32.5 Q8.5,12 12,3 Q15.5,12 16.5,32.5",
-  incisivo_lateral: "M8.5,32.5 Q9.5,14 12,6 Q14.5,14 15.5,32.5",
-  canino: "M7,32.5 Q8.5,9 12,0 Q15.5,9 17,32.5",
-  premolar_dos: "M6,32.5 Q6,16 8.5,7 Q11,16 11.5,26 Q12,24 12.5,26 Q13,16 15.5,7 Q18,16 18,32.5",
-  premolar: "M6.5,32.5 Q8,13 12,4 Q16,13 17.5,32.5",
-  molar_superior:
-    "M3.5,32.5 Q2,17 5,6 Q8.5,15 9.5,25 Q10.5,18 12,10 Q13.5,18 14.5,25 Q15.5,15 19,6 Q22,17 20.5,32.5",
-  molar_inferior: "M3.5,32.5 Q2.5,16 6,5 Q9.5,15 10.5,25 Q12,21 13.5,25 Q14.5,15 18,5 Q21.5,16 20.5,32.5",
-};
-
-const CUELLO: Record<string, [number, number]> = {
-  incisivo_central: [6.5, 17.5],
-  incisivo_lateral: [7.5, 16.5],
-  canino: [6, 18],
-  premolar: [5, 19],
-  molar: [2.5, 21.5],
-};
-
-function tipoDiente(numero: number, superior: boolean) {
-  const pos = numero % 10;
-  if (pos === 1) return { corona: "incisivo_central", raiz: "incisivo_central" };
-  if (pos === 2) return { corona: "incisivo_lateral", raiz: "incisivo_lateral" };
-  if (pos === 3) return { corona: "canino", raiz: "canino" };
-  if (pos === 4) return { corona: "premolar", raiz: superior ? "premolar_dos" : "premolar" };
-  if (pos === 5) return { corona: "premolar", raiz: "premolar" };
-  return { corona: "molar", raiz: superior ? "molar_superior" : "molar_inferior" };
-}
-
-function DienteMedico({ numero, superior }: { numero: number; superior: boolean }) {
-  const { corona, raiz } = tipoDiente(numero, superior);
-  return (
-    <svg viewBox="0 0 24 58" width="100%" height="100%" overflow="visible">
-      <g transform={superior ? undefined : "translate(0,58) scale(1,-1)"}>
-        <path d={RAIZ_MEDICA[raiz]} fill="white" />
-        <path d={CORONA_MEDICA[corona]} fill="white" strokeLinejoin="round" />
-        {/* línea cervical (cuello) */}
-        <line x1={CUELLO[corona][0]} y1={32} x2={CUELLO[corona][1]} y2={32} />
-      </g>
-    </svg>
-  );
-}
-
-function CirculoSuperficies({ cx, cy }: { cx: number; cy: number }) {
-  const r = SUPERFICIES_R;
-  const ri = r * 0.42;
-  const d = Math.SQRT1_2;
-  return (
-    <g fill="white" stroke="#5a5246" strokeWidth={0.7}>
-      <circle cx={cx} cy={cy} r={r} />
-      <line x1={cx - r * d} y1={cy - r * d} x2={cx - ri * d} y2={cy - ri * d} />
-      <line x1={cx + r * d} y1={cy - r * d} x2={cx + ri * d} y2={cy - ri * d} />
-      <line x1={cx - r * d} y1={cy + r * d} x2={cx - ri * d} y2={cy + ri * d} />
-      <line x1={cx + r * d} y1={cy + r * d} x2={cx + ri * d} y2={cy + ri * d} />
-      <circle cx={cx} cy={cy} r={ri} />
-    </g>
-  );
-}
-
 // ---- Componente ----
 export function OdontogramaDibujo({
   pacienteId,
@@ -287,7 +231,7 @@ export function OdontogramaDibujo({
       .then((r) => r.json())
       .then((d) => {
         if (!vivo) return;
-        setElementos(d.elementos ?? []);
+        setElementos((d.elementos ?? []).map(migrar));
         if (d.actualizado_en) {
           setInfo(
             `Guardado ${new Date(d.actualizado_en).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}${
@@ -354,17 +298,17 @@ export function OdontogramaDibujo({
     const [x, y] = punto(e);
     if (herramienta === "lapiz") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
-      setActual({ t: "trazo", color, puntos: [[x, y]] });
+      setActual({ t: "trazo", color, puntos: [[x, y]], v: 2 });
     } else if (herramienta === "linea") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
-      setActual({ t: "linea", color, x1: x, y1: y, x2: x, y2: y });
+      setActual({ t: "linea", color, x1: x, y1: y, x2: x, y2: y, v: 2 });
     } else if (herramienta === "sello") {
-      cambiar([...elementos, { t: "sello", color, forma: sello, x, y }]);
+      cambiar([...elementos, { t: "sello", color, forma: sello, x, y, v: 2 }]);
       setDienteSugerido(null);
     } else if (herramienta === "texto") {
       const diente = dienteEn(x, y);
       if (diente !== null) {
-        cambiar([...elementos, { t: "texto", color, texto: abreviatura, diente }]);
+        cambiar([...elementos, { t: "texto", color, texto: abreviatura, diente, v: 2 }]);
         setDienteSugerido(null);
       }
     }
@@ -375,7 +319,7 @@ export function OdontogramaDibujo({
     const [x, y] = punto(e);
     if (actual.t === "trazo") {
       const ult = actual.puntos[actual.puntos.length - 1];
-      if (Math.hypot(x - ult[0], y - ult[1]) < 1.5) return;
+      if (Math.hypot(x - ult[0], y - ult[1]) < 2.5) return;
       setActual({ ...actual, puntos: [...actual.puntos, [x, y]] });
     } else if (actual.t === "linea") {
       setActual({ ...actual, x2: x, y2: y });
@@ -386,7 +330,7 @@ export function OdontogramaDibujo({
     if (!actual) return;
     const valido =
       (actual.t === "trazo" && actual.puntos.length > 1) ||
-      (actual.t === "linea" && Math.hypot(actual.x2 - actual.x1, actual.y2 - actual.y1) > 3);
+      (actual.t === "linea" && Math.hypot(actual.x2 - actual.x1, actual.y2 - actual.y1) > 5);
     if (valido) cambiar([...elementos, actual]);
     setActual(null);
   }
@@ -446,24 +390,24 @@ export function OdontogramaDibujo({
       const d = el.puntos.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ");
       return (
         <g key={indice} onPointerDown={clickBorrar} style={{ cursor }}>
-          <path d={d} stroke="transparent" strokeWidth={12} fill="none" />
-          <path d={d} stroke={el.color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={d} stroke="transparent" strokeWidth={20} fill="none" />
+          <path d={d} stroke={el.color} strokeWidth={2 * K} fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </g>
       );
     }
     if (el.t === "linea") {
       return (
         <g key={indice} onPointerDown={clickBorrar} style={{ cursor }}>
-          <line x1={el.x1} y1={el.y1} x2={el.x2} y2={el.y2} stroke="transparent" strokeWidth={12} />
-          <line x1={el.x1} y1={el.y1} x2={el.x2} y2={el.y2} stroke={el.color} strokeWidth={2} strokeLinecap="round" />
+          <line x1={el.x1} y1={el.y1} x2={el.x2} y2={el.y2} stroke="transparent" strokeWidth={20} />
+          <line x1={el.x1} y1={el.y1} x2={el.x2} y2={el.y2} stroke={el.color} strokeWidth={2 * K} strokeLinecap="round" />
         </g>
       );
     }
     if (el.t === "sello") {
       return (
         <g key={indice} onPointerDown={clickBorrar} style={{ cursor }}>
-          <circle cx={el.x} cy={el.y} r={14} fill="transparent" />
-          <Sello forma={el.forma} color={el.color} x={el.x} y={el.y} />
+          <circle cx={el.x} cy={el.y} r={14 * K} fill="transparent" />
+          <Sello forma={el.forma} color={el.color} x={el.x} y={el.y} escala={K} />
         </g>
       );
     }
@@ -472,23 +416,26 @@ export function OdontogramaDibujo({
 
   function columnaDiente(numero: number, col: number, arriba: boolean) {
     const x = colX(col);
-    const cx = x + ANCHO_COL / 2;
+    const w = anchoCol(col);
+    const cx = x + w / 2;
     const caja = arriba ? CAJA_SUP : CAJA_INF;
     const textos = textosPorDiente.get(numero) ?? [];
     const resaltado = dienteSugerido === numero;
     return (
       <g key={numero}>
         {resaltado && (
-          <rect x={x + 1} y={arriba ? 0 : LINEA_MEDIA_Y + 2} width={ANCHO_COL - 2} height={LINEA_MEDIA_Y - 2} rx={6} fill="#FFF3C4" />
+          <rect
+            x={x + 2}
+            y={arriba ? FRANJA + 34 : LINEA_MEDIA_Y + 2}
+            width={w - 4}
+            height={arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4}
+            rx={8}
+            fill="#F0C24E"
+            fillOpacity={0.28}
+          />
         )}
-        <rect x={x + 3} y={caja.y} width={ANCHO_COL - 6} height={caja.h} rx={2} fill="white" stroke="#9a9180" strokeWidth={0.8} />
-        <text
-          x={cx}
-          y={caja.y + caja.h / 2 + 3.5}
-          textAnchor="middle"
-          fontSize={textos.length > 1 ? 7 : 9}
-          fontWeight={700}
-        >
+        <rect x={x + 4} y={caja.y} width={w - 8} height={caja.h} rx={3} fill="white" stroke="#9a9180" strokeWidth={1.2} />
+        <text x={cx} y={caja.y + caja.h / 2 + 6} textAnchor="middle" fontSize={textos.length > 1 ? 12 : 16} fontWeight={700}>
           {textos.map((t, i) => (
             <tspan
               key={t.indice}
@@ -501,19 +448,6 @@ export function OdontogramaDibujo({
             </tspan>
           ))}
         </text>
-        <text x={cx} y={arriba ? 34 : 240} textAnchor="middle" fontSize={8} fill="#8a8272" fontWeight={600}>
-          {numero}
-        </text>
-        <svg
-          x={cx - DIENTE_W / 2}
-          y={arriba ? DIENTE_SUP_Y : DIENTE_INF_Y}
-          width={DIENTE_W}
-          height={DIENTE_H}
-          style={{ stroke: "#5a5246", strokeWidth: 0.7 }}
-        >
-          <DienteMedico numero={numero} superior={Math.floor(numero / 10) <= 2} />
-        </svg>
-        <CirculoSuperficies cx={cx} cy={arriba ? SUPERFICIES_SUP_Y : SUPERFICIES_INF_Y} />
       </g>
     );
   }
@@ -660,29 +594,13 @@ export function OdontogramaDibujo({
             ref={svgRef}
             viewBox={`0 0 ${ANCHO_TOTAL} ${ALTO_TOTAL}`}
             className="block w-full select-none"
-            style={{ minWidth: 640, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }}
+            style={{ minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }}
             onPointerDown={alPresionar}
             onPointerMove={alMover}
             onPointerUp={alSoltar}
             onPointerCancel={alSoltar}
           >
-            <line
-              x1={MARGEN}
-              x2={ANCHO_TOTAL - MARGEN}
-              y1={LINEA_MEDIA_Y}
-              y2={LINEA_MEDIA_Y}
-              stroke="#cfc6b4"
-              strokeDasharray="4 3"
-              strokeWidth={0.8}
-            />
-            <line
-              x1={colX(8) - HUECO_LINEA_MEDIA / 2}
-              x2={colX(8) - HUECO_LINEA_MEDIA / 2}
-              y1={0}
-              y2={ALTO_TOTAL}
-              stroke="#cfc6b4"
-              strokeWidth={0.8}
-            />
+            <image href="/odontograma-carta.jpg" x={0} y={FRANJA} width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
             {ARCO_SUPERIOR.map((n, i) => columnaDiente(n, i, true))}
             {ARCO_INFERIOR_VISUAL.map((n, i) => columnaDiente(n, i, false))}
             {elementos.map((el, i) => renderElemento(el, i))}
