@@ -130,6 +130,15 @@ const SELLOS: { forma: FormaSello; label: string }[] = [
   { forma: "triangulo", label: "Endodoncia" },
 ];
 
+// Abreviatura que, por convención, acompaña a un símbolo: al ponerlo en
+// el diente se escribe sola en su recuadro.
+const ABREVIATURA_DE_SELLO: Partial<Record<FormaSello, string>> = {
+  doble_linea: "RR",
+  linea_v: "TCC",
+  triangulo: "TCC",
+  circulo: "CC",
+};
+
 const ABREVIATURAS = [
   "S", "RR", "MAC", "MIC", "M1", "M2", "M3", "IMP",
   "ATR", "ABR", "ERS", "ABF", "TCC", "PC", "PP",
@@ -356,7 +365,17 @@ export function OdontogramaDibujo({
       (e.target as Element).setPointerCapture?.(e.pointerId);
       setActual(conD({ t: "linea", color, x1: x, y1: y, x2: x, y2: y, v: 2 }));
     } else if (herramienta === "sello") {
-      cambiar([...elementos, conD({ t: "sello", color, forma: sello, x, y, v: 2 })]);
+      const nuevos: Elemento[] = [...elementos, conD({ t: "sello", color, forma: sello, x, y, v: 2 })];
+      const abrev = ABREVIATURA_DE_SELLO[sello];
+      const dienteSello = lienzo ?? dienteEn(x, y);
+      if (
+        abrev &&
+        dienteSello !== null &&
+        !elementos.some((el) => el.t === "texto" && el.diente === dienteSello && el.texto === abrev)
+      ) {
+        nuevos.push({ t: "texto", color, texto: abrev, diente: dienteSello, v: 2 });
+      }
+      cambiar(nuevos);
       setEditando(elementos.length);
       setDienteSugerido(null);
     } else if (herramienta === "texto") {
@@ -837,6 +856,11 @@ function PantallaCompleta(props: {
                     >
                       <MiniSello forma={s.forma} color={color} />
                       <span className="text-center">{s.label}</span>
+                      {ABREVIATURA_DE_SELLO[s.forma] && (
+                        <span className="font-serif text-[11px] font-bold italic" style={{ color }}>
+                          + {ABREVIATURA_DE_SELLO[s.forma]}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
