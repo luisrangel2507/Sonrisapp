@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Plus } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Pencil, Plus } from "lucide-react";
 import { OdontogramaDibujo } from "@/components/OdontogramaDibujo";
 import {
   ARCO_SUPERIOR,
@@ -463,6 +463,14 @@ function FilaCarta({
 
 export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [vista, setVista] = useState<"foto" | "carta" | "simbolos" | "marcar">("foto");
+  const [dienteMarcar, setDienteMarcar] = useState<number | null>(null);
+  const raizRef = useRef<HTMLDivElement>(null);
+
+  function irAMarcar(n: number) {
+    setDienteMarcar(n);
+    setVista("marcar");
+    raizRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   const [seleccionado, setSeleccionado] = useState<number>(16);
   const [historial, setHistorial] = useState<HistorialDental>({});
   const [cargando, setCargando] = useState(true);
@@ -607,7 +615,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   }
 
   return (
-    <div className={`space-y-4 md:mx-auto ${vista === "marcar" ? "md:max-w-4xl" : "md:max-w-xl"}`}>
+    <div ref={raizRef} className={`scroll-mt-4 space-y-4 md:mx-auto ${vista === "marcar" ? "md:max-w-4xl" : "md:max-w-xl"}`}>
       <div
         className="relative overflow-hidden rounded-[28px] border border-white/10 p-5"
         style={{ background: "radial-gradient(circle at 50% 0%, #241a38 0%, #120d1c 65%, #0a0714 100%)" }}
@@ -704,7 +712,13 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             />
           </div>
         ) : vista === "marcar" ? (
-          <OdontogramaDibujo pacienteId={paciente.id} historial={historial} etiquetasEstado={mapaEstados} />
+          <OdontogramaDibujo
+            pacienteId={paciente.id}
+            historial={historial}
+            etiquetasEstado={mapaEstados}
+            dienteFoco={dienteMarcar}
+            onCambiarFoco={setDienteMarcar}
+          />
         ) : (
           <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-2 flex items-center gap-1.5 text-[10px] leading-snug text-white/40">
@@ -759,6 +773,13 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
               {estado.label}
             </div>
           </div>
+          <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={() => irAMarcar(seleccionado)}
+            className="flex items-center gap-1 rounded-full bg-[#7C5CE0] px-3 py-1 text-[11px] font-semibold text-white"
+          >
+            <Pencil size={11} /> Marcar en carta
+          </button>
           <span
             className="rounded-full px-3 py-1 text-[11px] font-semibold text-white"
             style={{ backgroundColor: `rgba(${estado.glow},0.25)`, border: `1px solid ${estado.ring}` }}
@@ -770,6 +791,7 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                   return `${n} registro${n === 1 ? "" : "s"}`;
                 })()}
           </span>
+          </div>
         </div>
 
         <div className="mt-4 space-y-3">

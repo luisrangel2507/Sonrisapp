@@ -206,10 +206,16 @@ export function OdontogramaDibujo({
   pacienteId,
   historial,
   etiquetasEstado,
+  dienteFoco = null,
+  onCambiarFoco,
 }: {
   pacienteId: number;
   historial: HistorialDental;
   etiquetasEstado: Record<string, { label: string }>;
+  // Diente elegido desde el odontograma 3D/foto: la carta se acerca a
+  // esa pieza para marcarla con precisión.
+  dienteFoco?: number | null;
+  onCambiarFoco?: (n: number | null) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [elementos, setElementos] = useState<Elemento[]>([]);
@@ -371,6 +377,30 @@ export function OdontogramaDibujo({
     }
     setDienteSugerido(s.diente);
   }
+
+  // Al llegar desde el 3D con un diente elegido: se resalta y, si ya
+  // tiene una condición registrada, se deja listo su símbolo/color.
+  useEffect(() => {
+    if (dienteFoco == null) return;
+    const s = sugerencias.find((x) => x.diente === dienteFoco);
+    if (s) usarSugerencia(s);
+    else setDienteSugerido(dienteFoco);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dienteFoco]);
+
+  const vistaCaja = useMemo(() => {
+    if (dienteFoco == null) return `0 0 ${ANCHO_TOTAL} ${ALTO_TOTAL}`;
+    const iSup = ARCO_SUPERIOR.indexOf(dienteFoco);
+    const arriba = iSup !== -1;
+    const col = arriba ? iSup : ARCO_INFERIOR_VISUAL.indexOf(dienteFoco);
+    if (col === -1) return `0 0 ${ANCHO_TOTAL} ${ALTO_TOTAL}`;
+    const centro = colX(col) + anchoCol(col) / 2;
+    const ancho = 240;
+    const x0 = Math.min(Math.max(0, centro - ancho / 2), ANCHO_TOTAL - ancho);
+    const y0 = arriba ? 0 : LINEA_MEDIA_Y - 6;
+    const alto = arriba ? LINEA_MEDIA_Y + 6 : ALTO_TOTAL - y0;
+    return `${x0} ${y0} ${ancho} ${alto}`;
+  }, [dienteFoco]);
 
   const textosPorDiente = useMemo(() => {
     const mapa = new Map<number, { texto: string; color: string; indice: number }[]>();
@@ -586,15 +616,33 @@ export function OdontogramaDibujo({
       )}
 
       {/* Carta */}
+      {dienteFoco != null && (
+        <div className="flex items-center justify-between rounded-2xl border border-[#F0C24E]/40 bg-[#F0C24E]/10 px-3 py-2">
+          <span className="text-[12px] font-semibold text-[#F0C24E]">Diente {dienteFoco} — acercado para marcar</span>
+          <button
+            onClick={() => {
+              onCambiarFoco?.(null);
+              setDienteSugerido(null);
+            }}
+            className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white"
+          >
+            Ver carta completa
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto rounded-2xl bg-white p-2">
         {cargando ? (
           <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p>
         ) : (
           <svg
             ref={svgRef}
-            viewBox={`0 0 ${ANCHO_TOTAL} ${ALTO_TOTAL}`}
-            className="block w-full select-none"
-            style={{ minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }}
+            viewBox={vistaCaja}
+            className={`block select-none ${dienteFoco != null ? "mx-auto" : "w-full"}`}
+            style={
+              dienteFoco != null
+                ? { height: "min(70vh, 640px)", width: "auto", maxWidth: "100%", touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
+                : { minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
+            }
             onPointerDown={alPresionar}
             onPointerMove={alMover}
             onPointerUp={alSoltar}
