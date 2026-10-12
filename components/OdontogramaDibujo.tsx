@@ -884,7 +884,7 @@ function PantallaCompleta(props: {
   cerrar: () => void;
 }) {
   const { herramienta, setHerramienta, color } = props;
-  const [panel, setPanel] = useState(true);
+  const [panel, setPanel] = useState(false);
   const [libre, setLibre] = useState("");
 
   useEffect(() => {
