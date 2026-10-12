@@ -564,36 +564,6 @@ export function OdontogramaDibujo({
         Toca un diente de la carta para abrirlo en pantalla completa y marcarlo.
       </p>
 
-      {/* Sugerencias desde el odontograma 3D */}
-      {sugerencias.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-            Condiciones ya registradas — toca para abrir el diente
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {sugerencias.map((s) => (
-              <button
-                key={s.diente}
-                onClick={() => onCambiarFoco?.(s.diente)}
-                className={`flex items-center gap-1.5 rounded-xl border bg-white/90 px-2 py-1 text-[11px] text-[#2b2118] ${
-                  dienteSugerido === s.diente ? "border-[#F0C24E]" : "border-transparent"
-                }`}
-              >
-                <span className="font-bold text-[#8a8272]">{s.diente}</span>
-                {s.letra ? (
-                  <span className="font-bold" style={{ color: s.color }}>
-                    {s.letra}
-                  </span>
-                ) : (
-                  <MiniSello forma={s.forma} color={s.color} />
-                )}
-                <span className="max-w-[140px] truncate">{s.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Carta */}
       {dienteFoco != null && (
         <div className="flex items-center justify-between rounded-2xl border border-[#F0C24E]/40 bg-[#F0C24E]/10 px-3 py-2">
