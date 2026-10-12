@@ -132,47 +132,6 @@ export function IconoDiente({ numero }: { numero: number }) {
   );
 }
 
-function CasillaCarta({
-  numero,
-  arriba,
-  estado,
-  activo,
-  onClick,
-  mapaEstados,
-}: {
-  numero: number;
-  arriba: boolean;
-  estado: EstadoDiente;
-  activo: boolean;
-  onClick: () => void;
-  mapaEstados: MapaEstados;
-}) {
-  const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
-  const etiqueta = (
-    <span className={`text-[9px] font-semibold ${activo ? "text-white" : "text-white/50"}`}>{numero}</span>
-  );
-  return (
-    <button onClick={onClick} aria-label={`Diente ${numero}`} className="flex shrink-0 flex-col items-center gap-1">
-      {arriba && etiqueta}
-      <div
-        style={{
-          width: 22,
-          height: 58,
-          color: est.ring,
-          fill: activo ? `rgba(${est.glow},0.55)` : estado === "sano" ? "rgba(255,255,255,0.06)" : `rgba(${est.glow},0.28)`,
-          stroke: est.ring,
-          strokeWidth: activo ? 1.1 : 0.6,
-          filter: activo ? `drop-shadow(0 0 4px rgba(${est.glow},0.7))` : undefined,
-          transition: "filter 0.15s",
-        }}
-      >
-        <IconoDiente numero={numero} />
-      </div>
-      {!arriba && etiqueta}
-    </button>
-  );
-}
-
 function estiloPoligono(estado: EstadoDiente, activo: boolean, mapaEstados: MapaEstados): CSSProperties {
   const est = mapaEstados[estado] ?? ESTADO_DIENTE.sano;
   if (activo) {
@@ -275,43 +234,6 @@ function FilaEtiquetas({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-// Fila de 16 dientes partida en dos cuadrantes con una línea divisoria
-// bien visible en medio — como en las cartas dentales clásicas, para
-// que se distingan las 4 zonas de un vistazo (no solo un espacio).
-function FilaCarta({
-  numeros,
-  arriba,
-  historial,
-  seleccionado,
-  onSeleccionar,
-  mapaEstados,
-}: {
-  numeros: number[];
-  arriba: boolean;
-  historial: HistorialDental;
-  seleccionado: number;
-  onSeleccionar: (n: number) => void;
-  mapaEstados: MapaEstados;
-}) {
-  return (
-    <div className="flex w-max items-stretch justify-center gap-[3px]">
-      {numeros.map((n, i) => (
-        <Fragment key={n}>
-          {i === 8 && <div className="mx-2 w-px self-stretch bg-white/20" />}
-          <CasillaCarta
-            numero={n}
-            arriba={arriba}
-            estado={historial[n]?.estado ?? "sano"}
-            activo={n === seleccionado}
-            onClick={() => onSeleccionar(n)}
-            mapaEstados={mapaEstados}
-          />
-        </Fragment>
-      ))}
     </div>
   );
 }
@@ -548,25 +470,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
           </div>
         ) : (
           <>
-          <div className="mt-4 space-y-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4">
-            <FilaCarta
-              numeros={ARCO_SUPERIOR}
-              arriba
-              historial={historial}
-              seleccionado={seleccionado}
-              onSeleccionar={seleccionar}
-              mapaEstados={mapaEstados}
-            />
-            <div className="border-t border-dashed border-white/15" />
-            <FilaCarta
-              numeros={ARCO_INFERIOR_VISUAL}
-              arriba={false}
-              historial={historial}
-              seleccionado={seleccionado}
-              onSeleccionar={seleccionar}
-              mapaEstados={mapaEstados}
-            />
-          </div>
           <OdontogramaDibujo
             pacienteId={paciente.id}
             historial={historial}
