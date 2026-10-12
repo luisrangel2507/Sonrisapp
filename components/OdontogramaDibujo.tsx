@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Eraser, Hand, Minus, Pencil, Save, Stamp, Type, Undo2, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Eraser, Hand, Minus, Pencil, Save, Stamp, Type, Undo2, Trash2, X } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
@@ -490,6 +491,71 @@ export function OdontogramaDibujo({
     { h: "mover", label: "Desplazar", icon: <Hand size={14} /> },
   ];
 
+  const carta = (
+<svg
+  ref={svgRef}
+  viewBox={vistaCaja}
+  preserveAspectRatio="xMidYMid meet"
+  className={`block select-none ${dienteFoco != null ? "h-full w-full" : "w-full"}`}
+  style={
+    dienteFoco != null
+      ? { overflow: "hidden", touchAction: "none" }
+      : { minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
+  }
+  onPointerDown={alPresionar}
+  onPointerMove={alMover}
+  onPointerUp={alSoltar}
+  onPointerCancel={alSoltar}
+>
+  <defs>
+    <clipPath id="recorte-diente">
+      {(() => {
+        const [x, y, w, h] = vistaCaja.split(" ").map(Number);
+        return <rect x={x} y={y} width={w} height={h} />;
+      })()}
+    </clipPath>
+  </defs>
+  <g clipPath={dienteFoco != null ? "url(#recorte-diente)" : undefined}>
+    <image href="/odontograma-carta.jpg" x={0} y={FRANJA} width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
+    {ARCO_SUPERIOR.map((n, i) => columnaDiente(n, i, true))}
+    {ARCO_INFERIOR_VISUAL.map((n, i) => columnaDiente(n, i, false))}
+    {elementos.map((el, i) => renderElemento(el, i))}
+    {actual && renderElemento(actual, -1, true)}
+  </g>
+</svg>
+  );
+
+  if (dienteFoco != null) {
+    return (
+      <PantallaCompleta
+        diente={dienteFoco}
+        carta={cargando ? <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p> : carta}
+        herramienta={herramienta}
+        setHerramienta={setHerramienta}
+        color={color}
+        setColor={setColor}
+        sello={sello}
+        setSello={setSello}
+        abreviatura={abreviatura}
+        setAbreviatura={setAbreviatura}
+        puedeDeshacer={pila.length > 0}
+        deshacer={deshacer}
+        pendiente={pendiente}
+        guardando={guardando}
+        guardar={guardar}
+        sugerencia={sugerencias.find((x) => x.diente === dienteFoco)?.label ?? null}
+        usarSugerencia={() => {
+          const sg = sugerencias.find((x) => x.diente === dienteFoco);
+          if (sg) usarSugerencia(sg);
+        }}
+        cerrar={() => {
+          onCambiarFoco?.(null);
+          setDienteSugerido(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="mt-4 space-y-3">
       {/* Barra de herramientas */}
@@ -635,26 +701,7 @@ export function OdontogramaDibujo({
         {cargando ? (
           <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p>
         ) : (
-          <svg
-            ref={svgRef}
-            viewBox={vistaCaja}
-            className={`block select-none ${dienteFoco != null ? "mx-auto" : "w-full"}`}
-            style={
-              dienteFoco != null
-                ? { overflow: "hidden", height: "min(70vh, 640px)", width: "auto", maxWidth: "100%", touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
-                : { minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
-            }
-            onPointerDown={alPresionar}
-            onPointerMove={alMover}
-            onPointerUp={alSoltar}
-            onPointerCancel={alSoltar}
-          >
-            <image href="/odontograma-carta.jpg" x={0} y={FRANJA} width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
-            {ARCO_SUPERIOR.map((n, i) => columnaDiente(n, i, true))}
-            {ARCO_INFERIOR_VISUAL.map((n, i) => columnaDiente(n, i, false))}
-            {elementos.map((el, i) => renderElemento(el, i))}
-            {actual && renderElemento(actual, -1, true)}
-          </svg>
+          carta
         )}
       </div>
       </div>
@@ -673,3 +720,208 @@ export function OdontogramaDibujo({
   );
 }
 
+
+
+// Modo pantalla completa al venir de un diente del 3D: el diente ocupa
+// casi toda la pantalla y las herramientas quedan en un riel al lado,
+// a un toque del dedo. Las abreviaturas se eligen de chips grandes o se
+// escriben libres.
+function PantallaCompleta(props: {
+  diente: number;
+  carta: React.ReactNode;
+  herramienta: Herramienta;
+  setHerramienta: (h: Herramienta) => void;
+  color: string;
+  setColor: (c: string) => void;
+  sello: FormaSello;
+  setSello: (f: FormaSello) => void;
+  abreviatura: string;
+  setAbreviatura: (a: string) => void;
+  puedeDeshacer: boolean;
+  deshacer: () => void;
+  pendiente: boolean;
+  guardando: boolean;
+  guardar: () => void;
+  sugerencia: string | null;
+  usarSugerencia: () => void;
+  cerrar: () => void;
+}) {
+  const { herramienta, setHerramienta, color } = props;
+  const [panel, setPanel] = useState(true);
+  const [libre, setLibre] = useState("");
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  function elegir(h: Herramienta) {
+    if (h === herramienta && (h === "sello" || h === "texto")) setPanel((v) => !v);
+    else setPanel(true);
+    setHerramienta(h);
+  }
+
+  const riel: { h: Herramienta; label: string; icon: React.ReactNode }[] = [
+    { h: "lapiz", label: "Lápiz", icon: <Pencil size={20} /> },
+    { h: "linea", label: "Línea", icon: <Minus size={20} /> },
+    { h: "sello", label: "Símbolo", icon: <Stamp size={20} /> },
+    { h: "texto", label: "Abrev.", icon: <Type size={20} /> },
+    { h: "borrar", label: "Borrar", icon: <Eraser size={20} /> },
+  ];
+
+  const mostrarPanel = panel && (herramienta === "sello" || herramienta === "texto");
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[70] flex flex-col bg-[#15101f]"
+      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex items-center gap-2 px-3 py-2">
+        <button onClick={props.cerrar} className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-2 text-[13px] font-semibold text-white">
+          <X size={16} /> Cerrar
+        </button>
+        <div className="flex-1 text-center">
+          <div className="text-[10px] uppercase tracking-widest text-white/40">Marcando</div>
+          <div className="text-[17px] font-bold text-[#F0C24E]">Diente {props.diente}</div>
+        </div>
+        <button
+          onClick={props.guardar}
+          disabled={!props.pendiente || props.guardando}
+          className="flex items-center gap-1 rounded-full bg-[#7C5CE0] px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-40"
+        >
+          <Save size={15} /> {props.guardando ? "…" : props.pendiente ? "Guardar" : "Guardado"}
+        </button>
+      </div>
+
+      {props.sugerencia && (
+        <button
+          onClick={props.usarSugerencia}
+          className="mx-3 mb-2 flex items-center justify-center gap-2 rounded-2xl border border-[#F0C24E]/40 bg-[#F0C24E]/10 px-3 py-2 text-[12px] text-[#F0C24E]"
+        >
+          Registrado en 3D: <span className="font-bold">{props.sugerencia}</span> — toca el diente para colocarlo
+        </button>
+      )}
+
+      <div className="flex min-h-0 flex-1 gap-2 px-3 pb-3">
+        <div className="relative min-w-0 flex-1 overflow-hidden rounded-3xl bg-white p-2">
+          {props.carta}
+
+          {mostrarPanel && (
+            <div className="absolute inset-x-2 bottom-2 max-h-[45%] overflow-y-auto rounded-2xl border border-white/10 bg-[#211a2e]/95 p-3 shadow-2xl backdrop-blur">
+              {herramienta === "sello" ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {SELLOS.map((s) => (
+                    <button
+                      key={s.forma}
+                      onClick={() => {
+                        props.setSello(s.forma);
+                        setPanel(false);
+                      }}
+                      className={`flex flex-col items-center gap-1 rounded-xl p-2 text-[10px] leading-tight ${
+                        props.sello === s.forma ? "bg-white text-[#2b2118] ring-2 ring-[#F0C24E]" : "bg-white/90 text-[#2b2118]/70"
+                      }`}
+                    >
+                      <MiniSello forma={s.forma} color={color} />
+                      <span className="text-center">{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    {ABREVIATURAS.map((a) => (
+                      <button
+                        key={a}
+                        onClick={() => {
+                          props.setAbreviatura(a);
+                          setPanel(false);
+                        }}
+                        className={`rounded-xl py-2.5 font-serif text-[18px] font-bold italic tracking-wide shadow-sm ${
+                          props.abreviatura === a ? "bg-white ring-2 ring-[#F0C24E]" : "bg-white/90"
+                        }`}
+                        style={{ color }}
+                      >
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                  <form
+                    className="flex gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const t = libre.trim().toUpperCase();
+                      if (!t) return;
+                      props.setAbreviatura(t.slice(0, 6));
+                      setLibre("");
+                      setPanel(false);
+                    }}
+                  >
+                    <input
+                      value={libre}
+                      onChange={(e) => setLibre(e.target.value)}
+                      maxLength={6}
+                      placeholder="Escribir otra…"
+                      className="min-w-0 flex-1 rounded-xl bg-white px-3 py-2 font-serif text-[16px] font-bold italic uppercase outline-none"
+                      style={{ color }}
+                    />
+                    <button className="rounded-xl bg-[#7C5CE0] px-4 text-[13px] font-semibold text-white">Usar</button>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(herramienta === "sello" || herramienta === "texto") && !mostrarPanel && (
+            <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+              <span className="flex items-center gap-1.5 rounded-full bg-[#2b2118]/85 px-3 py-1 text-[12px] text-white">
+                Toca el diente para poner
+                {herramienta === "sello" ? (
+                  <MiniSello forma={props.sello} color={color} />
+                ) : (
+                  <b className="font-serif italic" style={{ color }}>{props.abreviatura}</b>
+                )}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex w-[60px] shrink-0 flex-col items-center gap-1.5 overflow-y-auto rounded-3xl bg-white/5 py-2">
+          <button
+            onClick={props.deshacer}
+            disabled={!props.puedeDeshacer}
+            className="flex w-[50px] flex-col items-center gap-0.5 rounded-2xl bg-white py-2 text-[8px] font-semibold text-[#2b2118] active:scale-95 disabled:opacity-30"
+          >
+            <Undo2 size={20} /> Deshacer
+          </button>
+          <div className="my-0.5 h-px w-8 bg-white/10" />
+          {riel.map((b) => (
+            <button
+              key={b.h}
+              onClick={() => elegir(b.h)}
+              className={`flex w-[50px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[9px] font-medium ${
+                herramienta === b.h ? "bg-[#7C5CE0] text-white" : "text-white/60"
+              }`}
+            >
+              {b.icon}
+              {b.label}
+            </button>
+          ))}
+          <div className="my-0.5 h-px w-8 bg-white/10" />
+          {COLORES.map((c) => (
+            <button
+              key={c.valor}
+              onClick={() => props.setColor(c.valor)}
+              aria-label={c.label}
+              className={`h-8 w-8 shrink-0 rounded-full border-[3px] ${color === c.valor ? "border-white" : "border-transparent"}`}
+              style={{ backgroundColor: c.valor }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
