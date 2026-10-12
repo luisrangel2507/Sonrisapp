@@ -48,7 +48,7 @@ function dienteEn(x: number, y: number): number | null {
 
 // Dientes con ilustración realista propia (public/dientes/N.jpg) que
 // sustituye al dibujo de línea de la carta en su columna.
-const DIENTES_REALISTAS = new Set<number>([18, 17]);
+const DIENTES_REALISTAS = new Set<number>([18, 17, 16]);
 
 // Lienzo propio de un diente realista en pantalla completa: las marcas
 // de ese diente se guardan en estas coordenadas (con d = número) y en
