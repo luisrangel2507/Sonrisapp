@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Eraser, Hand, Minus, Pencil, Save, Stamp, Type, Undo2, Trash2 } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
-import { IconoDiente } from "@/components/Odontograma";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
 const ANCHO_COL = 38;
@@ -12,11 +11,16 @@ const MARGEN = 10;
 const ANCHO_TOTAL = MARGEN * 2 + 16 * ANCHO_COL + HUECO_LINEA_MEDIA;
 const ALTO_TOTAL = 268;
 const LINEA_MEDIA_Y = 132;
-const DIENTE_W = 30;
-const DIENTE_H = 80;
+const DIENTE_W = 28;
+const DIENTE_H = 68;
 const CAJA_SUP = { y: 4, h: 18 };
 const DIENTE_SUP_Y = 40;
-const DIENTE_INF_Y = 144;
+const DIENTE_INF_Y = 158;
+// Círculo de 5 superficies (oclusal al centro; mesial, distal,
+// vestibular y lingual/palatino alrededor), pegado a la línea media.
+const SUPERFICIES_SUP_Y = 117;
+const SUPERFICIES_INF_Y = 147;
+const SUPERFICIES_R = 9;
 const CAJA_INF = { y: 246, h: 18 };
 
 const ARCO_INFERIOR_VISUAL = [...ARCO_INFERIOR].reverse();
@@ -179,6 +183,77 @@ function MiniSello({ forma, color }: { forma: FormaSello; color: string }) {
     <svg viewBox="-18 -18 36 36" width={26} height={26}>
       <Sello forma={forma} color={color} x={0} y={0} />
     </svg>
+  );
+}
+
+// ---- Figuras de diente estilo odontograma médico ----
+// Vista vestibular en un recuadro de 24×58: raíces arriba (0-33) y
+// corona abajo (32-56), como un diente superior. Los inferiores se
+// dibujan con el mismo trazo reflejado (corona arriba, raíces abajo).
+const CORONA_MEDICA: Record<string, string> = {
+  incisivo_central: "M6.5,32 L17.5,32 L18.5,51 Q12,57 5.5,51 Z",
+  incisivo_lateral: "M7.5,32 L16.5,32 L17,50 Q12,55.5 7,50 Z",
+  canino: "M6,32 L18,32 L18.5,47 L12,57 L5.5,47 Z",
+  premolar: "M5,32 L19,32 L19.5,47 Q17,55.5 14.5,51.5 Q12,49.5 9.5,51.5 Q7,55.5 4.5,47 Z",
+  molar:
+    "M2.5,32 L21.5,32 L22,46 Q20.5,55 17.5,51 Q15.5,48.5 14,51.5 Q12,55 10,51.5 Q8.5,48.5 6.5,51 Q3.5,55 2,46 Z",
+};
+const RAIZ_MEDICA: Record<string, string> = {
+  incisivo_central: "M7.5,32.5 Q8.5,12 12,3 Q15.5,12 16.5,32.5",
+  incisivo_lateral: "M8.5,32.5 Q9.5,14 12,6 Q14.5,14 15.5,32.5",
+  canino: "M7,32.5 Q8.5,9 12,0 Q15.5,9 17,32.5",
+  premolar_dos: "M6,32.5 Q6,16 8.5,7 Q11,16 11.5,26 Q12,24 12.5,26 Q13,16 15.5,7 Q18,16 18,32.5",
+  premolar: "M6.5,32.5 Q8,13 12,4 Q16,13 17.5,32.5",
+  molar_superior:
+    "M3.5,32.5 Q2,17 5,6 Q8.5,15 9.5,25 Q10.5,18 12,10 Q13.5,18 14.5,25 Q15.5,15 19,6 Q22,17 20.5,32.5",
+  molar_inferior: "M3.5,32.5 Q2.5,16 6,5 Q9.5,15 10.5,25 Q12,21 13.5,25 Q14.5,15 18,5 Q21.5,16 20.5,32.5",
+};
+
+const CUELLO: Record<string, [number, number]> = {
+  incisivo_central: [6.5, 17.5],
+  incisivo_lateral: [7.5, 16.5],
+  canino: [6, 18],
+  premolar: [5, 19],
+  molar: [2.5, 21.5],
+};
+
+function tipoDiente(numero: number, superior: boolean) {
+  const pos = numero % 10;
+  if (pos === 1) return { corona: "incisivo_central", raiz: "incisivo_central" };
+  if (pos === 2) return { corona: "incisivo_lateral", raiz: "incisivo_lateral" };
+  if (pos === 3) return { corona: "canino", raiz: "canino" };
+  if (pos === 4) return { corona: "premolar", raiz: superior ? "premolar_dos" : "premolar" };
+  if (pos === 5) return { corona: "premolar", raiz: "premolar" };
+  return { corona: "molar", raiz: superior ? "molar_superior" : "molar_inferior" };
+}
+
+function DienteMedico({ numero, superior }: { numero: number; superior: boolean }) {
+  const { corona, raiz } = tipoDiente(numero, superior);
+  return (
+    <svg viewBox="0 0 24 58" width="100%" height="100%" overflow="visible">
+      <g transform={superior ? undefined : "translate(0,58) scale(1,-1)"}>
+        <path d={RAIZ_MEDICA[raiz]} fill="white" />
+        <path d={CORONA_MEDICA[corona]} fill="white" strokeLinejoin="round" />
+        {/* línea cervical (cuello) */}
+        <line x1={CUELLO[corona][0]} y1={32} x2={CUELLO[corona][1]} y2={32} />
+      </g>
+    </svg>
+  );
+}
+
+function CirculoSuperficies({ cx, cy }: { cx: number; cy: number }) {
+  const r = SUPERFICIES_R;
+  const ri = r * 0.42;
+  const d = Math.SQRT1_2;
+  return (
+    <g fill="white" stroke="#5a5246" strokeWidth={0.7}>
+      <circle cx={cx} cy={cy} r={r} />
+      <line x1={cx - r * d} y1={cy - r * d} x2={cx - ri * d} y2={cy - ri * d} />
+      <line x1={cx + r * d} y1={cy - r * d} x2={cx + ri * d} y2={cy - ri * d} />
+      <line x1={cx - r * d} y1={cy + r * d} x2={cx - ri * d} y2={cy + ri * d} />
+      <line x1={cx + r * d} y1={cy + r * d} x2={cx + ri * d} y2={cy + ri * d} />
+      <circle cx={cx} cy={cy} r={ri} />
+    </g>
   );
 }
 
@@ -434,10 +509,11 @@ export function OdontogramaDibujo({
           y={arriba ? DIENTE_SUP_Y : DIENTE_INF_Y}
           width={DIENTE_W}
           height={DIENTE_H}
-          style={{ fill: "white", stroke: "#5a5246", strokeWidth: 0.7 }}
+          style={{ stroke: "#5a5246", strokeWidth: 0.7 }}
         >
-          <IconoDiente numero={numero} />
+          <DienteMedico numero={numero} superior={Math.floor(numero / 10) <= 2} />
         </svg>
+        <CirculoSuperficies cx={cx} cy={arriba ? SUPERFICIES_SUP_Y : SUPERFICIES_INF_Y} />
       </g>
     );
   }
