@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { Eraser, Hand, Minus, Pencil, Save, Stamp, Type, Undo2, Trash2, X } from "lucide-react";
+import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
@@ -343,7 +343,7 @@ export function OdontogramaDibujo({
   }
 
   function borrar(indice: number) {
-    if (herramienta !== "borrar") return;
+    if (herramienta !== "borrar" || dienteFoco == null) return;
     cambiar(elementos.filter((_, i) => i !== indice));
   }
 
@@ -482,14 +482,6 @@ export function OdontogramaDibujo({
     );
   }
 
-  const botonesHerramienta: { h: Herramienta; label: string; icon: React.ReactNode }[] = [
-    { h: "lapiz", label: "Lápiz", icon: <Pencil size={14} /> },
-    { h: "linea", label: "Línea", icon: <Minus size={14} /> },
-    { h: "sello", label: "Símbolo", icon: <Stamp size={14} /> },
-    { h: "texto", label: "Abreviatura", icon: <Type size={14} /> },
-    { h: "borrar", label: "Borrar", icon: <Eraser size={14} /> },
-    { h: "mover", label: "Desplazar", icon: <Hand size={14} /> },
-  ];
 
   const carta = (
 <svg
@@ -500,12 +492,21 @@ export function OdontogramaDibujo({
   style={
     dienteFoco != null
       ? { overflow: "hidden", touchAction: "none" }
-      : { minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
+      : { minWidth: 700, touchAction: "pan-x pan-y", cursor: "pointer" }
   }
-  onPointerDown={alPresionar}
-  onPointerMove={alMover}
-  onPointerUp={alSoltar}
-  onPointerCancel={alSoltar}
+  onPointerDown={dienteFoco != null ? alPresionar : undefined}
+  onPointerMove={dienteFoco != null ? alMover : undefined}
+  onPointerUp={dienteFoco != null ? alSoltar : undefined}
+  onPointerCancel={dienteFoco != null ? alSoltar : undefined}
+  onClick={
+    dienteFoco != null
+      ? undefined
+      : (e) => {
+          const [x, y] = punto(e as unknown as ReactPointerEvent<SVGSVGElement>);
+          const n = dienteEn(x, y);
+          if (n != null) onCambiarFoco?.(n);
+        }
+  }
 >
   <defs>
     <clipPath id="recorte-diente">
@@ -549,6 +550,7 @@ export function OdontogramaDibujo({
           if (sg) usarSugerencia(sg);
         }}
         cerrar={() => {
+          if (pendiente) guardar();
           onCambiarFoco?.(null);
           setDienteSugerido(null);
         }}
@@ -558,102 +560,21 @@ export function OdontogramaDibujo({
 
   return (
     <div className="mt-4 space-y-3">
-      {/* Barra de herramientas */}
-      <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
-        <div className="flex flex-wrap gap-1.5">
-          {botonesHerramienta.map((b) => (
-            <button
-              key={b.h}
-              onClick={() => setHerramienta(b.h)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium ${
-                herramienta === b.h ? "bg-[#7C5CE0] text-white" : "bg-white/10 text-white/70"
-              }`}
-            >
-              {b.icon} {b.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {COLORES.map((c) => (
-            <button
-              key={c.valor}
-              onClick={() => setColor(c.valor)}
-              aria-label={c.label}
-              className={`h-7 w-7 rounded-full border-2 ${color === c.valor ? "border-white" : "border-transparent"}`}
-              style={{ backgroundColor: c.valor }}
-            />
-          ))}
-          <div className="ml-auto flex gap-1.5">
-            <button
-              onClick={() => {
-                if (elementos.length && window.confirm("¿Borrar todas las marcas de la carta?")) cambiar([]);
-              }}
-              disabled={elementos.length === 0}
-              className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-[12px] text-white/80 disabled:opacity-40"
-            >
-              <Trash2 size={13} /> Limpiar
-            </button>
-          </div>
-        </div>
-
-        {herramienta === "sello" && (
-          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
-            {SELLOS.map((s) => (
-              <button
-                key={s.forma}
-                onClick={() => setSello(s.forma)}
-                title={s.label}
-                className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border px-1.5 py-0.5 text-[10px] ${
-                  sello === s.forma ? "border-white bg-white text-[#2b2118]" : "border-white/15 bg-white/90 text-[#2b2118]/70"
-                }`}
-              >
-                <MiniSello forma={s.forma} color={color} />
-                <span className="pr-1">{s.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {herramienta === "texto" && (
-          <div className="flex flex-wrap gap-1.5">
-            {ABREVIATURAS.map((a) => (
-              <button
-                key={a}
-                onClick={() => setAbreviatura(a)}
-                className={`rounded-lg px-2 py-1 text-[12px] font-bold ${
-                  abreviatura === a ? "bg-white" : "bg-white/15"
-                }`}
-                style={{ color: abreviatura === a ? color : "rgba(255,255,255,0.8)" }}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <p className="text-[11px] text-white/40">
-          {herramienta === "lapiz" && "Dibuja con el dedo o el mouse sobre los dientes."}
-          {herramienta === "linea" && "Arrastra para trazar una línea recta."}
-          {herramienta === "sello" && "Elige un símbolo y tócalo sobre el diente donde va."}
-          {herramienta === "texto" && "Elige la abreviatura y toca el diente: se escribe en su recuadro."}
-          {herramienta === "borrar" && "Toca una marca para quitarla."}
-          {herramienta === "mover" && "Desliza para recorrer la carta sin dibujar."}
-          {dienteSugerido !== null && ` · Colócalo en el diente ${dienteSugerido} (resaltado).`}
-        </p>
-      </div>
+      <p className="text-[12px] text-white/50">
+        Toca un diente de la carta para abrirlo en pantalla completa y marcarlo.
+      </p>
 
       {/* Sugerencias desde el odontograma 3D */}
       {sugerencias.length > 0 && (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-            Condiciones ya registradas — toca para colocarlas
+            Condiciones ya registradas — toca para abrir el diente
           </div>
           <div className="flex flex-wrap gap-1.5">
             {sugerencias.map((s) => (
               <button
                 key={s.diente}
-                onClick={() => usarSugerencia(s)}
+                onClick={() => onCambiarFoco?.(s.diente)}
                 className={`flex items-center gap-1.5 rounded-xl border bg-white/90 px-2 py-1 text-[11px] text-[#2b2118] ${
                   dienteSugerido === s.diente ? "border-[#F0C24E]" : "border-transparent"
                 }`}
@@ -689,14 +610,6 @@ export function OdontogramaDibujo({
         </div>
       )}
       <div className="relative">
-      <button
-        onClick={deshacer}
-        disabled={pila.length === 0}
-        aria-label="Deshacer"
-        className="absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-[#2b2118] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg active:scale-95 disabled:opacity-30"
-      >
-        <Undo2 size={17} /> Deshacer
-      </button>
       <div className="overflow-x-auto rounded-2xl bg-white p-2">
         {cargando ? (
           <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p>
@@ -706,16 +619,7 @@ export function OdontogramaDibujo({
       </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-        <button
-          onClick={guardar}
-          disabled={!pendiente || guardando}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#7C5CE0] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
-        >
-          <Save size={14} /> {guardando ? "Guardando…" : pendiente ? "Guardar marcas" : "Sin cambios"}
-        </button>
-        {info && <span className="text-center text-[11px] text-white/40 sm:shrink-0 sm:text-left">{info}</span>}
-      </div>
+      {info && <p className="text-center text-[11px] text-white/40">{info}</p>}
     </div>
   );
 }
