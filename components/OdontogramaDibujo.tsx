@@ -58,6 +58,41 @@ const LIENZO_CABECERA = 150;
 const LIENZO_H = LIENZO_CABECERA + 1017 + 30;
 const IMG_REAL = { x: 30, y: LIENZO_CABECERA, w: 240, h: 1017 };
 
+const HOY = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+const esPasado = (el: { f?: string }) => el.f !== HOY;
+
+// Transformación lienzo realista → carta completa de un diente (la
+// misma que usa su columna para dibujar la miniatura).
+function mapaColumna(numero: number) {
+  let col = ARCO_SUPERIOR.indexOf(numero);
+  const arriba = col !== -1;
+  if (!arriba) col = ARCO_INFERIOR_VISUAL.indexOf(numero);
+  if (col === -1) return null;
+  const w = anchoCol(col);
+  const cx = colX(col) + w / 2;
+  const yIni = arriba ? FRANJA + 34 : LINEA_MEDIA_Y + 2;
+  const alto = arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4;
+  const esc = Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
+  const ox = cx - (LIENZO_W * esc) / 2;
+  const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
+  return { esc, ox, oy, x: colX(col), w, yIni, alto };
+}
+
+// Diente al que pertenece una marca hecha sobre la carta completa
+// (por su punto central).
+function dienteDeElemento(el: Elemento): number | null {
+  if (el.t === "texto") return el.diente;
+  let x: number, y: number;
+  if (el.t === "sello") [x, y] = [el.x, el.y];
+  else if (el.t === "linea") [x, y] = [(el.x1 + el.x2) / 2, (el.y1 + el.y2) / 2];
+  else {
+    const xs = el.puntos.map((p) => p[0]);
+    const ys = el.puntos.map((p) => p[1]);
+    [x, y] = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+  }
+  return dienteEn(x, y);
+}
+
 // ---- Modelo ----
 export const COLORES = [
   { valor: "#D62839", label: "Rojo" },
@@ -93,7 +128,7 @@ type Elemento = (
   | { t: "linea"; color: string; x1: number; y1: number; x2: number; y2: number }
   | { t: "sello"; color: string; forma: FormaSello; x: number; y: number; e?: number }
   | { t: "texto"; color: string; texto: string; diente: number }
-) & { v?: number; d?: number };
+) & { v?: number; d?: number; f?: string };
 
 // Las marcas guardadas antes de usar la carta en imagen (sin v=2) se
 // pasan aproximadamente a las coordenadas nuevas.
@@ -280,7 +315,10 @@ export function OdontogramaDibujo({
 
   function cambiar(nuevos: Elemento[]) {
     setPila((p) => [...p.slice(-49), elementos]);
-    setElementos(nuevos);
+    // Cada marca nueva lleva la fecha del día: las de visitas pasadas
+    // se dibujan más tenues para distinguirlas de lo marcado hoy.
+    const previos = new Set(elementos);
+    setElementos(nuevos.map((el) => (previos.has(el) || el.f ? el : { ...el, f: HOY })));
     setPendiente(true);
   }
 
@@ -475,17 +513,26 @@ export function OdontogramaDibujo({
   }, [dienteFoco]);
 
   const textosPorDiente = useMemo(() => {
-    const mapa = new Map<number, { texto: string; color: string; indice: number }[]>();
+    const mapa = new Map<number, { texto: string; color: string; indice: number; pasado: boolean }[]>();
     elementos.forEach((el, indice) => {
       if (el.t !== "texto") return;
       const lista = mapa.get(el.diente) ?? [];
-      lista.push({ texto: el.texto, color: el.color, indice });
+      lista.push({ texto: el.texto, color: el.color, indice, pasado: esPasado(el) });
       mapa.set(el.diente, lista);
     });
     return mapa;
   }, [elementos]);
 
   function renderElemento(el: Elemento, indice: number, provisional = false) {
+    if (provisional || !esPasado(el)) return renderElementoBase(el, indice, provisional);
+    return (
+      <g key={indice} opacity={0.38}>
+        {renderElementoBase(el, indice, provisional)}
+      </g>
+    );
+  }
+
+  function renderElementoBase(el: Elemento, indice: number, provisional = false) {
     const clickBorrar = provisional ? undefined : () => borrar(indice);
     const cursor = herramienta === "borrar" && !provisional ? "pointer" : undefined;
     if (el.t === "trazo") {
@@ -572,6 +619,7 @@ export function OdontogramaDibujo({
             <tspan
               key={t.indice}
               fill={t.color}
+              fillOpacity={t.pasado ? 0.4 : 1}
               onPointerDown={herramienta === "borrar" ? () => borrar(t.indice) : undefined}
               style={{ cursor: herramienta === "borrar" ? "pointer" : undefined }}
             >
@@ -649,6 +697,7 @@ export function OdontogramaDibujo({
           <tspan
             key={t.indice}
             fill={t.color}
+            fillOpacity={t.pasado ? 0.4 : 1}
             onPointerDown={herramienta === "borrar" ? () => borrar(t.indice) : undefined}
           >
             {i > 0 ? " " : ""}
@@ -661,6 +710,15 @@ export function OdontogramaDibujo({
         {lienzo}
       </text>
       <image href={`/dientes/${lienzo}.jpg`} x={IMG_REAL.x} y={IMG_REAL.y} width={IMG_REAL.w} height={IMG_REAL.h} />
+      {(() => {
+        const m = mapaColumna(lienzo);
+        if (!m) return null;
+        return (
+          <g transform={`scale(${1 / m.esc}) translate(${-m.ox},${-m.oy})`}>
+            {elementos.map((el, i) => (el.d == null && el.t !== "texto" && dienteDeElemento(el) === lienzo ? renderElemento(el, i) : null))}
+          </g>
+        );
+      })()}
       {elementos.map((el, i) => (el.d === lienzo ? renderElemento(el, i) : null))}
       {actual && renderElemento(actual, -1, true)}
     </svg>
