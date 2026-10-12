@@ -46,6 +46,10 @@ function dienteEn(x: number, y: number): number | null {
   return y < LINEA_MEDIA_Y ? ARCO_SUPERIOR[col] : ARCO_INFERIOR_VISUAL[col];
 }
 
+// Dientes con ilustración realista propia (public/dientes/N.jpg) que
+// sustituye al dibujo de línea de la carta en su columna.
+const DIENTES_REALISTAS = new Set<number>([18]);
+
 // ---- Modelo ----
 export const COLORES = [
   { valor: "#D62839", label: "Rojo" },
@@ -501,8 +505,17 @@ export function OdontogramaDibujo({
     const caja = arriba ? CAJA_SUP : CAJA_INF;
     const textos = textosPorDiente.get(numero) ?? [];
     const resaltado = dienteSugerido === numero;
+    const realista = DIENTES_REALISTAS.has(numero);
+    const yIni = arriba ? FRANJA + 34 : LINEA_MEDIA_Y + 2;
+    const alto = arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4;
     return (
       <g key={numero}>
+        {realista && (
+          <>
+            <rect x={x + 1} y={yIni} width={w - 2} height={alto} fill="white" />
+            <image href={`/dientes/${numero}.jpg`} x={x + 1} y={yIni} width={w - 2} height={alto} preserveAspectRatio="xMidYMid meet" />
+          </>
+        )}
         {resaltado && (
           <rect
             x={x + 2}
