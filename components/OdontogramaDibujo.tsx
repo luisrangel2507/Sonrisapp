@@ -520,13 +520,6 @@ export function OdontogramaDibujo({
           ))}
           <div className="ml-auto flex gap-1.5">
             <button
-              onClick={deshacer}
-              disabled={pila.length === 0}
-              className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-[12px] text-white/80 disabled:opacity-40"
-            >
-              <Undo2 size={13} /> Deshacer
-            </button>
-            <button
               onClick={() => {
                 if (elementos.length && window.confirm("¿Borrar todas las marcas de la carta?")) cambiar([]);
               }}
@@ -629,6 +622,15 @@ export function OdontogramaDibujo({
           </button>
         </div>
       )}
+      <div className="relative">
+      <button
+        onClick={deshacer}
+        disabled={pila.length === 0}
+        aria-label="Deshacer"
+        className="absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-[#2b2118] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg active:scale-95 disabled:opacity-30"
+      >
+        <Undo2 size={17} /> Deshacer
+      </button>
       <div className="overflow-x-auto rounded-2xl bg-white p-2">
         {cargando ? (
           <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p>
@@ -654,6 +656,7 @@ export function OdontogramaDibujo({
             {actual && renderElemento(actual, -1, true)}
           </svg>
         )}
+      </div>
       </div>
 
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
