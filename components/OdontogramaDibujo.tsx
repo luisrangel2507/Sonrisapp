@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X } from "lucide-react";
+import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X, Trash2, Check } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
@@ -79,7 +79,7 @@ type FormaSello =
 type Elemento = (
   | { t: "trazo"; color: string; puntos: [number, number][] }
   | { t: "linea"; color: string; x1: number; y1: number; x2: number; y2: number }
-  | { t: "sello"; color: string; forma: FormaSello; x: number; y: number }
+  | { t: "sello"; color: string; forma: FormaSello; x: number; y: number; e?: number }
   | { t: "texto"; color: string; texto: string; diente: number }
 ) & { v?: number };
 
@@ -225,6 +225,10 @@ export function OdontogramaDibujo({
   const [herramienta, setHerramienta] = useState<Herramienta>("lapiz");
   const [color, setColor] = useState<string>(ROJO);
   const [sello, setSello] = useState<FormaSello>("circulo_relleno");
+  // Símbolo recién puesto que todavía se puede arrastrar y cambiar de
+  // tamaño; se fija con "Listo".
+  const [editando, setEditando] = useState<number | null>(null);
+  const arrastrando = useRef<{ dx: number; dy: number } | null>(null);
   const [abreviatura, setAbreviatura] = useState("S");
   const [dienteSugerido, setDienteSugerido] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -261,6 +265,7 @@ export function OdontogramaDibujo({
 
   function deshacer() {
     if (pila.length === 0) return;
+    setEditando(null);
     setElementos(pila[pila.length - 1]);
     setPila(pila.slice(0, -1));
     setPendiente(true);
@@ -300,7 +305,33 @@ export function OdontogramaDibujo({
     return [Math.round(r.x * 10) / 10, Math.round(r.y * 10) / 10];
   }
 
+  function moverEditando(x: number, y: number) {
+    setElementos((els) => els.map((el, i) => (i === editando && el.t === "sello" ? { ...el, x, y } : el)));
+    setPendiente(true);
+  }
+
+  function tamanoEditando(delta: number) {
+    if (editando === null) return;
+    cambiar(
+      elementos.map((el, i) =>
+        i === editando && el.t === "sello" ? { ...el, e: Math.min(3, Math.max(0.4, Math.round(((el.e ?? 1) + delta) * 10) / 10)) } : el
+      )
+    );
+  }
+
   function alPresionar(e: ReactPointerEvent<SVGSVGElement>) {
+    if (editando !== null) {
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+      setPila((p) => [...p.slice(-49), elementos]);
+      const [x, y] = punto(e);
+      const el = elementos[editando];
+      // Si se toca el símbolo, se arrastra desde ahí; si se toca en
+      // otro lado, el símbolo salta a ese punto.
+      const cerca = el?.t === "sello" && Math.hypot(el.x - x, el.y - y) < 24 * K * (el.e ?? 1);
+      arrastrando.current = cerca && el?.t === "sello" ? { dx: el.x - x, dy: el.y - y } : { dx: 0, dy: 0 };
+      if (!cerca) moverEditando(x, y);
+      return;
+    }
     if (herramienta === "mover" || herramienta === "borrar") return;
     const [x, y] = punto(e);
     if (herramienta === "lapiz") {
@@ -311,6 +342,7 @@ export function OdontogramaDibujo({
       setActual({ t: "linea", color, x1: x, y1: y, x2: x, y2: y, v: 2 });
     } else if (herramienta === "sello") {
       cambiar([...elementos, { t: "sello", color, forma: sello, x, y, v: 2 }]);
+      setEditando(elementos.length);
       setDienteSugerido(null);
     } else if (herramienta === "texto") {
       const diente = dienteEn(x, y);
@@ -322,6 +354,11 @@ export function OdontogramaDibujo({
   }
 
   function alMover(e: ReactPointerEvent<SVGSVGElement>) {
+    if (arrastrando.current) {
+      const [x, y] = punto(e);
+      moverEditando(x + arrastrando.current.dx, y + arrastrando.current.dy);
+      return;
+    }
     if (!actual) return;
     const [x, y] = punto(e);
     if (actual.t === "trazo") {
@@ -334,6 +371,7 @@ export function OdontogramaDibujo({
   }
 
   function alSoltar() {
+    arrastrando.current = null;
     if (!actual) return;
     const valido =
       (actual.t === "trazo" && actual.puntos.length > 1) ||
@@ -436,8 +474,20 @@ export function OdontogramaDibujo({
     if (el.t === "sello") {
       return (
         <g key={indice} onPointerDown={clickBorrar} style={{ cursor }}>
-          <circle cx={el.x} cy={el.y} r={14 * K} fill="transparent" />
-          <Sello forma={el.forma} color={el.color} x={el.x} y={el.y} escala={K} />
+          <circle cx={el.x} cy={el.y} r={14 * K * (el.e ?? 1)} fill="transparent" />
+          {indice === editando && (
+            <circle
+              cx={el.x}
+              cy={el.y}
+              r={17 * K * (el.e ?? 1)}
+              fill="#F0C24E"
+              fillOpacity={0.12}
+              stroke="#E0A800"
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+            />
+          )}
+          <Sello forma={el.forma} color={el.color} x={el.x} y={el.y} escala={K * (el.e ?? 1)} />
         </g>
       );
     }
@@ -532,7 +582,10 @@ export function OdontogramaDibujo({
         diente={dienteFoco}
         carta={cargando ? <p className="p-6 text-center text-sm text-[#8a8272]">Cargando…</p> : carta}
         herramienta={herramienta}
-        setHerramienta={setHerramienta}
+        setHerramienta={(h) => {
+          setEditando(null);
+          setHerramienta(h);
+        }}
         color={color}
         setColor={setColor}
         sello={sello}
@@ -549,7 +602,16 @@ export function OdontogramaDibujo({
           const sg = sugerencias.find((x) => x.diente === dienteFoco);
           if (sg) usarSugerencia(sg);
         }}
+        editandoSello={editando !== null}
+        tamanoSello={tamanoEditando}
+        fijarSello={() => setEditando(null)}
+        quitarSello={() => {
+          if (editando === null) return;
+          cambiar(elementos.filter((_, i) => i !== editando));
+          setEditando(null);
+        }}
         cerrar={() => {
+          setEditando(null);
           if (pendiente) guardar();
           onCambiarFoco?.(null);
           setDienteSugerido(null);
@@ -618,6 +680,10 @@ function PantallaCompleta(props: {
   guardar: () => void;
   sugerencia: string | null;
   usarSugerencia: () => void;
+  editandoSello: boolean;
+  tamanoSello: (delta: number) => void;
+  fijarSello: () => void;
+  quitarSello: () => void;
   cerrar: () => void;
 }) {
   const { herramienta, setHerramienta, color } = props;
@@ -646,7 +712,7 @@ function PantallaCompleta(props: {
     { h: "borrar", label: "Borrar", icon: <Eraser size={20} /> },
   ];
 
-  const mostrarPanel = panel && (herramienta === "sello" || herramienta === "texto");
+  const mostrarPanel = panel && !props.editandoSello && (herramienta === "sello" || herramienta === "texto");
 
   return createPortal(
     <div
@@ -748,7 +814,40 @@ function PantallaCompleta(props: {
             </div>
           )}
 
-          {(herramienta === "sello" || herramienta === "texto") && !mostrarPanel && (
+          {props.editandoSello && (
+            <div className="absolute inset-x-2 bottom-2 z-10 flex items-center gap-2 rounded-2xl bg-[#211a2e]/95 p-2 shadow-2xl backdrop-blur">
+              <button
+                onClick={props.quitarSello}
+                aria-label="Quitar símbolo"
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white/80"
+              >
+                <Trash2 size={18} />
+              </button>
+              <div className="flex items-center rounded-xl bg-white/10">
+                <button onClick={() => props.tamanoSello(-0.2)} aria-label="Más chico" className="h-11 w-11 text-[22px] font-bold text-white">
+                  −
+                </button>
+                <span className="px-1 text-[10px] uppercase tracking-wide text-white/50">Tamaño</span>
+                <button onClick={() => props.tamanoSello(0.2)} aria-label="Más grande" className="h-11 w-11 text-[22px] font-bold text-white">
+                  +
+                </button>
+              </div>
+              <button
+                onClick={props.fijarSello}
+                className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#2E9E5B] text-[14px] font-semibold text-white"
+              >
+                <Check size={18} /> Listo
+              </button>
+            </div>
+          )}
+
+          {props.editandoSello && (
+            <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+              <span className="rounded-full bg-[#2b2118]/85 px-3 py-1 text-[12px] text-white">Arrastra el símbolo para acomodarlo</span>
+            </div>
+          )}
+
+          {(herramienta === "sello" || herramienta === "texto") && !mostrarPanel && !props.editandoSello && (
             <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
               <span className="flex items-center gap-1.5 rounded-full bg-[#2b2118]/85 px-3 py-1 text-[12px] text-white">
                 Toca el diente para poner
