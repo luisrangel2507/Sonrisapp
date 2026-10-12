@@ -61,6 +61,9 @@ const DIENTES_REALISTAS = new Set<number>([18, 17, 16, 15, 14, 13, 12, 11, 21, 2
 const LIENZO_W = 300;
 const LIENZO_CABECERA = 150;
 const LIENZO_H = LIENZO_CABECERA + 1017 + 30;
+// Las ilustraciones se ven 5% más grandes en la carta completa (pueden
+// rebasar un poco su columna). Debe coincidir con scripts/componer-carta.py.
+const ESCALA_REAL = 1.05;
 const IMG_REAL = { x: 30, y: LIENZO_CABECERA, w: 240, h: 1017 };
 
 const HOY = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
@@ -77,7 +80,7 @@ function mapaColumna(numero: number) {
   const cx = colX(col) + w / 2;
   const yIni = arriba ? FRANJA + 34 : LINEA_MEDIA_Y + 2;
   const alto = arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4;
-  const esc = Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
+  const esc = ESCALA_REAL * Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
   const ox = cx - (LIENZO_W * esc) / 2;
   const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
   return { esc, ox, oy, x: colX(col), w, yIni, alto };
@@ -622,7 +625,7 @@ export function OdontogramaDibujo({
       <g key={numero}>
         {realista &&
           (() => {
-            const esc = Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
+            const esc = ESCALA_REAL * Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
             const ox = cx - (LIENZO_W * esc) / 2;
             const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
             return (

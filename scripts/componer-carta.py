@@ -12,15 +12,23 @@ SUP=[18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28]
 INF=[48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38]
 base=Image.open('public/odontograma-carta.jpg').convert('RGB').resize((1024*S,787*S),Image.LANCZOS)
 d=ImageDraw.Draw(base)
+pegar=[]
 for f in sorted(os.listdir('public/dientes')):
     n=int(f.split('.')[0]); arriba=n in SUP; col=(SUP if arriba else INF).index(n)
     x=B[col]; w=B[col+1]-B[col]; cx=x+w/2
     yI=FR+34 if arriba else LM+2; alto=LM-FR-36 if arriba else FR+IMG_H-34-LM-4
-    esc=min((w-2)/LW, alto/(LH-LC)); ox=cx-LW*esc/2; oy=yI+(alto-(LH-LC)*esc)/2-LC*esc
+    esc=1.05*min((w-2)/LW, alto/(LH-LC)); ox=cx-LW*esc/2; oy=yI+(alto-(LH-LC)*esc)/2-LC*esc
     r=lambda v: round(v*S)
     d.rectangle([r(x-1),r(yI-1-FR),r(x+w+1),r(yI+alto+1-FR)],fill='white')
     t=Image.open('public/dientes/'+f).convert('RGB')
     px,py,pw,ph=ox+esc*IR[0], oy+esc*IR[1]-FR, esc*IR[2], esc*IR[3]
-    base.paste(t.resize((r(pw),r(ph)),Image.LANCZOS),(r(px),r(py)))
+    pegar.append((t.resize((r(pw),r(ph)),Image.LANCZOS),(r(px),r(py))))
+# Primero se blanquean todas las columnas y luego se pegan los dientes,
+# para que una columna no tape lo que el diente vecino rebasa.
+from PIL import ImageChops
+for img,pos in pegar:
+    caja=(pos[0],pos[1],pos[0]+img.width,pos[1]+img.height)
+    # "darker": el fondo blanco de la ilustración no borra al vecino.
+    base.paste(ImageChops.darker(base.crop(caja),img),pos)
 base.save('public/odontograma-carta-v2.webp',quality=78,method=6)
 print(os.path.getsize('public/odontograma-carta-v2.webp'))
