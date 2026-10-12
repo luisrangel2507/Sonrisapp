@@ -394,9 +394,8 @@ export function OdontogramaDibujo({
     const arriba = iSup !== -1;
     const col = arriba ? iSup : ARCO_INFERIOR_VISUAL.indexOf(dienteFoco);
     if (col === -1) return `0 0 ${ANCHO_TOTAL} ${ALTO_TOTAL}`;
-    const centro = colX(col) + anchoCol(col) / 2;
-    const ancho = 240;
-    const x0 = Math.min(Math.max(0, centro - ancho / 2), ANCHO_TOTAL - ancho);
+    const x0 = colX(col);
+    const ancho = anchoCol(col);
     const y0 = arriba ? 0 : LINEA_MEDIA_Y - 6;
     const alto = arriba ? LINEA_MEDIA_Y + 6 : ALTO_TOTAL - y0;
     return `${x0} ${y0} ${ancho} ${alto}`;
@@ -640,7 +639,7 @@ export function OdontogramaDibujo({
             className={`block select-none ${dienteFoco != null ? "mx-auto" : "w-full"}`}
             style={
               dienteFoco != null
-                ? { height: "min(70vh, 640px)", width: "auto", maxWidth: "100%", touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
+                ? { overflow: "hidden", height: "min(70vh, 640px)", width: "auto", maxWidth: "100%", touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
                 : { minWidth: 700, touchAction: herramienta === "mover" ? "pan-x pan-y" : "none" }
             }
             onPointerDown={alPresionar}
