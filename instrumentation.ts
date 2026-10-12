@@ -12,7 +12,8 @@
 // no puede resolver los módulos de Node que usa "pg" (fs/net/dns...).
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { aplicarSchema } = await import("./instrumentation-node");
+    const { aplicarSchema, iniciarProgramador } = await import("./instrumentation-node");
     await aplicarSchema();
+    iniciarProgramador();
   }
 }

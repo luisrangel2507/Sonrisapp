@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS citas (
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS monto NUMERIC(10,2);
 -- Evita mandar el recordatorio de "1 hora antes" más de una vez por cita.
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS recordatorio_1h_enviado BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS aviso_2h_enviado BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS paciente_dientes (
   id SERIAL PRIMARY KEY,

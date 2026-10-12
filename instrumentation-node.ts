@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { query } from "@/lib/db";
 import { cifrar, cifradoDisponible } from "@/lib/crypto";
+import { enviarAvisos2hAntes, enviarRecordatoriosHoraAntes, enviarResumenDiario } from "@/lib/cron/recordatorios";
 import { HISTORIA_CLINICA_CAMPOS_CIFRABLES } from "@/lib/historia-clinica-campos";
 
 export async function aplicarSchema() {
@@ -55,4 +56,38 @@ async function cifrarDatosExistentes() {
   } catch (err) {
     console.error("[cifrado] error migrando datos existentes a cifrado:", err);
   }
+}
+
+// Programador interno: no depende de que alguien configure un cron
+// externo. Cada 5 minutos revisa los avisos de 2h/1h antes de la cita,
+// y desde las 8am (hora de México) manda el resumen del día. Todo es
+// idempotente en la base (banderas por cita y avisos_*_diarios), así
+// que convive sin duplicar con /api/cron si también está configurado.
+const INTERVALO_MS = 5 * 60 * 1000;
+
+function horaMexico() {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Mexico_City" }).format(new Date())
+  );
+}
+
+async function tick() {
+  try {
+    await enviarAvisos2hAntes();
+    await enviarRecordatoriosHoraAntes();
+    const hora = horaMexico();
+    if (hora >= 8 && hora < 12) await enviarResumenDiario();
+  } catch (err) {
+    console.error("[programador] error en avisos:", err);
+  }
+}
+
+export function iniciarProgramador() {
+  if (process.env.DESACTIVAR_PROGRAMADOR === "1") return;
+  const g = globalThis as { __programadorSonrisa?: boolean };
+  if (g.__programadorSonrisa) return;
+  g.__programadorSonrisa = true;
+  setTimeout(tick, 30_000);
+  setInterval(tick, INTERVALO_MS).unref?.();
+  console.log("[programador] avisos de citas activos (cada 5 min, resumen a las 8am).");
 }

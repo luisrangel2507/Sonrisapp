@@ -73,17 +73,22 @@ export async function enviarResumenDiario() {
     `INSERT INTO avisos_push_diarios (fecha) VALUES ($1) ON CONFLICT DO NOTHING`,
     [hoy]
   );
-  if (pushInsertado! > 0 && citas.length > 0) {
-    const primeras = citas
-      .slice(0, 4)
-      .map((c) => `${formatearHoraMx(c.fecha_hora)} — ${c.nombre}`)
-      .join("\n");
-    const resto = citas.length > 4 ? `\n+${citas.length - 4} más` : "";
-    await enviarPush(
-      `${citas.length} cita${citas.length === 1 ? "" : "s"} hoy`,
-      `${primeras}${resto}`,
-      "/dashboard/citas"
-    );
+  if (pushInsertado! > 0) {
+    if (citas.length === 0) {
+      await enviarPush("Hoy no hay citas agendadas", "Agenda libre por hoy.", "/dashboard/citas");
+    } else {
+      const ordenadas = [...citas].sort((a, b) => +new Date(a.fecha_hora) - +new Date(b.fecha_hora));
+      const primeras = ordenadas
+        .slice(0, 4)
+        .map((c) => `${formatearHoraMx(c.fecha_hora)} — ${c.nombre} (${c.tratamiento})`)
+        .join("\n");
+      const resto = citas.length > 4 ? `\n+${citas.length - 4} más` : "";
+      await enviarPush(
+        `Tu día: ${citas.length} cita${citas.length === 1 ? "" : "s"} · de ${formatearHoraMx(ordenadas[0].fecha_hora)} a ${formatearHoraMx(ordenadas[ordenadas.length - 1].fecha_hora)}`,
+        `${primeras}${resto}`,
+        "/dashboard/citas"
+      );
+    }
   }
 
   return { pacientesConCitaHoy: porPaciente.size, mensajesEnviados: enviados };
@@ -126,4 +131,30 @@ export async function enviarRecordatoriosHoraAntes() {
   }
 
   return { citasEnVentana: citas.length, mensajesEnviados: enviados };
+}
+
+// Aviso push a la doctora/staff 2 horas antes de cada cita. El UPDATE
+// ... RETURNING marca y selecciona en un solo paso, así aunque el
+// scheduler corra en dos instancias a la vez nadie recibe el aviso
+// doble. La ventana (hasta 2h10m) cubre disparos retrasados; las citas
+// agendadas con menos de 2h de anticipación también se avisan una vez.
+export async function enviarAvisos2hAntes() {
+  const { rows: citas } = await query<{ nombre: string; fecha_hora: string; tratamiento: string }>(
+    `UPDATE citas c SET aviso_2h_enviado = true
+     FROM pacientes p
+     WHERE p.id = c.paciente_id
+       AND c.estado = 'agendada'
+       AND c.aviso_2h_enviado = false
+       AND c.fecha_hora > now()
+       AND c.fecha_hora - now() <= interval '2 hours 10 minutes'
+     RETURNING p.nombre, c.fecha_hora, c.tratamiento`
+  );
+  for (const c of citas) {
+    await enviarPush(
+      "Cita en 2 horas",
+      `${c.tratamiento} con ${c.nombre} a las ${formatearHoraMx(c.fecha_hora)}`,
+      "/dashboard/citas"
+    );
+  }
+  return { avisos2h: citas.length };
 }

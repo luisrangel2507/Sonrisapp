@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { enviarRecordatoriosHoraAntes } from "@/lib/cron/recordatorios";
+import { enviarAvisos2hAntes, enviarRecordatoriosHoraAntes } from "@/lib/cron/recordatorios";
 import { autorizadoParaCron } from "@/lib/cron-auth";
 
 // Disparado cada 10-15 minutos por el scheduler de Railway (o un cron
@@ -10,6 +10,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "no autorizado" }, { status: 401 });
   }
 
-  const resultado = await enviarRecordatoriosHoraAntes();
-  return NextResponse.json({ ok: true, ...resultado });
+  const [resultado, avisos] = await Promise.all([enviarRecordatoriosHoraAntes(), enviarAvisos2hAntes()]);
+  return NextResponse.json({ ok: true, ...resultado, ...avisos });
 }
