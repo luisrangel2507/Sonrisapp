@@ -32,3 +32,15 @@ for img,pos in pegar:
     base.paste(ImageChops.darker(base.crop(caja),img),pos)
 base.save('public/odontograma-carta-v2.webp',quality=78,method=6)
 print(os.path.getsize('public/odontograma-carta-v2.webp'))
+
+# Versión por contenido: el navegador guarda las imágenes en caché, así
+# que cada cambio genera una URL nueva para que se vea al momento.
+import hashlib
+h=hashlib.sha1(open('public/odontograma-carta-v2.webp','rb').read())
+for f in sorted(os.listdir('public/dientes')):
+    h.update(open('public/dientes/'+f,'rb').read())
+v=h.hexdigest()[:10]
+open('lib/odontograma-version.ts','w').write(
+    '// Generado por scripts/componer-carta.py — no editar a mano.\n'
+    f'export const ODONTOGRAMA_VERSION = "{v}";\n')
+print('version',v)

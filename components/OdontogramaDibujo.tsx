@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
+import { ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
 import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X, Trash2, Check } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
@@ -49,7 +50,7 @@ function dienteEn(x: number, y: number): number | null {
 // Carta con las ilustraciones realistas ya integradas en una sola imagen
 // (se genera recortando public/dientes/N.webp sobre la carta original),
 // para que cargue de una vez en lugar de imagen por imagen.
-const CARTA_URL = "/odontograma-carta-v2.webp";
+const CARTA_URL = `/odontograma-carta-v2.webp?v=${ODONTOGRAMA_VERSION}`;
 
 // Dientes con ilustración realista propia (public/dientes/N.webp) que
 // sustituye al dibujo de línea de la carta en su columna.
@@ -61,8 +62,8 @@ const DIENTES_REALISTAS = new Set<number>([18, 17, 16, 15, 14, 13, 12, 11, 21, 2
 const LIENZO_W = 300;
 const LIENZO_CABECERA = 150;
 const LIENZO_H = LIENZO_CABECERA + 1017 + 30;
-// Las ilustraciones se ven 5% más grandes en la carta completa (pueden
-// rebasar un poco su columna). Debe coincidir con scripts/componer-carta.py.
+// Las ilustraciones se ven 5% más grandes, en la carta completa (pueden
+// rebasar un poco su columna) y en la pantalla completa del diente. Debe coincidir con scripts/componer-carta.py.
 const ESCALA_REAL = 1.05;
 const IMG_REAL = { x: 30, y: LIENZO_CABECERA, w: 240, h: 1017 };
 
@@ -307,7 +308,7 @@ export function OdontogramaDibujo({
   useEffect(() => {
     DIENTES_REALISTAS.forEach((n) => {
       const img = new Image();
-      img.src = `/dientes/${n}.webp`;
+      img.src = `/dientes/${n}.webp?v=${ODONTOGRAMA_VERSION}`;
     });
   }, []);
 
@@ -726,6 +727,13 @@ export function OdontogramaDibujo({
       onPointerCancel={alSoltar}
     >
       <rect x={0} y={0} width={LIENZO_W} height={LIENZO_H} fill="white" />
+      <image
+        href={`/dientes/${lienzo}.webp?v=${ODONTOGRAMA_VERSION}`}
+        x={IMG_REAL.x - (IMG_REAL.w * (ESCALA_REAL - 1)) / 2}
+        y={IMG_REAL.y - (IMG_REAL.h * (ESCALA_REAL - 1)) / 2}
+        width={IMG_REAL.w * ESCALA_REAL}
+        height={IMG_REAL.h * ESCALA_REAL}
+      />
       <rect x={60} y={14} width={180} height={64} rx={14} fill="#FBF8F1" stroke="#CFC6B4" strokeWidth={2} />
       <text x={150} y={58} textAnchor="middle" fontSize={(textosPorDiente.get(lienzo)?.length ?? 0) > 1 ? 24 : 32} fontWeight={700} fontFamily="Georgia, serif" fontStyle="italic">
         {(textosPorDiente.get(lienzo) ?? []).map((t, i) => (
@@ -744,7 +752,6 @@ export function OdontogramaDibujo({
       <text x={150} y={120} textAnchor="middle" fontSize={24} fontWeight={700} fill="white">
         {lienzo}
       </text>
-      <image href={`/dientes/${lienzo}.webp`} x={IMG_REAL.x} y={IMG_REAL.y} width={IMG_REAL.w} height={IMG_REAL.h} />
       {(() => {
         const m = mapaColumna(lienzo);
         if (!m) return null;
