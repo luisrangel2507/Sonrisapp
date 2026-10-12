@@ -54,7 +54,7 @@ const CARTA_URL = `/odontograma-carta-v2.webp?v=${ODONTOGRAMA_VERSION}`;
 
 // Dientes con ilustración realista propia (public/dientes/N.webp) que
 // sustituye al dibujo de línea de la carta en su columna.
-const DIENTES_REALISTAS = new Set<number>([18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28, 48, 38, 47, 37, 46, 36, 45, 35]);
+const DIENTES_REALISTAS = new Set<number>([18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28, 48, 38, 47, 37, 46, 36, 45, 35, 44, 34]);
 
 // Lienzo propio de un diente realista en pantalla completa: las marcas
 // de ese diente se guardan en estas coordenadas (con d = número) y en
