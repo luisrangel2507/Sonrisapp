@@ -81,7 +81,12 @@ export interface FamiliarDetalle {
   parentesco: string;
   vive: boolean | null;
   enfermedades: string | null;
+  // "No aplica" (ej. hijo único): no se pregunta si vive ni enfermedades.
+  no_aplica?: boolean;
 }
+
+// Parentescos que pueden marcarse como "No aplica".
+export const PARENTESCOS_NO_APLICA: readonly string[] = ["Hermanos"];
 
 // fam_detalle se guarda como JSON en un solo TEXT (cifrado) — estos
 // helpers evitan repetir el parse/serialize en cada lugar que lo usa.
@@ -98,7 +103,7 @@ export function parsearFamDetalle(json: string | null): FamiliarDetalle[] {
 }
 
 export function serializarFamDetalle(lista: FamiliarDetalle[]): string | null {
-  const conDatos = lista.filter((f) => f.vive !== null || f.enfermedades);
+  const conDatos = lista.filter((f) => f.vive !== null || f.enfermedades || f.no_aplica);
   return conDatos.length > 0 ? JSON.stringify(lista) : null;
 }
 
@@ -305,9 +310,23 @@ export function TablaFamiliares({
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-semibold text-[#2b2118]">{f.parentesco}</span>
             <div className="flex gap-1.5">
+              {PARENTESCOS_NO_APLICA.includes(f.parentesco) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    actualizar(f.parentesco, f.no_aplica ? { no_aplica: false } : { no_aplica: true, vive: null, enfermedades: null })
+                  }
+                  className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
+                    f.no_aplica ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+                  }`}
+                >
+                  No aplica
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => actualizar(f.parentesco, { vive: true })}
+                disabled={f.no_aplica}
+                onClick={() => actualizar(f.parentesco, { vive: true, no_aplica: false })}
                 className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
                   f.vive === true ? "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
                 }`}
@@ -316,7 +335,8 @@ export function TablaFamiliares({
               </button>
               <button
                 type="button"
-                onClick={() => actualizar(f.parentesco, { vive: false })}
+                disabled={f.no_aplica}
+                onClick={() => actualizar(f.parentesco, { vive: false, no_aplica: false })}
                 className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
                   f.vive === false ? "border-[#B0503A] bg-[#F7E5E0] text-[#B0503A]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
                 }`}
@@ -327,9 +347,10 @@ export function TablaFamiliares({
           </div>
           <input
             value={f.enfermedades ?? ""}
+            disabled={f.no_aplica}
             onChange={(e) => actualizar(f.parentesco, { enfermedades: e.target.value || null })}
             placeholder="Enfermedades (si aplica)"
-            className="mt-2 w-full rounded-lg border border-[#EFE9DC] bg-white px-2.5 py-1.5 text-[13px] text-[#2b2118] outline-none focus:border-[#803449]"
+            className="mt-2 w-full rounded-lg border border-[#EFE9DC] bg-white px-2.5 py-1.5 text-[13px] text-[#2b2118] outline-none focus:border-[#803449] disabled:opacity-40"
           />
         </div>
       ))}
