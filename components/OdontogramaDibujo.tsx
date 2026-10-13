@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
+import { COLOCACION_DIENTES, ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
 import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X, Trash2, Check, History } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
@@ -62,8 +62,8 @@ const DIENTES_REALISTAS = new Set<number>([18, 17, 16, 15, 14, 13, 12, 11, 21, 2
 const LIENZO_W = 300;
 const LIENZO_CABECERA = 150;
 const LIENZO_H = LIENZO_CABECERA + 1017 + 30;
-// Las ilustraciones se ven 5% más grandes, en la carta completa (pueden
-// rebasar un poco su columna) y en la pantalla completa del diente. Debe coincidir con scripts/componer-carta.py.
+// En la pantalla completa la ilustración se ve 5% más grande. En la carta
+// completa cada diente ocupa el tamaño de su dibujo original. Debe coincidir con scripts/componer-carta.py.
 const ESCALA_REAL = 1.05;
 const IMG_REAL = { x: 30, y: LIENZO_CABECERA, w: 240, h: 1017 };
 
@@ -81,9 +81,10 @@ function mapaColumna(numero: number) {
   const cx = colX(col) + w / 2;
   const yIni = arriba ? FRANJA + 34 : LINEA_MEDIA_Y + 2;
   const alto = arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4;
-  const esc = ESCALA_REAL * Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
-  const ox = cx - (LIENZO_W * esc) / 2;
-  const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
+  const c = COLOCACION_DIENTES[numero];
+  const esc = c ? c[0] : Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
+  const ox = c ? c[1] : cx - (LIENZO_W * esc) / 2;
+  const oy = c ? c[2] : yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
   return { esc, ox, oy, x: colX(col), w, yIni, alto };
 }
 
@@ -622,15 +623,11 @@ export function OdontogramaDibujo({
     const textos = textosPorDiente.get(numero) ?? [];
     const resaltado = dienteSugerido === numero;
     const realista = DIENTES_REALISTAS.has(numero);
-    const yIni = arriba ? FRANJA + 34 : LINEA_MEDIA_Y + 2;
-    const alto = arriba ? LINEA_MEDIA_Y - FRANJA - 36 : FRANJA + IMG_H - 34 - LINEA_MEDIA_Y - 4;
     return (
       <g key={numero}>
         {realista &&
           (() => {
-            const esc = ESCALA_REAL * Math.min((w - 2) / LIENZO_W, alto / (LIENZO_H - LIENZO_CABECERA));
-            const ox = cx - (LIENZO_W * esc) / 2;
-            const oy = yIni + (alto - (LIENZO_H - LIENZO_CABECERA) * esc) / 2 - LIENZO_CABECERA * esc;
+            const { esc, ox, oy } = mapaColumna(numero)!;
             return (
               <>
                 {/* La ilustración ya viene integrada en la carta (una sola imagen). */}
