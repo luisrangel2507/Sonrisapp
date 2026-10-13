@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { OdontogramaDibujo } from "@/components/OdontogramaDibujo";
 import {
   ARCO_SUPERIOR,
@@ -254,7 +254,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [formAbierto, setFormAbierto] = useState(false);
   const [tipo, setTipo] = useState("");
   const [nota, setNota] = useState("");
-  const [estadoNuevo, setEstadoNuevo] = useState<EstadoDiente | "">("");
   const [aplicarTodos, setAplicarTodos] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -264,9 +263,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
 
   const [personalizados, setPersonalizados] = useState<EstadoDientePersonalizado[]>([]);
-  const [formEstadoAbierto, setFormEstadoAbierto] = useState(false);
-  const [nombreEstadoNuevo, setNombreEstadoNuevo] = useState("");
-  const [creandoEstado, setCreandoEstado] = useState(false);
 
   const mapaEstados = useMemo(() => construirMapaEstados(personalizados), [personalizados]);
 
@@ -290,25 +286,18 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
       .catch(() => {});
   }, []);
 
-  async function crearEstadoPersonalizado() {
-    if (!nombreEstadoNuevo.trim() || creandoEstado) return;
-    setCreandoEstado(true);
-    try {
-      const res = await fetch("/api/estados-diente", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ etiqueta: nombreEstadoNuevo.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok && data.estado) {
-        setPersonalizados((prev) => [...prev, data.estado]);
-        setEstadoNuevo(data.estado.clave);
-        setNombreEstadoNuevo("");
-        setFormEstadoAbierto(false);
-      }
-    } finally {
-      setCreandoEstado(false);
+  async function crearEstadoDesdeCarta(nombre: string): Promise<string | null> {
+    const res = await fetch("/api/estados-diente", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ etiqueta: nombre.trim() }),
+    });
+    const data = await res.json();
+    if (res.ok && data.estado) {
+      setPersonalizados((prev) => [...prev, data.estado]);
+      return data.estado.clave as string;
     }
+    return null;
   }
 
   const info = historial[seleccionado];
@@ -323,6 +312,18 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
       .filter((e) => e !== "sano")
   );
 
+  // Diagnóstico/tratamiento guardado desde la pantalla completa del diente:
+  // se registra en el historial del diente (versionado) y se recargan los
+  // colores del odontograma.
+  async function registrarDesdeCarta(diente: number, r: { estado: string; tipo: string; nota: string | null }) {
+    await fetch(`/api/pacientes/${paciente.id}/dientes/${diente}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo: r.tipo, nota: r.nota, estado: r.estado }),
+    });
+    await cargarHistorial();
+  }
+
   async function agregarRegistro() {
     if (!tipo.trim() || guardando) return;
     setGuardando(true);
@@ -332,15 +333,12 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
     await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tipo, nota: nota || null, estado: estadoNuevo || undefined }),
+      body: JSON.stringify({ tipo, nota: nota || null }),
     });
     setTipo("");
     setNota("");
-    setEstadoNuevo("");
     setAplicarTodos(false);
     setFormAbierto(false);
-    setFormEstadoAbierto(false);
-    setNombreEstadoNuevo("");
     setGuardando(false);
     await cargarHistorial();
   }
@@ -348,7 +346,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
   function seleccionar(n: number) {
     setSeleccionado(n);
     setFormAbierto(false);
-    setFormEstadoAbierto(false);
     setEditandoId(null);
   }
 
@@ -476,6 +473,8 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             etiquetasEstado={mapaEstados}
             dienteFoco={dienteMarcar}
             onCambiarFoco={setDienteMarcar}
+            onRegistrarEstado={registrarDesdeCarta}
+            onCrearEstado={crearEstadoDesdeCarta}
           />
           </>
         )}
@@ -630,79 +629,11 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
 
         {formAbierto ? (
           <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
-            <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white/70">
-              <input
-                type="checkbox"
-                checked={aplicarTodos}
-                onChange={(e) => setAplicarTodos(e.target.checked)}
-                className="h-4 w-4 shrink-0 accent-[#7C5CE0]"
-              />
-              Aplicar a los 32 dientes (limpieza, fluorización, etc.)
-            </label>
-            {!aplicarTodos && (
-              <>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {Object.entries(mapaEstados).map(([key, v]) => {
-                    const activo = (estadoNuevo || info?.estado || "sano") === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setEstadoNuevo(key as EstadoDiente)}
-                        className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-left text-[11px] transition-colors ${
-                          activo ? "border-white/60 bg-white/10 text-white" : "border-white/10 text-white/70"
-                        }`}
-                      >
-                        <span
-                          className="h-3 w-3 shrink-0 rounded-full border border-white/30"
-                          style={{ backgroundColor: v.ring }}
-                        />
-                        <span className="truncate">{v.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {formEstadoAbierto ? (
-                  <div className="flex gap-1.5">
-                    <input
-                      value={nombreEstadoNuevo}
-                      onChange={(e) => setNombreEstadoNuevo(e.target.value)}
-                      placeholder="Nombre del estado (ej. Bruxismo)"
-                      autoFocus
-                      className="min-w-0 flex-1 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
-                    />
-                    <button
-                      onClick={crearEstadoPersonalizado}
-                      disabled={!nombreEstadoNuevo.trim() || creandoEstado}
-                      className="shrink-0 rounded-xl bg-[#7C5CE0] px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-50"
-                    >
-                      {creandoEstado ? "…" : "Agregar"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFormEstadoAbierto(false);
-                        setNombreEstadoNuevo("");
-                      }}
-                      className="shrink-0 rounded-xl border border-white/15 px-3 py-2 text-[12px] font-medium text-white/70"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setFormEstadoAbierto(true)}
-                    className="flex items-center gap-1.5 text-[12px] font-medium text-[#7C5CE0]"
-                  >
-                    <Plus size={13} /> ¿No está en la lista? Agrega un estado nuevo
-                  </button>
-                )}
-              </>
-            )}
+            <div className="text-[12px] font-semibold text-white/80">Tratamiento para toda la boca (limpieza, fluorización, etc.)</div>
             <input
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
-              placeholder="Tipo de tratamiento (ej. Resina)"
+              placeholder="Tipo de tratamiento (ej. Limpieza)"
               className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
             />
             <textarea
@@ -718,14 +649,12 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
                 disabled={!tipo.trim() || guardando}
                 className="flex-1 rounded-full bg-[#7C5CE0] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
-                {guardando ? "Guardando…" : aplicarTodos ? "Guardar en los 32 dientes" : "Guardar"}
+                {guardando ? "Guardando…" : "Guardar en los 32 dientes"}
               </button>
               <button
                 onClick={() => {
                   setFormAbierto(false);
                   setAplicarTodos(false);
-                  setFormEstadoAbierto(false);
-                  setNombreEstadoNuevo("");
                 }}
                 className="rounded-full border border-white/15 px-4 py-2 text-[13px] font-medium text-white/70"
               >
@@ -734,16 +663,24 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => {
-              setFormAbierto(true);
-              setEditandoId(null);
-              setEstadoNuevo(info?.estado ?? "sano");
-            }}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 py-2.5 text-[13px] font-semibold text-white/90"
-          >
-            <Plus size={14} /> Agregar registro a este diente
-          </button>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => irAMarcar(seleccionado)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#7C5CE0] py-2.5 text-[13px] font-semibold text-white"
+            >
+              <Pencil size={14} /> Diagnóstico y marcas
+            </button>
+            <button
+              onClick={() => {
+                setFormAbierto(true);
+                setAplicarTodos(true);
+                setEditandoId(null);
+              }}
+              className="rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-[12px] font-semibold text-white/80"
+            >
+              Toda la boca
+            </button>
+          </div>
         )}
       </div>
     </div>
