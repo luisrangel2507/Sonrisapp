@@ -41,6 +41,7 @@ type EstadoDienteFijo =
   | "implante_bueno"
   | "superficie_resina"
   | "superficie_amalgama"
+  | "material_temporal"
   | "incrustacion_buena"
   | "incrustacion_mala"
   | "perdido"
@@ -81,8 +82,11 @@ export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: strin
   protesis_removible_buena: estado("#4178DD", "Prótesis removible en buen estado"),
   implante_malo: estado("#D23C50", "Implante en mal estado"),
   implante_bueno: estado("#3D73D8", "Implante en buen estado"),
-  superficie_resina: estado("#9AA3AE", "Superficie resina"),
-  superficie_amalgama: estado("#2E4C87", "Superficie amalgama"),
+  // Colores de la norma para lo que se pinta a mano: resina verde,
+  // amalgama azul, material temporal rojo.
+  superficie_resina: estado("#2E9E5B", "Resina"),
+  superficie_amalgama: estado("#2F5DD0", "Amalgama"),
+  material_temporal: estado("#D62839", "Material temporal"),
   incrustacion_buena: estado("#4280E0", "Incrustación en buen estado"),
   incrustacion_mala: estado("#D94A5D", "Incrustación en mal estado"),
   perdido: estado("#8893A6", "Diente perdido"),
@@ -140,6 +144,7 @@ export const SIMBOLO_DIENTE: Record<EstadoDienteFijo, SimboloEstado> = {
   implante_bueno: { forma: "flecha" },
   superficie_resina: { forma: "circulo_relleno" },
   superficie_amalgama: { forma: "circulo_relleno" },
+  material_temporal: { forma: "circulo_relleno" },
   incrustacion_buena: { forma: "letra", letra: "INC" },
   incrustacion_mala: { forma: "letra", letra: "INC" },
   perdido: { forma: "linea_punteada" },

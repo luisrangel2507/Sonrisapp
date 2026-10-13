@@ -224,6 +224,20 @@ const ABREVIATURAS = [
 
 // Estados del odontograma 3D/foto que, por convención, van en rojo
 // (mal estado / por tratar); el resto en azul.
+// Diagnósticos que se registran pintando a mano (el color lo marca la
+// norma). Al elegirlos se activa el pincel de ese color y el diente se
+// colorea en el 3D y en la foto de todos los dientes.
+const ESTADO_PINTADO: Record<string, { estado: string; color: string }> = {
+  Resina: { estado: "superficie_resina", color: "#2E9E5B" },
+  Amalgama: { estado: "superficie_amalgama", color: "#2F5DD0" },
+  "Material temporal": { estado: "material_temporal", color: "#D62839" },
+  Incrustación: { estado: "incrustacion_buena", color: "#2F5DD0" },
+  "Puente (contorno)": { estado: "protesis_fija_buena", color: "#2F5DD0" },
+};
+const COLOR_DE_ESTADO_PINTADO: Record<string, string> = Object.fromEntries(
+  Object.values(ESTADO_PINTADO).map((v) => [v.estado, v.color])
+);
+
 const ESTADOS_ROJOS = new Set([
   "extraccion_indicada", "caries_recurrente", "caries", "sellante_mal", "endodoncia_mal",
   "corona_mala", "protesis_fija_mala", "protesis_removible_mala", "implante_malo",
@@ -589,7 +603,15 @@ export function OdontogramaDibujo({
   // Al elegir un diagnóstico/tratamiento: el color y el símbolo se ponen
   // solos según la convención (rojo = mal estado/por tratar, azul = bien).
   function aplicarEstado(clave: string) {
-    setColor(ESTADOS_ROJOS.has(clave) ? ROJO : AZUL);
+    setColor(COLOR_DE_ESTADO_PINTADO[clave] ?? (ESTADOS_ROJOS.has(clave) ? ROJO : AZUL));
+    if (clave in COLOR_DE_ESTADO_PINTADO) {
+      // Se pinta a mano: pincel libre con el significado de ese estado.
+      const nombre = Object.entries(ESTADO_PINTADO).find(([, v]) => v.estado === clave)?.[0] ?? null;
+      setSignificado(nombre);
+      setHerramienta("lapiz");
+      return;
+    }
+    setSignificado(null);
     const simbolo = (SIMBOLO_DIENTE as Record<string, SimboloEstado>)[clave];
     if (simbolo?.forma === "letra" && simbolo.letra) {
       setAbreviatura(simbolo.letra);
@@ -607,7 +629,7 @@ export function OdontogramaDibujo({
   // abreviatura en el recuadro), listo para acomodarlo y fijarlo con
   // "Listo". Si ya se había puesto el de ese diagnóstico, no se repite.
   function colocarMarcaDeEstado(clave: string, diente: number) {
-    if (clave === "sano") return;
+    if (clave === "sano" || clave in COLOR_DE_ESTADO_PINTADO) return;
     if (elementos.some((el) => el.est === clave && (el.t === "texto" ? el.diente === diente : el.d === diente || dienteDeElemento(el) === diente))) return;
     const simbolo = (SIMBOLO_DIENTE as Record<string, SimboloEstado>)[clave];
     const col = ESTADOS_ROJOS.has(clave) ? ROJO : AZUL;
@@ -921,8 +943,8 @@ export function OdontogramaDibujo({
           colocarMarcaDeEstado(estado, dienteFoco);
         }}
         significado={significado}
-        pintarTratamiento={(clave) => {
-          const t = TRATAMIENTOS_PINTADOS.find((x) => x.clave === clave);
+        pintarTratamiento={async (clave) => {
+          const t = clave ? TRATAMIENTOS_PINTADOS.find((x) => x.clave === clave) : null;
           if (!t) {
             setSignificado(null);
             return;
@@ -930,6 +952,12 @@ export function OdontogramaDibujo({
           setColor(t.color);
           setHerramienta("lapiz");
           setSignificado(clave);
+          // Queda registrado de una vez: el diente se colorea en el 3D y
+          // en la foto de todos los dientes.
+          const est = ESTADO_PINTADO[t.clave];
+          if (est && dienteFoco != null && historial[dienteFoco]?.estado !== est.estado) {
+            await onRegistrarEstado?.(dienteFoco, { estado: est.estado, tipo: t.clave, nota: null });
+          }
         }}
         resumenMarcas={(() => {
           const cuenta = new Map<string, number>();
@@ -1052,7 +1080,7 @@ function PantallaCompleta(props: {
   fijarSello: () => void;
   quitarSello: () => void;
   significado: string | null;
-  pintarTratamiento: (clave: string | null) => void;
+  pintarTratamiento: (clave: string | null) => void | Promise<void>;
   resumenMarcas: [string, number][];
   estados: { key: string; label: string; ring: string }[];
   estadoActual: string;
@@ -1243,7 +1271,7 @@ function PantallaCompleta(props: {
               </div>
               <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">Diagnóstico</div>
               <div className="grid grid-cols-2 gap-1.5">
-                {props.estados.map((e) => (
+                {props.estados.filter((e) => !["superficie_resina", "superficie_amalgama", "material_temporal"].includes(e.key)).map((e) => (
                   <button
                     key={e.key}
                     type="button"
