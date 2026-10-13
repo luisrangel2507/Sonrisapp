@@ -701,3 +701,7 @@ CREATE TABLE IF NOT EXISTS odontograma_dibujos (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_odontograma_dibujos_paciente ON odontograma_dibujos(paciente_id, id DESC);
+
+-- Puntos de lealtad por completar la historia clínica en línea: se
+-- otorgan una sola vez por paciente.
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historia_puntos_otorgados BOOLEAN NOT NULL DEFAULT false;

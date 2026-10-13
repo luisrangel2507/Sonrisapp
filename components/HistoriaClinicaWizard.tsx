@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, HeartPulse, IdCard, Leaf, Pencil, Save, Smile, Stethoscope, Users, type LucideIcon } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
@@ -508,6 +508,9 @@ const PAGINAS: Paso[][] = (() => {
   return unidas;
 })();
 
+// Niveles del "juego": una sección por nivel (las que encabezan página).
+const NIVELES: Seccion[] = Array.from(new Set(PAGINAS.map((pag) => pag[0].seccion)));
+
 const ICONO_SECCION: Record<Seccion, LucideIcon> = {
   "Ficha de identificación": IdCard,
   "Antecedentes heredofamiliares": Users,
@@ -630,6 +633,7 @@ export function HistoriaClinicaWizard({
   onEnviar,
   guardando,
   error,
+  puntosPremio = null,
 }: {
   form: FormStateHistoriaClinica;
   set: <K extends keyof FormStateHistoriaClinica>(campo: K, valor: FormStateHistoriaClinica[K]) => void;
@@ -641,12 +645,21 @@ export function HistoriaClinicaWizard({
   onEnviar: () => void;
   guardando: boolean;
   error: string;
+  // Puntos que gana al terminar (null si ya los recibió antes).
+  puntosPremio?: number | null;
 }) {
   // vista === "intro": pantalla de bienvenida
   // vista === "pregunta": una pregunta a la vez, avanza con pasoIndex
   // vista === "resumen": revisión final antes de confirmar
   const [vista, setVista] = useState<"intro" | "pregunta" | "resumen">("intro");
   const [pasoIndex, setPasoIndex] = useState(0);
+  // Insignia de "nivel completado" al pasar a una sección nueva.
+  const [insignia, setInsignia] = useState<Seccion | null>(null);
+  useEffect(() => {
+    if (!insignia) return;
+    const t = setTimeout(() => setInsignia(null), 1600);
+    return () => clearTimeout(t);
+  }, [insignia]);
 
   const edad = calcularEdad(pacienteFechaNacimiento);
   const pasosVisibles = PASOS.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad, datosPaciente));
@@ -686,6 +699,26 @@ export function HistoriaClinicaWizard({
           Hola {pacienteNombre.split(" ")[0]}, vamos a completar tu ficha antes de tu cita — nos ayuda a atenderte
           mejor. Es rápido: unas cuantas preguntas por pantalla.
         </p>
+        {puntosPremio ? (
+          <div className="mt-6 flex items-center gap-3 rounded-3xl border border-[#E3B9C1] bg-white/80 px-5 py-4 text-left shadow-[0_8px_24px_-12px_rgba(122,30,51,0.35)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#7A1E33] text-[22px]">🎁</div>
+            <div>
+              <div className="text-[15px] font-bold text-[#7A1E33]">Gana {puntosPremio} puntos</div>
+              <div className="text-[12px] text-[#8a8272]">Al completar tu ficha suman para tu próximo premio en Viña Sonrisas.</div>
+            </div>
+          </div>
+        ) : null}
+        <div className="mt-6 flex items-center gap-2">
+          {NIVELES.map((sec) => {
+            const I = ICONO_SECCION[sec];
+            return (
+              <div key={sec} className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFD9D3] text-[#7A1E33]">
+                <I size={16} />
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 text-[12px] text-[#a49c8a]">{NIVELES.length} niveles · ~4 minutos</div>
         <button
           onClick={() => setVista("pregunta")}
           className="mt-8 flex items-center gap-2 rounded-full bg-[#7A1E33] px-8 py-3.5 text-[15px] font-semibold text-white"
@@ -762,7 +795,7 @@ export function HistoriaClinicaWizard({
           <button
             onClick={onEnviar}
             disabled={guardando}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#7A1E33] py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
           >
             <Save size={16} /> {guardando ? "Enviando…" : "Mi información es correcta, enviar"}
           </button>
@@ -952,6 +985,9 @@ paso.tipo === "sexo" ? (
   const progreso = ((pasoIndex + 1) / paginas.length) * 100;
   const Icono = ICONO_SECCION[pagina[0].seccion];
   const ultima = pasoIndex + 1 >= paginas.length;
+  const secciones = SECCIONES.filter((sec) => paginas.some((pag) => pag[0].seccion === sec));
+  const nivelActual = Math.max(0, secciones.indexOf(pagina[0].seccion));
+  const restantes = paginas.length - pasoIndex;
 
   return (
     <div
@@ -970,10 +1006,53 @@ paso.tipo === "sexo" ? (
         <div className="h-2 w-full overflow-hidden rounded-full bg-[#E9DCD6]">
           <div className="h-full rounded-full transition-all" style={{ width: `${progreso}%`, background: GUINDA }} />
         </div>
-        <div className="mt-2 text-[12px] font-medium" style={{ color: GUINDA }}>
-          Página {pasoIndex + 1} de {paginas.length}
+        <div className="mt-2 flex items-center justify-between text-[12px] font-medium" style={{ color: GUINDA }}>
+          <span>
+            Nivel {nivelActual + 1} de {secciones.length} · Página {pasoIndex + 1} de {paginas.length}
+          </span>
+          <span className="text-[#a49c8a]">
+            {restantes <= 1 ? "¡Última página!" : `~${Math.max(1, Math.round((restantes * 25) / 60))} min`}
+          </span>
         </div>
+        {/* Caminito de niveles */}
+        <div className="mt-3 flex items-center">
+          {secciones.map((sec, i) => {
+            const I = ICONO_SECCION[sec];
+            const hecho = i < nivelActual;
+            const actualN = i === nivelActual;
+            return (
+              <div key={sec} className="flex flex-1 items-center last:flex-none">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all ${
+                    hecho ? "bg-[#7A1E33] text-white" : actualN ? "scale-110 bg-white text-[#7A1E33] ring-2 ring-[#7A1E33]" : "bg-[#EADAD5] text-[#B99AA2]"
+                  }`}
+                >
+                  {hecho ? <Check size={15} /> : <I size={15} />}
+                </div>
+                {i < secciones.length - 1 && <div className={`mx-1 h-0.5 flex-1 rounded ${hecho ? "bg-[#7A1E33]" : "bg-[#EADAD5]"}`} />}
+              </div>
+            );
+          })}
+        </div>
+        {nivelActual > 0 && nivelActual === Math.floor(secciones.length / 2) && pagina[0].seccion !== paginas[pasoIndex - 1]?.[0].seccion && (
+          <div className="mt-3 text-center text-[13px] font-semibold text-[#7A1E33]">¡Vas a la mitad! 💪</div>
+        )}
       </div>
+
+      {insignia && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+          <div className="animate-[insignia_1.6s_ease-out_forwards] rounded-3xl bg-white px-8 py-6 text-center shadow-2xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#7A1E33] text-white">
+              <Check size={30} />
+            </div>
+            <div className="mt-3 text-[17px] font-bold text-[#7A1E33]" style={{ fontFamily: "Georgia, serif" }}>
+              ¡Nivel completado!
+            </div>
+            <div className="text-[12px] text-[#8a8272]">{insignia}</div>
+          </div>
+          <style>{`@keyframes insignia{0%{opacity:0;transform:scale(.6)}15%{opacity:1;transform:scale(1.05)}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(.95)}}`}</style>
+        </div>
+      )}
 
       <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col py-6">
         <div className="mb-6 flex flex-col items-center text-center">
@@ -1012,6 +1091,9 @@ paso.tipo === "sexo" ? (
         </button>
         <button
           onClick={() => {
+            const siguiente = paginas[pasoIndex + 1];
+            if (siguiente && siguiente[0].seccion !== pagina[0].seccion) setInsignia(pagina[0].seccion);
+            navigator.vibrate?.(15);
             irASiguiente(paginas.length);
             window.scrollTo({ top: 0 });
           }}

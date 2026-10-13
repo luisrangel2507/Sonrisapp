@@ -5,6 +5,7 @@ import { esFechaFutura } from "@/lib/fechas";
 import { guardarHistoriaClinica, obtenerHistoriaClinicaVigente } from "@/lib/historia-clinica";
 import { cifrar, descifrar } from "@/lib/crypto";
 import { registrarAcceso } from "@/lib/bitacora";
+import { PUNTOS_HISTORIA_CLINICA } from "@/lib/recompensas";
 
 // alergias_cual y antecedentes_medicos_cual son texto libre clínico —
 // se cifran en reposo (NOM-024) igual que la historia clínica.
@@ -32,6 +33,10 @@ interface PacientePublico {
   alergias_cual: string | null;
   antecedentes_medicos: boolean | null;
   antecedentes_medicos_cual: string | null;
+  puntos: number;
+  meta_premio: number | null;
+  premio_actual: string | null;
+  historia_puntos_otorgados: boolean;
 }
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
@@ -39,7 +44,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
   try {
     const { rows: pacienteRows } = await query<PacientePublico>(
       `SELECT id, nombre, fecha_nacimiento, telefono, email,
-              alergias, alergias_cual, antecedentes_medicos, antecedentes_medicos_cual
+              alergias, alergias_cual, antecedentes_medicos, antecedentes_medicos_cual,
+              puntos, meta_premio, premio_actual, historia_puntos_otorgados
        FROM pacientes WHERE historial_token = $1`,
       [params.token]
     );
@@ -107,7 +113,19 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
       esPublico: true,
     });
 
-    return NextResponse.json({ historiaClinica });
+    // Recompensa por completarla: solo la primera vez (la condición en el
+    // UPDATE evita duplicarla aunque el paciente la reenvíe).
+    const { rows: premio } = await query<{ puntos: number; meta_premio: number | null; premio_actual: string | null }>(
+      `UPDATE pacientes SET puntos = puntos + $2, historia_puntos_otorgados = true
+       WHERE id = $1 AND historia_puntos_otorgados = false
+       RETURNING puntos, meta_premio, premio_actual`,
+      [pacienteId, PUNTOS_HISTORIA_CLINICA]
+    );
+
+    return NextResponse.json({
+      historiaClinica,
+      recompensa: premio[0] ? { puntosGanados: PUNTOS_HISTORIA_CLINICA, ...premio[0] } : null,
+    });
   } catch (err) {
     return errorJson(err);
   }

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
 import { HISTORIA_CLINICA_VACIA, type FormStateHistoriaClinica } from "@/components/HistoriaClinicaFormulario";
 import { HistoriaClinicaWizard, type DatosPacienteWizard } from "@/components/HistoriaClinicaWizard";
+import { PUNTOS_HISTORIA_CLINICA } from "@/lib/recompensas";
 
 interface PacientePublico {
   id: number;
@@ -16,6 +16,55 @@ interface PacientePublico {
   alergias_cual: string | null;
   antecedentes_medicos: boolean | null;
   antecedentes_medicos_cual: string | null;
+  puntos?: number;
+  meta_premio?: number | null;
+  premio_actual?: string | null;
+  historia_puntos_otorgados?: boolean;
+}
+
+interface Recompensa {
+  puntosGanados: number;
+  puntos: number;
+  meta_premio: number | null;
+  premio_actual: string | null;
+}
+
+// Confeti hecho con CSS (sin librerías): piezas que caen con giro y
+// colores de la marca.
+function Confeti() {
+  const colores = ["#7A1E33", "#D88A9A", "#F0C24E", "#E3B9C1", "#9B3048"];
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      {Array.from({ length: 60 }, (_, i) => (
+        <span
+          key={i}
+          className="absolute top-[-20px] block h-3 w-2 rounded-sm"
+          style={{
+            left: `${(i * 37) % 100}%`,
+            background: colores[i % colores.length],
+            animation: `confeti ${2.4 + (i % 5) * 0.4}s ${(i % 10) * 0.12}s ease-in forwards`,
+          }}
+        />
+      ))}
+      <style>{`@keyframes confeti{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}`}</style>
+    </div>
+  );
+}
+
+function ContadorPuntos({ desde, hasta }: { desde: number; hasta: number }) {
+  const [v, setV] = useState(desde);
+  useEffect(() => {
+    let raf = 0;
+    const inicio = performance.now();
+    const paso = (t: number) => {
+      const k = Math.min(1, (t - inicio) / 1200);
+      setV(Math.round(desde + (hasta - desde) * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) raf = requestAnimationFrame(paso);
+    };
+    raf = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(raf);
+  }, [desde, hasta]);
+  return <>{v}</>;
 }
 
 const DATOS_PACIENTE_VACIOS: DatosPacienteWizard = {
@@ -40,6 +89,7 @@ export default function FormularioPublicoPage() {
   const [guardando, setGuardando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState("");
+  const [recompensa, setRecompensa] = useState<Recompensa | null>(null);
 
   function set<K extends keyof FormStateHistoriaClinica>(campo: K, valor: FormStateHistoriaClinica[K]) {
     setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -95,6 +145,11 @@ export default function FormularioPublicoPage() {
         body: JSON.stringify({ ...form, fecha_nacimiento: fechaNacimiento, ...datosPaciente }),
       });
       if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+      if (data.recompensa) {
+        setRecompensa(data.recompensa);
+        setPaciente((p) => (p ? { ...p, historia_puntos_otorgados: true } : p));
+      }
       setEnviado(true);
     } catch {
       setError("No se pudo enviar tu información. Intenta de nuevo.");
@@ -123,15 +178,50 @@ export default function FormularioPublicoPage() {
   }
 
   if (enviado) {
+    const meta = recompensa?.meta_premio ?? null;
+    const avance = recompensa && meta ? Math.min(100, (recompensa.puntos / meta) * 100) : 0;
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#F5F1EA] px-6 text-center">
-        <div>
-          <CheckCircle2 className="mx-auto mb-3 text-[#3F6B33]" size={40} />
-          <p className="text-lg font-semibold text-[#2b2118]">¡Gracias, {paciente.nombre.split(" ")[0]}!</p>
-          <p className="mt-2 text-sm text-[#8a8272]">Tu información fue enviada. Ya puedes cerrar esta ventana.</p>
+      <div
+        className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 text-center"
+        style={{ background: "linear-gradient(180deg, #F8F1EC 0%, #F3E6E1 100%)" }}
+      >
+        <Confeti />
+        <div className="relative w-full max-w-sm">
+          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-[#7A1E33] text-[44px] shadow-[0_14px_34px_-10px_rgba(122,30,51,0.7)]">
+            🦷
+          </div>
+          <h1 className="mt-5 text-[28px] font-bold leading-tight text-[#7A1E33]" style={{ fontFamily: "Georgia, serif" }}>
+            ¡Lo lograste, {paciente.nombre.split(" ")[0]}!
+          </h1>
+          <p className="mt-2 text-[14px] text-[#8a8272]">Completaste todos los niveles de tu historia clínica. ¡Gracias!</p>
+
+          {recompensa && (
+            <div className="mt-6 rounded-3xl bg-white/90 p-5 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.35)]">
+              <div className="text-[13px] font-semibold uppercase tracking-wide text-[#a49c8a]">Ganaste</div>
+              <div className="text-[44px] font-bold leading-none text-[#7A1E33]">
+                +<ContadorPuntos desde={0} hasta={recompensa.puntosGanados} />
+              </div>
+              <div className="text-[13px] text-[#8a8272]">puntos</div>
+              {meta ? (
+                <div className="mt-4 text-left">
+                  <div className="mb-1 flex justify-between text-[12px] text-[#8a8272]">
+                    <span>{recompensa.premio_actual ?? "Tu próximo premio"}</span>
+                    <span>
+                      <ContadorPuntos desde={recompensa.puntos - recompensa.puntosGanados} hasta={recompensa.puntos} /> / {meta}
+                    </span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-[#EADAD5]">
+                    <div className="h-full rounded-full bg-[#7A1E33] transition-[width] duration-[1500ms]" style={{ width: `${avance}%` }} />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <p className="mt-6 text-[13px] text-[#8a8272]">Ya puedes cerrar esta ventana.</p>
           <button
             onClick={() => setEnviado(false)}
-            className="mt-4 text-[13px] font-medium text-[#803449] underline underline-offset-2"
+            className="mt-2 text-[13px] font-medium text-[#803449] underline underline-offset-2"
           >
             Editar mi respuesta
           </button>
@@ -153,6 +243,7 @@ export default function FormularioPublicoPage() {
         onEnviar={enviar}
         guardando={guardando}
         error={error}
+        puntosPremio={paciente.historia_puntos_otorgados ? null : PUNTOS_HISTORIA_CLINICA}
       />
     </div>
   );
