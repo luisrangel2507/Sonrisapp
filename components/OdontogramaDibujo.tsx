@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { COLOCACION_DIENTES, ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
-import { Eraser, Minus, Pencil, Save, Stamp, Type, Undo2, X, Trash2, Check, History, Stethoscope } from "lucide-react";
+import { Eraser, Save, Stamp, Type, Undo2, X, Trash2, Check, History, Stethoscope } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
@@ -270,6 +270,33 @@ function estadoDeElemento(el: Elemento): string | null {
   if (!par) return null;
   return el.color === COLORES[0].valor ? par[0] : par[1];
 }
+
+// Colores fijos según la hoja de colores de la doctora: lo que ahí tiene
+// un color propio (azul o verde) se pone solo al elegirlo. El resto usa el
+// rojo (mal estado / por tratar) o azul (buen estado) que se elija.
+const AZUL_HOJA = "#2F5DD0";
+const VERDE_HOJA = "#2E9E5B";
+const COLOR_FIJO_SELLO: Partial<Record<string, string>> = {
+  tornillo: AZUL_HOJA,
+  corona_cmp: AZUL_HOJA,
+  corona_clm: AZUL_HOJA,
+  corona_cac: AZUL_HOJA,
+  puente: AZUL_HOJA,
+  sellante: VERDE_HOJA,
+};
+const COLOR_FIJO_TEXTO: Record<string, string> = {
+  MAC: AZUL_HOJA,
+  MIC: AZUL_HOJA,
+  M1: AZUL_HOJA,
+  M2: AZUL_HOJA,
+  M3: AZUL_HOJA,
+  IMP: AZUL_HOJA,
+  CMP: AZUL_HOJA,
+  CLM: AZUL_HOJA,
+  CAC: AZUL_HOJA,
+  INC: AZUL_HOJA,
+  S: VERDE_HOJA,
+};
 
 const ESTADOS_ROJOS = new Set([
   "extraccion_indicada", "caries_recurrente", "caries", "sellante_mal", "endodoncia_mal",
@@ -1117,8 +1144,6 @@ function PantallaCompleta(props: {
   }
 
   const riel: { h: Herramienta; label: string; icon: React.ReactNode }[] = [
-    { h: "lapiz", label: "Lápiz", icon: <Pencil size={20} /> },
-    { h: "linea", label: "Línea", icon: <Minus size={20} /> },
     { h: "sello", label: "Símbolo", icon: <Stamp size={20} /> },
     { h: "texto", label: "Abrev.", icon: <Type size={20} /> },
     { h: "borrar", label: "Borrar", icon: <Eraser size={20} /> },
@@ -1148,15 +1173,6 @@ function PantallaCompleta(props: {
         </button>
       </div>
 
-      {props.sugerencia && (
-        <button
-          onClick={props.usarSugerencia}
-          className="mx-3 mb-2 flex items-center justify-center gap-2 rounded-2xl border border-[#F0C24E]/40 bg-[#F0C24E]/10 px-3 py-2 text-[12px] text-[#F0C24E]"
-        >
-          Registrado en 3D: <span className="font-bold">{props.sugerencia}</span> — toca el diente para colocarlo
-        </button>
-      )}
-
       <div className="flex min-h-0 flex-1 gap-2 px-3 pb-3">
         <div className="relative min-w-0 flex-1 overflow-hidden rounded-3xl bg-white p-2">
           {props.carta}
@@ -1170,6 +1186,8 @@ function PantallaCompleta(props: {
                       key={s.forma}
                       onClick={() => {
                         props.setSello(s.forma);
+                        const fijo = COLOR_FIJO_SELLO[s.forma];
+                        if (fijo) props.setColor(fijo);
                         setPanel(false);
                       }}
                       className={`flex flex-col items-center gap-1 rounded-xl p-2 text-[10px] leading-tight ${
@@ -1194,6 +1212,8 @@ function PantallaCompleta(props: {
                         key={a}
                         onClick={() => {
                           props.setAbreviatura(a);
+                          const fijo = COLOR_FIJO_TEXTO[a];
+                          if (fijo) props.setColor(fijo);
                           setPanel(false);
                         }}
                         className={`rounded-xl py-2.5 font-serif text-[18px] font-bold italic tracking-wide shadow-sm ${
@@ -1212,6 +1232,7 @@ function PantallaCompleta(props: {
                       const t = libre.trim().toUpperCase();
                       if (!t) return;
                       props.setAbreviatura(t.slice(0, 6));
+                      if (COLOR_FIJO_TEXTO[t]) props.setColor(COLOR_FIJO_TEXTO[t]);
                       setLibre("");
                       setPanel(false);
                     }}
@@ -1272,7 +1293,7 @@ function PantallaCompleta(props: {
                 Pintando: <b>{props.significado}</b>
               </span>
               <button onClick={() => props.pintarTratamiento(null)} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
-                Pincel libre
+                Terminar
               </button>
             </div>
           )}

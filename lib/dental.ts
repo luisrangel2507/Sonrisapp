@@ -71,7 +71,7 @@ export const ESTADO_DIENTE: Record<EstadoDienteFijo, { ring: string; glow: strin
   caries: estado("#E8508C", "Caries"),
   restauracion_buena: estado("#3E6FD9", "Restauración u obturación en buen estado"),
   sellante_mal: estado("#D6455B", "Sellante en mal estado"),
-  sellante_bueno: estado("#4C7FE0", "Sellante en buen estado"),
+  sellante_bueno: estado("#2E9E5B", "Sellante en buen estado"),
   endodoncia_mal: estado("#C23B4E", "Endodoncia en mal estado"),
   endodoncia_buena: estado("#4A7FE0", "Endodoncia en buen estado"),
   corona_buena: estado("#3E72D6", "Corona completa en buen estado"),
