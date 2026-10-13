@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { COLOCACION_DIENTES, ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
-import { Eraser, Save, Stamp, Type, Undo2, X, Trash2, Check, History, Stethoscope } from "lucide-react";
+import { Eraser, Save, Stamp, Type, Undo2, X, Trash2, Check, History, Receipt } from "lucide-react";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
@@ -153,15 +153,6 @@ type Elemento = (
   est?: string;
 };
 
-// Tratamientos que se pintan a mano, con el color que marca la norma.
-const TRATAMIENTOS_PINTADOS = [
-  { clave: "Resina", color: "#2E9E5B" },
-  { clave: "Amalgama", color: "#2F5DD0" },
-  { clave: "Material temporal", color: "#D62839" },
-  { clave: "Incrustación", color: "#2F5DD0" },
-  { clave: "Puente (contorno)", color: "#2F5DD0" },
-] as const;
-
 // Las marcas guardadas antes de usar la carta en imagen (sin v=2) se
 // pasan aproximadamente a las coordenadas nuevas.
 function migrar(el: Elemento): Elemento {
@@ -224,16 +215,6 @@ const ABREVIATURAS = [
 
 // Estados del odontograma 3D/foto que, por convención, van en rojo
 // (mal estado / por tratar); el resto en azul.
-// Diagnósticos que se registran pintando a mano (el color lo marca la
-// norma). Al elegirlos se activa el pincel de ese color y el diente se
-// colorea en el 3D y en la foto de todos los dientes.
-const ESTADO_PINTADO: Record<string, { estado: string; color: string }> = {
-  Resina: { estado: "superficie_resina", color: "#2E9E5B" },
-  Amalgama: { estado: "superficie_amalgama", color: "#2F5DD0" },
-  "Material temporal": { estado: "material_temporal", color: "#D62839" },
-  Incrustación: { estado: "incrustacion_buena", color: "#2F5DD0" },
-  "Puente (contorno)": { estado: "protesis_fija_buena", color: "#2F5DD0" },
-};
 // Lo que se marca en el odontograma también colorea el diente en el 3D y
 // en la foto: cada símbolo (o abreviatura) corresponde a un estado, en su
 // versión de mal estado (rojo) o buen estado (azul).
@@ -971,32 +952,7 @@ export function OdontogramaDibujo({
           const sg = sugerencias.find((x) => x.diente === dienteFoco);
           if (sg) usarSugerencia(sg);
         }}
-        puedeRegistrar={!!onRegistrarEstado}
-        significado={significado}
-        pintarTratamiento={async (clave) => {
-          const t = clave ? TRATAMIENTOS_PINTADOS.find((x) => x.clave === clave) : null;
-          if (!t) {
-            setSignificado(null);
-            return;
-          }
-          setColor(t.color);
-          setHerramienta("lapiz");
-          setSignificado(clave);
-          // Queda registrado de una vez: el diente se colorea en el 3D y
-          // en la foto de todos los dientes.
-          const est = ESTADO_PINTADO[t.clave];
-          if (est && dienteFoco != null && historial[dienteFoco]?.estado !== est.estado) {
-            await onRegistrarEstado?.(dienteFoco, { estado: est.estado, tipo: t.clave, nota: null });
-          }
-        }}
-        resumenMarcas={(() => {
-          const cuenta = new Map<string, number>();
-          elementos.forEach((el) => {
-            const delDiente = el.d === dienteFoco || (el.d == null && dienteDeElemento(el) === dienteFoco);
-            if (delDiente && el.m) cuenta.set(el.m, (cuenta.get(el.m) ?? 0) + 1);
-          });
-          return Array.from(cuenta.entries());
-        })()}
+        pacienteId={pacienteId}
         fechas={(() => {
           const set = new Set(
             elementos
@@ -1113,10 +1069,7 @@ function PantallaCompleta(props: {
   tamanoSello: (delta: number) => void;
   fijarSello: () => void;
   quitarSello: () => void;
-  significado: string | null;
-  pintarTratamiento: (clave: string | null) => void | Promise<void>;
-  resumenMarcas: [string, number][];
-  puedeRegistrar: boolean;
+  pacienteId: number;
   fechas: string[];
   etiquetaFecha: (f: string) => string;
   filtroFecha: string | null;
@@ -1127,7 +1080,46 @@ function PantallaCompleta(props: {
   const [panel, setPanel] = useState(false);
   const [libre, setLibre] = useState("");
   const [historial, setHistorial] = useState(false);
-  const [estadoPanel, setEstadoPanel] = useState(false);
+  const [presupuestoAbierto, setPresupuestoAbierto] = useState(false);
+  const [servicios, setServicios] = useState<{ servicio: string; precio: number | null }[]>([]);
+  const [lineas, setLineas] = useState<{ concepto: string; precio: string }[]>([]);
+  const [guardandoPres, setGuardandoPres] = useState(false);
+  const [avisoPres, setAvisoPres] = useState(false);
+
+  useEffect(() => {
+    if (!presupuestoAbierto || servicios.length > 0) return;
+    fetch("/api/precios-servicios")
+      .then((r) => r.json())
+      .then((d) => setServicios(d.precios ?? []))
+      .catch(() => {});
+  }, [presupuestoAbierto, servicios.length]);
+
+  function agregarServicio(concepto: string, precio: number) {
+    setLineas((ls) => (ls.some((l) => l.concepto === concepto) ? ls : [...ls, { concepto, precio: String(precio) }]));
+  }
+
+  async function crearPresupuesto() {
+    setGuardandoPres(true);
+    try {
+      const res = await fetch(`/api/pacientes/${props.pacienteId}/presupuestos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titulo: `Presupuesto diente ${props.diente}`,
+          dientes: [props.diente],
+          items: lineas.map((l) => ({ concepto: l.concepto, cantidad: 1, precio_unitario: Number(l.precio) || 0 })),
+        }),
+      });
+      if (res.ok) {
+        setLineas([]);
+        setPresupuestoAbierto(false);
+        setAvisoPres(true);
+        setTimeout(() => setAvisoPres(false), 2200);
+      }
+    } finally {
+      setGuardandoPres(false);
+    }
+  }
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -1252,49 +1244,75 @@ function PantallaCompleta(props: {
             </div>
           )}
 
-          {estadoPanel && (
-            <div className="absolute inset-x-2 top-2 z-20 max-h-[88%] overflow-y-auto rounded-2xl border border-white/10 bg-[#211a2e]/95 p-3 shadow-2xl backdrop-blur">
+          {presupuestoAbierto && (
+            <div className="absolute inset-x-2 top-2 z-20 max-h-[92%] overflow-y-auto rounded-2xl border border-white/10 bg-[#211a2e]/95 p-3 shadow-2xl backdrop-blur">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
-                  Tratamiento · diente {props.diente}
+                  Presupuesto · diente {props.diente}
                 </span>
-                <button onClick={() => setEstadoPanel(false)} aria-label="Cerrar" className="text-white/60">
+                <button onClick={() => setPresupuestoAbierto(false)} aria-label="Cerrar" className="text-white/60">
                   <X size={16} />
                 </button>
               </div>
-              <div className="mb-3">
-                
-                <div className="flex flex-wrap gap-1.5">
-                  {TRATAMIENTOS_PINTADOS.map((t) => (
-                    <button
-                      key={t.clave}
-                      type="button"
-                      onClick={() => {
-                        props.pintarTratamiento(t.clave);
-                        setEstadoPanel(false);
-                      }}
-                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[12px] text-white/85"
-                    >
-                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.color }} />
-                      {t.clave}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5">
+                {servicios.map((sv) => (
+                  <button
+                    key={sv.servicio}
+                    type="button"
+                    onClick={() => agregarServicio(sv.servicio, sv.precio ?? 0)}
+                    className="rounded-full border border-white/15 px-3 py-1.5 text-left text-[12px] text-white/85"
+                  >
+                    {sv.servicio}
+                    {sv.precio != null && <span className="ml-1 text-white/45">${sv.precio}</span>}
+                  </button>
+                ))}
+                {servicios.length === 0 && <span className="text-[12px] text-white/40">Cargando servicios…</span>}
               </div>
-              <p className="text-[11px] leading-snug text-white/40">
-                Al elegir uno, el pincel toma su color y el diente se colorea en el odontograma 3D y en la foto.
+
+              {lineas.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  {lineas.map((l, i) => (
+                    <div key={l.concepto} className="flex items-center gap-2 rounded-xl bg-white/5 px-2.5 py-2">
+                      <span className="min-w-0 flex-1 truncate text-[12px] text-white">{l.concepto}</span>
+                      <input
+                        inputMode="decimal"
+                        value={l.precio}
+                        onChange={(ev) => setLineas((ls) => ls.map((x, j) => (j === i ? { ...x, precio: ev.target.value } : x)))}
+                        className="w-16 rounded-lg border border-white/15 bg-transparent px-2 py-1 text-right text-[12px] text-white outline-none"
+                        aria-label="Precio"
+                      />
+                      <button
+                        onClick={() => setLineas((ls) => ls.filter((_, j) => j !== i))}
+                        aria-label="Quitar"
+                        className="text-white/50"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex justify-between px-1 pt-1 text-[13px] font-semibold text-white">
+                    <span>Total</span>
+                    <span>${lineas.reduce((t, l) => t + (Number(l.precio) || 0), 0).toLocaleString("es-MX")}</span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                disabled={lineas.length === 0 || guardandoPres}
+                onClick={crearPresupuesto}
+                className="mt-3 w-full rounded-full bg-[#7C5CE0] py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"
+              >
+                {guardandoPres ? "Creando…" : "Crear presupuesto"}
+              </button>
+              <p className="mt-2 text-[11px] leading-snug text-white/40">
+                Se crea ligado al diente {props.diente}. Lo ves y lo compartes en la sección Presupuestos de la ficha.
               </p>
             </div>
           )}
 
-          {props.significado && !estadoPanel && (
-            <div className="absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-2 rounded-2xl bg-[#2b2118]/90 px-3 py-2 text-white shadow-lg">
-              <span className="text-[12px]">
-                Pintando: <b>{props.significado}</b>
-              </span>
-              <button onClick={() => props.pintarTratamiento(null)} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
-                Terminar
-              </button>
+          {avisoPres && (
+            <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center">
+              <span className="rounded-full bg-[#2E9E5B] px-4 py-1.5 text-[13px] font-semibold text-white shadow-lg">Presupuesto creado ✓</span>
             </div>
           )}
 
@@ -1320,15 +1338,6 @@ function PantallaCompleta(props: {
                     >
                       {f === null ? "Todas" : props.etiquetaFecha(f)}
                     </button>
-                  ))}
-                </div>
-              )}
-              {props.resumenMarcas.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {props.resumenMarcas.map(([m, n]) => (
-                    <span key={m} className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-white/80">
-                      {m} ×{n}
-                    </span>
                   ))}
                 </div>
               )}
@@ -1393,23 +1402,21 @@ function PantallaCompleta(props: {
           >
             <Undo2 size={20} /> Deshacer
           </button>
-          {props.puedeRegistrar && (
-            <button
-              onClick={() => {
-                setEstadoPanel((v) => !v);
-                setHistorial(false);
-              }}
-              className={`flex w-[50px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[8px] font-semibold ${
-                estadoPanel ? "bg-[#F0C24E] text-[#2b2118]" : "bg-[#7C5CE0] text-white"
-              }`}
-            >
-              <Stethoscope size={20} /> Tratam.
-            </button>
-          )}
+          <button
+            onClick={() => {
+              setPresupuestoAbierto((v) => !v);
+              setHistorial(false);
+            }}
+            className={`flex w-[50px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[8px] font-semibold ${
+              presupuestoAbierto ? "bg-[#F0C24E] text-[#2b2118]" : "bg-[#7C5CE0] text-white"
+            }`}
+          >
+            <Receipt size={20} /> Presup.
+          </button>
           <button
             onClick={() => {
               setHistorial((v) => !v);
-              setEstadoPanel(false);
+              setPresupuestoAbierto(false);
             }}
             className={`flex w-[50px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[9px] font-medium ${
               historial || props.filtroFecha ? "bg-[#F0C24E] text-[#2b2118]" : "text-white/60"
