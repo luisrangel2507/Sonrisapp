@@ -75,7 +75,21 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
 
 // Parentescos del cuadro de antecedentes heredofamiliares, en el orden
 // del formulario en papel.
-export const PARENTESCOS_FAMILIA = ["Madre", "Padre", "Hermanos", "Hijos", "Primos", "Tíos", "Abuelos"] as const;
+export const PARENTESCOS_FAMILIA = [
+  "Madre",
+  "Padre",
+  "Hermanos",
+  "Hijos",
+  "Primos",
+  "Tíos",
+  "Abuelo materno",
+  "Abuela materna",
+  "Abuelo paterno",
+  "Abuela paterna",
+  // Registro anterior (antes eran "Abuelos" en conjunto): solo se muestra
+  // si ya traía datos, para no perderlos.
+  "Abuelos",
+] as const;
 
 export interface FamiliarDetalle {
   parentesco: string;
@@ -309,7 +323,13 @@ export function TablaFamiliares({
   }
   return (
     <div className="space-y-2">
-      {valor.filter((f) => !parentescos || parentescos.includes(f.parentesco)).map((f) => (
+      {valor
+        .filter((f) => {
+          const tieneDatos = f.vive !== null || !!f.enfermedades || !!f.no_aplica || !!f.si_aplica;
+          if (f.parentesco === "Abuelos") return tieneDatos && (!parentescos || parentescos.includes("Abuelo materno"));
+          return !parentescos || parentescos.includes(f.parentesco);
+        })
+        .map((f) => (
         <div key={f.parentesco} className="rounded-xl border border-[#EFE9DC] p-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-semibold text-[#2b2118]">{f.parentesco}</span>

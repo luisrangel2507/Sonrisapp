@@ -197,9 +197,16 @@ const PASOS: Paso[] = [
   {
     key: "fam_detalle",
     tipo: "familiares",
-    pregunta: "Abuelos: ¿viven? ¿alguna enfermedad?",
+    pregunta: "Abuelos maternos (papás de tu mamá): ¿viven? ¿alguna enfermedad?",
     seccion: "Antecedentes heredofamiliares",
-    parentescos: ["Abuelos"],
+    parentescos: ["Abuelo materno", "Abuela materna"],
+  },
+  {
+    key: "fam_detalle",
+    tipo: "familiares",
+    pregunta: "Abuelos paternos (papás de tu papá): ¿viven? ¿alguna enfermedad?",
+    seccion: "Antecedentes heredofamiliares",
+    parentescos: ["Abuelo paterno", "Abuela paterna"],
   },
   {
     key: "fam_enfermedad_sistemica",
@@ -527,7 +534,7 @@ function altoEstimado(p: Paso): number {
 function pesoPregunta(p: Paso): number {
   if (p.mostrarSi) return 0; // las condicionales no cuentan
   if (p.tipo === "domicilio" || p.tipo === "emergencia") return 3;
-  if (p.tipo === "familiares") return (p.parentescos?.length ?? 7) * 2; // vive + enfermedades
+  if (p.tipo === "familiares") return Math.max(3, (p.parentescos?.length ?? 7) * 2); // vive + enfermedades
   return 1;
 }
 
