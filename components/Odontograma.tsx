@@ -286,20 +286,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
       .catch(() => {});
   }, []);
 
-  async function crearEstadoDesdeCarta(nombre: string): Promise<string | null> {
-    const res = await fetch("/api/estados-diente", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ etiqueta: nombre.trim() }),
-    });
-    const data = await res.json();
-    if (res.ok && data.estado) {
-      setPersonalizados((prev) => [...prev, data.estado]);
-      return data.estado.clave as string;
-    }
-    return null;
-  }
-
   const info = historial[seleccionado];
   const estado = mapaEstados[info?.estado ?? "sano"] ?? ESTADO_DIENTE.sano;
 
@@ -474,7 +460,6 @@ export function Odontograma({ paciente }: { paciente: Paciente }) {
             dienteFoco={dienteMarcar}
             onCambiarFoco={setDienteMarcar}
             onRegistrarEstado={registrarDesdeCarta}
-            onCrearEstado={crearEstadoDesdeCarta}
           />
           </>
         )}

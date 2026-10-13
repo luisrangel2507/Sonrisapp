@@ -234,10 +234,6 @@ const ESTADO_PINTADO: Record<string, { estado: string; color: string }> = {
   Incrustación: { estado: "incrustacion_buena", color: "#2F5DD0" },
   "Puente (contorno)": { estado: "protesis_fija_buena", color: "#2F5DD0" },
 };
-const COLOR_DE_ESTADO_PINTADO: Record<string, string> = Object.fromEntries(
-  Object.values(ESTADO_PINTADO).map((v) => [v.estado, v.color])
-);
-
 const ESTADOS_ROJOS = new Set([
   "extraccion_indicada", "caries_recurrente", "caries", "sellante_mal", "endodoncia_mal",
   "corona_mala", "protesis_fija_mala", "protesis_removible_mala", "implante_malo",
@@ -348,7 +344,6 @@ export function OdontogramaDibujo({
   dienteFoco = null,
   onCambiarFoco,
   onRegistrarEstado,
-  onCrearEstado,
 }: {
   pacienteId: number;
   historial: HistorialDental;
@@ -356,8 +351,6 @@ export function OdontogramaDibujo({
   // Registro del diagnóstico/tratamiento del diente (alimenta los colores
   // del odontograma 3D). Lo guarda quien contiene el historial.
   onRegistrarEstado?: (diente: number, r: { estado: string; tipo: string; nota: string | null }) => Promise<void>;
-  // Crea un estado propio (ej. "Bruxismo") y regresa su clave.
-  onCrearEstado?: (nombre: string) => Promise<string | null>;
   // Diente elegido desde el odontograma 3D/foto: la carta se acerca a
   // esa pieza para marcarla con precisión.
   dienteFoco?: number | null;
@@ -598,59 +591,6 @@ export function OdontogramaDibujo({
       setHerramienta("sello");
     }
     setDienteSugerido(s.diente);
-  }
-
-  // Al elegir un diagnóstico/tratamiento: el color y el símbolo se ponen
-  // solos según la convención (rojo = mal estado/por tratar, azul = bien).
-  function aplicarEstado(clave: string) {
-    setColor(COLOR_DE_ESTADO_PINTADO[clave] ?? (ESTADOS_ROJOS.has(clave) ? ROJO : AZUL));
-    if (clave in COLOR_DE_ESTADO_PINTADO) {
-      // Se pinta a mano: pincel libre con el significado de ese estado.
-      const nombre = Object.entries(ESTADO_PINTADO).find(([, v]) => v.estado === clave)?.[0] ?? null;
-      setSignificado(nombre);
-      setHerramienta("lapiz");
-      return;
-    }
-    setSignificado(null);
-    const simbolo = (SIMBOLO_DIENTE as Record<string, SimboloEstado>)[clave];
-    if (simbolo?.forma === "letra" && simbolo.letra) {
-      setAbreviatura(simbolo.letra);
-      setHerramienta("texto");
-    } else if (clave.startsWith("implante")) {
-      setSello("tornillo");
-      setHerramienta("sello");
-    } else if (simbolo && simbolo.forma !== "ninguno") {
-      setSello(FORMA_DESDE_SIMBOLO[simbolo.forma] ?? "circulo_relleno");
-      setHerramienta("sello");
-    }
-  }
-
-  // Todo diagnóstico queda dibujado en el diente con su símbolo (o su
-  // abreviatura en el recuadro), listo para acomodarlo y fijarlo con
-  // "Listo". Si ya se había puesto el de ese diagnóstico, no se repite.
-  function colocarMarcaDeEstado(clave: string, diente: number) {
-    if (clave === "sano" || clave in COLOR_DE_ESTADO_PINTADO) return;
-    if (elementos.some((el) => el.est === clave && (el.t === "texto" ? el.diente === diente : el.d === diente || dienteDeElemento(el) === diente))) return;
-    const simbolo = (SIMBOLO_DIENTE as Record<string, SimboloEstado>)[clave];
-    const col = ESTADOS_ROJOS.has(clave) ? ROJO : AZUL;
-    if (simbolo?.forma === "letra" && simbolo.letra) {
-      cambiar([...elementos, { t: "texto", color: col, texto: simbolo.letra, diente, v: 2, est: clave }]);
-      return;
-    }
-    if (!simbolo || simbolo.forma === "ninguno") return;
-    const forma: FormaSello = clave.startsWith("implante") ? "tornillo" : FORMA_DESDE_SIMBOLO[simbolo.forma] ?? "circulo_relleno";
-    let x: number, y: number;
-    const real = DIENTES_REALISTAS.has(diente);
-    if (real) {
-      [x, y] = [IMG_REAL.x + IMG_REAL.w / 2, IMG_REAL.y + IMG_REAL.h * 0.5];
-    } else {
-      const arriba = ARCO_SUPERIOR.includes(diente);
-      const c = arriba ? ARCO_SUPERIOR.indexOf(diente) : ARCO_INFERIOR_VISUAL.indexOf(diente);
-      [x, y] = [colX(c) + anchoCol(c) / 2, arriba ? FRANJA + 200 : LINEA_MEDIA_Y + 200];
-    }
-    const nuevo: Elemento = { t: "sello", color: col, forma, x, y, v: 2, est: clave, ...(real ? { d: diente } : {}) };
-    cambiar([...elementos, nuevo]);
-    setEditando(elementos.length);
   }
 
   // Al llegar desde el 3D con un diente elegido: se resalta y, si ya
@@ -932,16 +872,7 @@ export function OdontogramaDibujo({
           const sg = sugerencias.find((x) => x.diente === dienteFoco);
           if (sg) usarSugerencia(sg);
         }}
-        estados={Object.entries(etiquetasEstado).map(([key, v]) => ({ key, label: v.label, ring: v.ring ?? "#9aa" }))}
-        estadoActual={dienteFoco != null ? historial[dienteFoco]?.estado ?? "sano" : "sano"}
         puedeRegistrar={!!onRegistrarEstado}
-        crearEstado={onCrearEstado}
-        elegirEstado={aplicarEstado}
-        registrarEstado={async (estado, tipo, nota) => {
-          if (dienteFoco == null) return;
-          await onRegistrarEstado?.(dienteFoco, { estado, tipo, nota });
-          colocarMarcaDeEstado(estado, dienteFoco);
-        }}
         significado={significado}
         pintarTratamiento={async (clave) => {
           const t = clave ? TRATAMIENTOS_PINTADOS.find((x) => x.clave === clave) : null;
@@ -1082,12 +1013,7 @@ function PantallaCompleta(props: {
   significado: string | null;
   pintarTratamiento: (clave: string | null) => void | Promise<void>;
   resumenMarcas: [string, number][];
-  estados: { key: string; label: string; ring: string }[];
-  estadoActual: string;
   puedeRegistrar: boolean;
-  crearEstado?: (nombre: string) => Promise<string | null>;
-  elegirEstado: (clave: string) => void;
-  registrarEstado: (estado: string, tipo: string, nota: string | null) => Promise<void>;
   fechas: string[];
   etiquetaFecha: (f: string) => string;
   filtroFecha: string | null;
@@ -1099,14 +1025,6 @@ function PantallaCompleta(props: {
   const [libre, setLibre] = useState("");
   const [historial, setHistorial] = useState(false);
   const [estadoPanel, setEstadoPanel] = useState(false);
-  const [estadoSel, setEstadoSel] = useState<string | null>(null);
-  const [tipoTrat, setTipoTrat] = useState("");
-  const [notaTrat, setNotaTrat] = useState("");
-  const [guardandoEstado, setGuardandoEstado] = useState(false);
-  const [avisoEstado, setAvisoEstado] = useState(false);
-  const [nuevoEstado, setNuevoEstado] = useState("");
-  const [creandoEstado, setCreandoEstado] = useState(false);
-  const etiquetaActual = props.estados.find((e) => e.key === props.estadoActual)?.label;
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -1144,9 +1062,6 @@ function PantallaCompleta(props: {
         <div className="flex-1 text-center">
           <div className="text-[10px] uppercase tracking-widest text-white/40">Marcando</div>
           <div className="text-[17px] font-bold text-[#F0C24E]">Diente {props.diente}</div>
-          {props.puedeRegistrar && etiquetaActual && props.estadoActual !== "sano" && (
-            <div className="text-[11px] text-white/60">{etiquetaActual}</div>
-          )}
         </div>
         <button
           onClick={props.guardar}
@@ -1244,14 +1159,14 @@ function PantallaCompleta(props: {
             <div className="absolute inset-x-2 top-2 z-20 max-h-[88%] overflow-y-auto rounded-2xl border border-white/10 bg-[#211a2e]/95 p-3 shadow-2xl backdrop-blur">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
-                  Diagnóstico / tratamiento · diente {props.diente}
+                  Tratamiento · diente {props.diente}
                 </span>
                 <button onClick={() => setEstadoPanel(false)} aria-label="Cerrar" className="text-white/60">
                   <X size={16} />
                 </button>
               </div>
               <div className="mb-3">
-                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">Pintar a mano</div>
+                
                 <div className="flex flex-wrap gap-1.5">
                   {TRATAMIENTOS_PINTADOS.map((t) => (
                     <button
@@ -1269,90 +1184,8 @@ function PantallaCompleta(props: {
                   ))}
                 </div>
               </div>
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">Diagnóstico</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {props.estados.filter((e) => !["superficie_resina", "superficie_amalgama", "material_temporal"].includes(e.key)).map((e) => (
-                  <button
-                    key={e.key}
-                    type="button"
-                    onClick={() => {
-                      setEstadoSel(e.key);
-                      props.elegirEstado(e.key);
-                    }}
-                    className={`flex items-center gap-1.5 rounded-xl border px-2 py-2 text-left text-[11px] leading-tight ${
-                      (estadoSel ?? props.estadoActual) === e.key ? "border-white/70 bg-white/15 text-white" : "border-white/10 text-white/75"
-                    }`}
-                  >
-                    <span className="h-3 w-3 shrink-0 rounded-full border border-white/30" style={{ backgroundColor: e.ring }} />
-                    <span>{e.label}</span>
-                  </button>
-                ))}
-              </div>
-              {props.crearEstado && (
-                <div className="mt-2 flex gap-1.5">
-                  <input
-                    value={nuevoEstado}
-                    onChange={(ev) => setNuevoEstado(ev.target.value)}
-                    placeholder="¿No está? Crea un estado (ej. Bruxismo)"
-                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white placeholder:text-white/30 outline-none"
-                  />
-                  <button
-                    disabled={!nuevoEstado.trim() || creandoEstado}
-                    onClick={async () => {
-                      setCreandoEstado(true);
-                      try {
-                        const clave = await props.crearEstado!(nuevoEstado);
-                        if (clave) {
-                          setEstadoSel(clave);
-                          setNuevoEstado("");
-                        }
-                      } finally {
-                        setCreandoEstado(false);
-                      }
-                    }}
-                    className="shrink-0 rounded-xl bg-white/15 px-3 text-[12px] font-semibold text-white disabled:opacity-40"
-                  >
-                    {creandoEstado ? "…" : "Crear"}
-                  </button>
-                </div>
-              )}
-              <input
-                value={tipoTrat}
-                onChange={(ev) => setTipoTrat(ev.target.value)}
-                placeholder="Tipo de tratamiento (ej. Resina) — opcional"
-                className="mt-3 w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
-              />
-              <textarea
-                value={notaTrat}
-                onChange={(ev) => setNotaTrat(ev.target.value)}
-                placeholder="Nota (opcional)"
-                rows={2}
-                className="mt-2 w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
-              />
-              <button
-                disabled={!estadoSel || guardandoEstado}
-                onClick={async () => {
-                  if (!estadoSel) return;
-                  setGuardandoEstado(true);
-                  const lab = props.estados.find((e) => e.key === estadoSel)?.label ?? estadoSel;
-                  try {
-                    await props.registrarEstado(estadoSel, tipoTrat.trim() || lab, notaTrat.trim() || null);
-                    setTipoTrat("");
-                    setNotaTrat("");
-                    setEstadoSel(null);
-                    setEstadoPanel(false);
-                    setAvisoEstado(true);
-                    setTimeout(() => setAvisoEstado(false), 1800);
-                  } finally {
-                    setGuardandoEstado(false);
-                  }
-                }}
-                className="mt-3 w-full rounded-full bg-[#7C5CE0] py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"
-              >
-                {guardandoEstado ? "Guardando…" : "Guardar diagnóstico"}
-              </button>
-              <p className="mt-2 text-[11px] leading-snug text-white/40">
-                Al elegirlo, el color y el símbolo del pincel se ponen solos. El color del diente en el odontograma 3D cambia con este diagnóstico.
+              <p className="text-[11px] leading-snug text-white/40">
+                Al elegir uno, el pincel toma su color y el diente se colorea en el odontograma 3D y en la foto.
               </p>
             </div>
           )}
@@ -1365,12 +1198,6 @@ function PantallaCompleta(props: {
               <button onClick={() => props.pintarTratamiento(null)} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
                 Pincel libre
               </button>
-            </div>
-          )}
-
-          {avisoEstado && (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center">
-              <span className="rounded-full bg-[#2E9E5B] px-4 py-1.5 text-[13px] font-semibold text-white shadow-lg">Diagnóstico guardado ✓</span>
             </div>
           )}
 
@@ -1479,7 +1306,7 @@ function PantallaCompleta(props: {
                 estadoPanel ? "bg-[#F0C24E] text-[#2b2118]" : "bg-[#7C5CE0] text-white"
               }`}
             >
-              <Stethoscope size={20} /> Estado
+              <Stethoscope size={20} /> Tratam.
             </button>
           )}
           <button
