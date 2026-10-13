@@ -1,2 +1,2 @@
 // Generado por scripts/componer-carta.py — no editar a mano.
-export const ODONTOGRAMA_VERSION = "de9d2fcdad";
+export const ODONTOGRAMA_VERSION = "942aa8efc1";
