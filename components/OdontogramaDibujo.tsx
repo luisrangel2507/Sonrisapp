@@ -234,6 +234,43 @@ const ESTADO_PINTADO: Record<string, { estado: string; color: string }> = {
   Incrustación: { estado: "incrustacion_buena", color: "#2F5DD0" },
   "Puente (contorno)": { estado: "protesis_fija_buena", color: "#2F5DD0" },
 };
+// Lo que se marca en el odontograma también colorea el diente en el 3D y
+// en la foto: cada símbolo (o abreviatura) corresponde a un estado, en su
+// versión de mal estado (rojo) o buen estado (azul).
+const ESTADO_DE_SELLO: Partial<Record<string, [mal: string, bien: string]>> = {
+  circulo_relleno: ["caries", "restauracion_buena"],
+  circulo_halo: ["caries_recurrente", "caries_recurrente"],
+  x: ["extraccion_indicada", "extraido"],
+  doble_linea: ["extraccion_indicada", "extraccion_indicada"],
+  linea_h: ["ausente", "ausente"],
+  linea_v: ["endodoncia_mal", "endodoncia_buena"],
+  triangulo: ["endodoncia_mal", "endodoncia_buena"],
+  circulo: ["corona_mala", "corona_buena"],
+  corona_cmp: ["corona_mala", "corona_buena"],
+  corona_clm: ["corona_mala", "corona_buena"],
+  corona_cac: ["corona_mala", "corona_buena"],
+  puente: ["protesis_fija_mala", "protesis_fija_buena"],
+  tornillo: ["implante_malo", "implante_bueno"],
+  sellante: ["sellante_mal", "sellante_bueno"],
+};
+const ESTADO_DE_TEXTO: Record<string, [string, string]> = {
+  S: ["sellante_mal", "sellante_bueno"],
+  INC: ["incrustacion_mala", "incrustacion_buena"],
+  CMP: ["corona_mala", "corona_buena"],
+  CLM: ["corona_mala", "corona_buena"],
+  CAC: ["corona_mala", "corona_buena"],
+  IMP: ["implante_malo", "implante_bueno"],
+  CC: ["corona_mala", "corona_buena"],
+  TCC: ["endodoncia_mal", "endodoncia_buena"],
+  PF: ["protesis_fija_mala", "protesis_fija_buena"],
+  PR: ["protesis_removible_mala", "protesis_removible_buena"],
+};
+function estadoDeElemento(el: Elemento): string | null {
+  const par = el.t === "sello" ? ESTADO_DE_SELLO[el.forma] : el.t === "texto" ? ESTADO_DE_TEXTO[el.texto.toUpperCase()] : undefined;
+  if (!par) return null;
+  return el.color === COLORES[0].valor ? par[0] : par[1];
+}
+
 const ESTADOS_ROJOS = new Set([
   "extraccion_indicada", "caries_recurrente", "caries", "sellante_mal", "endodoncia_mal",
   "corona_mala", "protesis_fija_mala", "protesis_removible_mala", "implante_malo",
@@ -519,7 +556,9 @@ export function OdontogramaDibujo({
     } else if (herramienta === "texto") {
       const diente = lienzo ?? dienteEn(x, y);
       if (diente !== null) {
-        cambiar([...elementos, { t: "texto", color, texto: abreviatura, diente, v: 2 }]);
+        const nuevoTexto: Elemento = { t: "texto", color, texto: abreviatura, diente, v: 2 };
+        cambiar([...elementos, nuevoTexto]);
+        void registrarEstadoDeMarca(nuevoTexto);
         setDienteSugerido(null);
       }
     }
@@ -592,6 +631,39 @@ export function OdontogramaDibujo({
     }
     setDienteSugerido(s.diente);
   }
+
+  // Registra en el historial el estado que representa una marca, para que
+  // el diente cambie de color en el 3D y en la foto de todos los dientes.
+  async function registrarEstadoDeMarca(el: Elemento) {
+    const est = estadoDeElemento(el);
+    if (!est || !onRegistrarEstado) return;
+    const diente = el.t === "texto" ? el.diente : el.d ?? dienteDeElemento(el);
+    if (diente == null || historial[diente]?.estado === est) return;
+    const etiqueta = etiquetasEstado[est]?.label ?? est;
+    await onRegistrarEstado(diente, { estado: est, tipo: etiqueta, nota: null });
+  }
+
+  // Marcas hechas antes de que existiera este vínculo: una sola vez al
+  // abrir, los dientes que siguen "sanos" toman el estado de su última marca.
+  const sincronizado = useRef(false);
+  useEffect(() => {
+    if (sincronizado.current || cargando || !onRegistrarEstado || Object.keys(historial).length === 0) return;
+    sincronizado.current = true;
+    const porDiente = new Map<number, string>();
+    elementos.forEach((el) => {
+      const est = estadoDeElemento(el);
+      const d = el.t === "texto" ? el.diente : el.d ?? dienteDeElemento(el);
+      if (est && d != null) porDiente.set(d, est);
+    });
+    (async () => {
+      for (const [d, est] of Array.from(porDiente.entries())) {
+        if ((historial[d]?.estado ?? "sano") === "sano") {
+          await onRegistrarEstado(d, { estado: est, tipo: etiquetasEstado[est]?.label ?? est, nota: null });
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargando, historial, elementos]);
 
   // Al llegar desde el 3D con un diente elegido: se resalta y, si ya
   // tiene una condición registrada, se deja listo su símbolo/color.
@@ -911,7 +983,11 @@ export function OdontogramaDibujo({
         setFiltroFecha={setFiltroFecha}
         editandoSello={editando !== null}
         tamanoSello={tamanoEditando}
-        fijarSello={() => setEditando(null)}
+        fijarSello={() => {
+          const el = editando !== null ? elementos[editando] : null;
+          setEditando(null);
+          if (el) registrarEstadoDeMarca(el);
+        }}
         quitarSello={() => {
           if (editando === null) return;
           cambiar(elementos.filter((_, i) => i !== editando));
