@@ -1,5 +1,5 @@
 // Generado por scripts/componer-carta.py — no editar a mano.
-export const ODONTOGRAMA_VERSION = "0ead820783";
+export const ODONTOGRAMA_VERSION = "5afac5eab3";
 // Colocación de cada ilustración en la carta: [escala, x, y] del lienzo.
 export const COLOCACION_DIENTES: Record<number, [number, number, number]> = {
   11: [0.28024, 439.96, 75.96],
