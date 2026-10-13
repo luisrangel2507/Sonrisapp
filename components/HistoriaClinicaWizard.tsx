@@ -166,18 +166,18 @@ const PASOS: Paso[] = [
     // contestó la fecha de nacimiento), se asume que no aplica.
     mostrarSi: (_f, edad) => edad !== null && edad < 18,
   },
-  { key: "domicilio", tipo: "domicilio", pregunta: "¿Cuál es tu domicilio?", seccion: "Ficha de identificación" },
   { key: "ocupacion", tipo: "texto", pregunta: "¿Cuál es tu ocupación?", seccion: "Ficha de identificación" },
-  {
-    key: "emergencia",
-    tipo: "emergencia",
-    pregunta: "En caso de emergencia, ¿a quién llamamos?",
-    seccion: "Ficha de identificación",
-  },
   {
     key: "motivo_consulta",
     tipo: "texto",
     pregunta: "¿Cuál es el motivo de tu consulta?",
+    seccion: "Ficha de identificación",
+  },
+  { key: "domicilio", tipo: "domicilio", pregunta: "¿Cuál es tu domicilio?", seccion: "Ficha de identificación" },
+  {
+    key: "emergencia",
+    tipo: "emergencia",
+    pregunta: "En caso de emergencia, ¿a quién llamamos?",
     seccion: "Ficha de identificación",
   },
   {
@@ -500,47 +500,111 @@ const SECCIONES: Seccion[] = [
 // llenar un alto estimado (px). Las preguntas condicionales ("¿cuál?")
 // reservan su espacio en la página de la pregunta que las abre, para que
 // la pantalla no crezca al contestar.
-const ALTO_PAGINA = 425;
+const ALTO_PAGINA = 430;
+// Mínimo de preguntas por página (domicilio, contacto de emergencia y la
+// tabla de familiares cuentan por sus campos). Si no caben sin scroll,
+// se prefiere un poco de scroll antes que una página con menos de 3.
+const MIN_PREGUNTAS = 3;
 
 function altoEstimado(p: Paso): number {
   const largo = p.pregunta.length > 42 ? 20 : 0;
   switch (p.tipo) {
     case "domicilio":
-      return 380;
     case "emergencia":
-      return 330;
+      return 297;
     case "familiares":
-      return 70 + (p.parentescos?.length ?? 7) * 108;
+      return 70 + (p.parentescos?.length ?? 7) * 100;
     case "opciones":
     case "multi":
       return 90 + largo + Math.ceil(p.opciones.length / 2) * 44;
     default:
-      return 105 + (p.pregunta.length > 42 ? 20 : 0);
+      // Las condicionales ("¿Cuál?") van dentro de la tarjeta de su
+      // pregunta; solo se reserva un poco de espacio por si aparecen.
+      return p.mostrarSi ? 36 : 105 + largo;
   }
 }
 
+function pesoPregunta(p: Paso): number {
+  if (p.mostrarSi) return 0; // las condicionales no cuentan
+  if (p.tipo === "domicilio" || p.tipo === "emergencia") return 3;
+  if (p.tipo === "familiares") return (p.parentescos?.length ?? 7) * 2; // vive + enfermedades
+  return 1;
+}
+
+// Cada grupo es una pregunta con sus condicionales (las que vienen justo
+// después): siempre van juntas.
+const GRUPOS: Paso[][] = (() => {
+  const grupos: Paso[][] = [];
+  for (const p of PASOS) {
+    if (p.mostrarSi && grupos.length > 0) grupos[grupos.length - 1].push(p);
+    else grupos.push([p]);
+  }
+  return grupos;
+})();
+
+// "Antecedentes médicos" tiene solo 2 preguntas: para cumplir el mínimo de
+// 3 por página se pagina junto con la sección anterior.
+function seccionPaginacion(p: Paso): Seccion {
+  return p.seccion === "Antecedentes médicos" ? "Antecedentes odontológicos" : p.seccion;
+}
+
 const PAGINAS: Paso[][] = (() => {
-  const paginas: Paso[][] = [];
-  let actual: Paso[] = [];
+  const altoGrupo = (g: Paso[]) => g.reduce((t, p) => t + altoEstimado(p), 0);
+  const pesoGrupos = (gs: Paso[][]) => gs.reduce((t, g) => t + pesoPregunta(g[0]), 0);
+
+  let paginas: Paso[][][] = [];
+  let actual: Paso[][] = [];
   let alto = 0;
-  for (let i = 0; i < PASOS.length; i++) {
-    const p = PASOS[i];
-    // Una pregunta se mide junto con sus condicionales (las que vienen
-    // justo después), porque siempre van en su misma página.
-    let h = altoEstimado(p);
-    for (let j = i + 1; j < PASOS.length && PASOS[j].mostrarSi && !p.mostrarSi; j++) h += altoEstimado(PASOS[j]);
-    const cambiaSeccion = actual.length > 0 && actual[0].seccion !== p.seccion;
-    if (cambiaSeccion || (!p.mostrarSi && actual.length > 0 && alto + h > ALTO_PAGINA)) {
+  for (const g of GRUPOS) {
+    const h = altoGrupo(g);
+    const cambia = actual.length > 0 && seccionPaginacion(actual[0][0]) !== seccionPaginacion(g[0]);
+    if (actual.length > 0 && (cambia || (pesoGrupos(actual) >= MIN_PREGUNTAS && alto + h > ALTO_PAGINA))) {
       paginas.push(actual);
       actual = [];
       alto = 0;
     }
-    actual.push(p);
-    // Las condicionales ya se contaron junto con su pregunta.
-    if (!p.mostrarSi) alto += h;
+    actual.push(g);
+    alto += h;
   }
   if (actual.length) paginas.push(actual);
-  return paginas;
+
+  // Si la última página de una sección se queda con menos de 3 preguntas,
+  // se reparte toda la sección en páginas parejas (cada una con 3 o más).
+  const final: Paso[][][] = [];
+  let k = 0;
+  while (k < paginas.length) {
+    const seccion = seccionPaginacion(paginas[k][0][0]);
+    let fin = k;
+    while (fin + 1 < paginas.length && seccionPaginacion(paginas[fin + 1][0][0]) === seccion) fin++;
+    const delSeccion = paginas.slice(k, fin + 1);
+    const ultima = delSeccion[delSeccion.length - 1];
+    if (pesoGrupos(ultima) >= MIN_PREGUNTAS || delSeccion.length === 1) {
+      final.push(...delSeccion);
+    } else {
+      const grupos = delSeccion.flat();
+      const total = pesoGrupos(grupos);
+      const n = Math.max(1, Math.floor(total / MIN_PREGUNTAS));
+      const meta = total / n;
+      let actualPag: Paso[][] = [];
+      let acum = 0;
+      for (const g of grupos) {
+        actualPag.push(g);
+        acum += pesoPregunta(g[0]);
+        if (acum >= meta - 0.01 && final.length - (final.length - 0) >= 0 && actualPag.length > 0 && acum >= MIN_PREGUNTAS) {
+          final.push(actualPag);
+          actualPag = [];
+          acum = 0;
+        }
+      }
+      if (actualPag.length) {
+        if (final.length > 0 && seccionPaginacion(final[final.length - 1][0][0]) === seccion && pesoGrupos(actualPag) < MIN_PREGUNTAS) final[final.length - 1].push(...actualPag);
+        else final.push(actualPag);
+      }
+    }
+    k = fin + 1;
+  }
+  paginas = final;
+  return paginas.map((pag) => pag.flat());
 })();
 
 const ICONO_SECCION: Record<Seccion, LucideIcon> = {
@@ -1095,15 +1159,28 @@ paso.tipo === "sexo" ? (
         </div>
 
         <div className="space-y-2">
-          {pagina.map((paso) => (
-            <div
-              key={String(paso.key) + paso.tipo + paso.pregunta}
-              className="rounded-3xl bg-white/85 p-3 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur"
-            >
-              <EtiquetaPregunta pregunta={paso.pregunta} />
-              <div className="mt-2">{campo(paso)}</div>
-            </div>
-          ))}
+          {pagina
+            .reduce<Paso[][]>((grupos, paso) => {
+              // Las condicionales ("¿Cuál?") van dentro de la tarjeta de su pregunta.
+              if (paso.mostrarSi && grupos.length > 0) grupos[grupos.length - 1].push(paso);
+              else grupos.push([paso]);
+              return grupos;
+            }, [])
+            .map((grupo) => (
+              <div
+                key={String(grupo[0].key) + grupo[0].tipo + grupo[0].pregunta}
+                className="rounded-3xl bg-white/85 p-3 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur"
+              >
+                <EtiquetaPregunta pregunta={grupo[0].pregunta} />
+                <div className="mt-2">{campo(grupo[0])}</div>
+                {grupo.slice(1).map((cond) => (
+                  <div key={String(cond.key) + cond.pregunta} className="mt-2">
+                    <div className="mb-1 text-[12px] font-medium text-[#8a8272]">{cond.pregunta}</div>
+                    {campo(cond)}
+                  </div>
+                ))}
+              </div>
+            ))}
         </div>
       </div>
 
