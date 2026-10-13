@@ -83,10 +83,14 @@ export interface FamiliarDetalle {
   enfermedades: string | null;
   // "No aplica" (ej. hijo único): no se pregunta si vive ni enfermedades.
   no_aplica?: boolean;
+  // Solo para Primos y Tíos: "Sí aplica" (hay algún caso que declarar).
+  si_aplica?: boolean;
 }
 
 // Parentescos que pueden marcarse como "No aplica".
-export const PARENTESCOS_NO_APLICA: readonly string[] = ["Hermanos"];
+export const PARENTESCOS_NO_APLICA: readonly string[] = ["Hermanos", "Hijos"];
+// Parentescos que no preguntan "vive / finado": solo "Sí aplica" o "No aplica".
+export const PARENTESCOS_SOLO_APLICA: readonly string[] = ["Primos", "Tíos"];
 
 // fam_detalle se guarda como JSON en un solo TEXT (cifrado) — estos
 // helpers evitan repetir el parse/serialize en cada lugar que lo usa.
@@ -103,7 +107,7 @@ export function parsearFamDetalle(json: string | null): FamiliarDetalle[] {
 }
 
 export function serializarFamDetalle(lista: FamiliarDetalle[]): string | null {
-  const conDatos = lista.filter((f) => f.vive !== null || f.enfermedades || f.no_aplica);
+  const conDatos = lista.filter((f) => f.vive !== null || f.enfermedades || f.no_aplica || f.si_aplica);
   return conDatos.length > 0 ? JSON.stringify(lista) : null;
 }
 
@@ -310,11 +314,25 @@ export function TablaFamiliares({
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-semibold text-[#2b2118]">{f.parentesco}</span>
             <div className="flex gap-1.5">
-              {PARENTESCOS_NO_APLICA.includes(f.parentesco) && (
+              {PARENTESCOS_SOLO_APLICA.includes(f.parentesco) && (
+                <button
+                  type="button"
+                  onClick={() => actualizar(f.parentesco, f.si_aplica ? { si_aplica: false } : { si_aplica: true, no_aplica: false })}
+                  className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
+                    f.si_aplica ? "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+                  }`}
+                >
+                  Sí aplica
+                </button>
+              )}
+              {(PARENTESCOS_NO_APLICA.includes(f.parentesco) || PARENTESCOS_SOLO_APLICA.includes(f.parentesco)) && (
                 <button
                   type="button"
                   onClick={() =>
-                    actualizar(f.parentesco, f.no_aplica ? { no_aplica: false } : { no_aplica: true, vive: null, enfermedades: null })
+                    actualizar(
+                      f.parentesco,
+                      f.no_aplica ? { no_aplica: false } : { no_aplica: true, si_aplica: false, vive: null, enfermedades: null }
+                    )
                   }
                   className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
                     f.no_aplica ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
@@ -323,33 +341,37 @@ export function TablaFamiliares({
                   No aplica
                 </button>
               )}
-              <button
-                type="button"
-                disabled={f.no_aplica}
-                onClick={() => actualizar(f.parentesco, { vive: true, no_aplica: false })}
-                className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
-                  f.vive === true ? "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
-                }`}
-              >
-                Vive
-              </button>
-              <button
-                type="button"
-                disabled={f.no_aplica}
-                onClick={() => actualizar(f.parentesco, { vive: false, no_aplica: false })}
-                className={`rounded-full border px-3 py-1 text-[12px] font-semibold ${
-                  f.vive === false ? "border-[#B0503A] bg-[#F7E5E0] text-[#B0503A]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
-                }`}
-              >
-                Finado
-              </button>
+              {!PARENTESCOS_SOLO_APLICA.includes(f.parentesco) && (
+                <>
+                  <button
+                    type="button"
+                    disabled={f.no_aplica}
+                    onClick={() => actualizar(f.parentesco, { vive: true, no_aplica: false })}
+                    className={`rounded-full border px-3 py-1 text-[12px] font-semibold disabled:opacity-40 ${
+                      f.vive === true ? "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+                    }`}
+                  >
+                    Vive
+                  </button>
+                  <button
+                    type="button"
+                    disabled={f.no_aplica}
+                    onClick={() => actualizar(f.parentesco, { vive: false, no_aplica: false })}
+                    className={`rounded-full border px-3 py-1 text-[12px] font-semibold disabled:opacity-40 ${
+                      f.vive === false ? "border-[#B0503A] bg-[#F7E5E0] text-[#B0503A]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+                    }`}
+                  >
+                    Finado
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <input
             value={f.enfermedades ?? ""}
-            disabled={f.no_aplica}
+            disabled={f.no_aplica || (PARENTESCOS_SOLO_APLICA.includes(f.parentesco) && !f.si_aplica)}
             onChange={(e) => actualizar(f.parentesco, { enfermedades: e.target.value || null })}
-            placeholder="Enfermedades (si aplica)"
+            placeholder={PARENTESCOS_SOLO_APLICA.includes(f.parentesco) ? "¿Qué enfermedad? (si aplica)" : "Enfermedades (si aplica)"}
             className="mt-2 w-full rounded-lg border border-[#EFE9DC] bg-white px-2.5 py-1.5 text-[13px] text-[#2b2118] outline-none focus:border-[#803449] disabled:opacity-40"
           />
         </div>

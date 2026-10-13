@@ -697,8 +697,8 @@ function valorLegible(paso: Paso, form: FormStateHistoriaClinica, datosPaciente:
     return (datosPaciente[paso.key] as string | null) || "—";
   }
   if (paso.tipo === "familiares") {
-    const lista = parsearFamDetalle(form.fam_detalle).filter((f) => f.vive !== null || f.enfermedades || f.no_aplica);
-    return lista.length ? lista.map((f) => `${f.parentesco}: ${f.no_aplica ? "no aplica" : f.vive === true ? "vive" : f.vive === false ? "finado" : "—"}`).join(" · ") : "—";
+    const lista = parsearFamDetalle(form.fam_detalle).filter((f) => f.vive !== null || f.enfermedades || f.no_aplica || f.si_aplica);
+    return lista.length ? lista.map((f) => `${f.parentesco}: ${f.no_aplica ? "no aplica" : f.si_aplica ? "sí aplica" : f.vive === true ? "vive" : f.vive === false ? "finado" : "—"}`).join(" · ") : "—";
   }
   if (paso.tipo === "opciones") {
     if (paso.key === "esquema_vacunacion") {
