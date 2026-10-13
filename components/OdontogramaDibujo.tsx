@@ -113,6 +113,10 @@ const ROJO = COLORES[0].valor;
 const AZUL = COLORES[1].valor;
 
 type FormaSello =
+  | "corona_cmp"
+  | "corona_clm"
+  | "corona_cac"
+  | "sellante"
   | "tornillo"
   | "x"
   | "linea_h"
@@ -139,7 +143,24 @@ type Elemento = (
   | { t: "linea"; color: string; x1: number; y1: number; x2: number; y2: number }
   | { t: "sello"; color: string; forma: FormaSello; x: number; y: number; e?: number }
   | { t: "texto"; color: string; texto: string; diente: number }
-) & { v?: number; d?: number; f?: string };
+) & {
+  v?: number;
+  d?: number;
+  f?: string;
+  // Significado de un trazo a mano (ej. "Resina") y diagnóstico del que
+  // viene una marca puesta automáticamente.
+  m?: string;
+  est?: string;
+};
+
+// Tratamientos que se pintan a mano, con el color que marca la norma.
+const TRATAMIENTOS_PINTADOS = [
+  { clave: "Resina", color: "#2E9E5B" },
+  { clave: "Amalgama", color: "#2F5DD0" },
+  { clave: "Material temporal", color: "#D62839" },
+  { clave: "Incrustación", color: "#2F5DD0" },
+  { clave: "Puente (contorno)", color: "#2F5DD0" },
+] as const;
 
 // Las marcas guardadas antes de usar la carta en imagen (sin v=2) se
 // pasan aproximadamente a las coordenadas nuevas.
@@ -175,6 +196,10 @@ const SELLOS: { forma: FormaSello; label: string }[] = [
   { forma: "numeral", label: "Supernumerario" },
   { forma: "triangulo", label: "Endodoncia" },
   { forma: "tornillo", label: "Implante" },
+  { forma: "corona_cmp", label: "Corona metal porcelana" },
+  { forma: "corona_clm", label: "Corona libre de metal" },
+  { forma: "corona_cac", label: "Corona acero cromado" },
+  { forma: "sellante", label: "Sellante" },
 ];
 
 // Abreviatura que, por convención, acompaña a un símbolo: al ponerlo en
@@ -182,6 +207,9 @@ const SELLOS: { forma: FormaSello; label: string }[] = [
 const ABREVIATURA_DE_SELLO: Partial<Record<FormaSello, string>> = {
   doble_linea: "RR",
   tornillo: "IMP",
+  corona_cmp: "CMP",
+  corona_clm: "CLM",
+  corona_cac: "CAC",
   linea_v: "TCC",
   triangulo: "TCC",
   circulo: "CC",
@@ -258,6 +286,22 @@ function Sello({ forma, color, x, y, escala = 1 }: { forma: FormaSello; color: s
       return g(<path d="M-12,-4 L-6,4 L0,-4 L6,4 L12,-4" {...p} />);
     case "numeral":
       return g(<><circle r={8} {...p} /><text y={4} textAnchor="middle" fontSize={11} fontWeight={700} fill={color}>#</text></>);
+    case "corona_cmp":
+    case "corona_clm":
+    case "corona_cac":
+      // Cuadrado incompleto sobre la cara vestibular y la lingual/palatina.
+      return g(
+        <>
+          <path d="M-12,-7 L-12,-13 L12,-13 L12,-7" {...p} />
+          <path d="M-12,7 L-12,13 L12,13 L12,7" {...p} />
+        </>
+      );
+    case "sellante":
+      return g(
+        <text x={0} y={8} textAnchor="middle" fontSize={22} fontWeight={700} fontStyle="italic" fill={color} stroke="none">
+          S
+        </text>
+      );
     case "tornillo":
       // Implante: cabeza, cuerpo con cuerdas y punta (un tornillo).
       return g(
@@ -317,6 +361,8 @@ export function OdontogramaDibujo({
   const [editando, setEditando] = useState<number | null>(null);
   // Historial por consulta: en la carta completa se puede ver solo lo
   // marcado en una fecha ("antes" = marcas sin fecha registrada).
+  // Tratamiento que se está pintando a mano ("Resina", etc.).
+  const [significado, setSignificado] = useState<string | null>(null);
   const [filtroFecha, setFiltroFecha] = useState<string | null>(null);
   const arrastrando = useRef<{ dx: number; dy: number } | null>(null);
   const [abreviatura, setAbreviatura] = useState("S");
@@ -421,7 +467,10 @@ export function OdontogramaDibujo({
   }
 
   const lienzo = dienteFoco != null && DIENTES_REALISTAS.has(dienteFoco) ? dienteFoco : null;
-  const conD = <T extends Elemento>(el: T): T => (lienzo != null ? { ...el, d: lienzo } : el);
+  const conD = <T extends Elemento>(el: T): T => {
+    const marca = el.t === "trazo" || el.t === "linea" ? (significado ? { m: significado } : {}) : {};
+    return lienzo != null ? { ...el, ...marca, d: lienzo } : { ...el, ...marca };
+  };
 
   function alPresionar(e: ReactPointerEvent<SVGSVGElement>) {
     // Al marcar algo nuevo se vuelve a ver todo (lo nuevo es de hoy).
@@ -552,6 +601,34 @@ export function OdontogramaDibujo({
       setSello(FORMA_DESDE_SIMBOLO[simbolo.forma] ?? "circulo_relleno");
       setHerramienta("sello");
     }
+  }
+
+  // Todo diagnóstico queda dibujado en el diente con su símbolo (o su
+  // abreviatura en el recuadro), listo para acomodarlo y fijarlo con
+  // "Listo". Si ya se había puesto el de ese diagnóstico, no se repite.
+  function colocarMarcaDeEstado(clave: string, diente: number) {
+    if (clave === "sano") return;
+    if (elementos.some((el) => el.est === clave && (el.t === "texto" ? el.diente === diente : el.d === diente || dienteDeElemento(el) === diente))) return;
+    const simbolo = (SIMBOLO_DIENTE as Record<string, SimboloEstado>)[clave];
+    const col = ESTADOS_ROJOS.has(clave) ? ROJO : AZUL;
+    if (simbolo?.forma === "letra" && simbolo.letra) {
+      cambiar([...elementos, { t: "texto", color: col, texto: simbolo.letra, diente, v: 2, est: clave }]);
+      return;
+    }
+    if (!simbolo || simbolo.forma === "ninguno") return;
+    const forma: FormaSello = clave.startsWith("implante") ? "tornillo" : FORMA_DESDE_SIMBOLO[simbolo.forma] ?? "circulo_relleno";
+    let x: number, y: number;
+    const real = DIENTES_REALISTAS.has(diente);
+    if (real) {
+      [x, y] = [IMG_REAL.x + IMG_REAL.w / 2, IMG_REAL.y + IMG_REAL.h * 0.5];
+    } else {
+      const arriba = ARCO_SUPERIOR.includes(diente);
+      const c = arriba ? ARCO_SUPERIOR.indexOf(diente) : ARCO_INFERIOR_VISUAL.indexOf(diente);
+      [x, y] = [colX(c) + anchoCol(c) / 2, arriba ? FRANJA + 200 : LINEA_MEDIA_Y + 200];
+    }
+    const nuevo: Elemento = { t: "sello", color: col, forma, x, y, v: 2, est: clave, ...(real ? { d: diente } : {}) };
+    cambiar([...elementos, nuevo]);
+    setEditando(elementos.length);
   }
 
   // Al llegar desde el 3D con un diente elegido: se resalta y, si ya
@@ -839,8 +916,29 @@ export function OdontogramaDibujo({
         crearEstado={onCrearEstado}
         elegirEstado={aplicarEstado}
         registrarEstado={async (estado, tipo, nota) => {
-          if (dienteFoco != null) await onRegistrarEstado?.(dienteFoco, { estado, tipo, nota });
+          if (dienteFoco == null) return;
+          await onRegistrarEstado?.(dienteFoco, { estado, tipo, nota });
+          colocarMarcaDeEstado(estado, dienteFoco);
         }}
+        significado={significado}
+        pintarTratamiento={(clave) => {
+          const t = TRATAMIENTOS_PINTADOS.find((x) => x.clave === clave);
+          if (!t) {
+            setSignificado(null);
+            return;
+          }
+          setColor(t.color);
+          setHerramienta("lapiz");
+          setSignificado(clave);
+        }}
+        resumenMarcas={(() => {
+          const cuenta = new Map<string, number>();
+          elementos.forEach((el) => {
+            const delDiente = el.d === dienteFoco || (el.d == null && dienteDeElemento(el) === dienteFoco);
+            if (delDiente && el.m) cuenta.set(el.m, (cuenta.get(el.m) ?? 0) + 1);
+          });
+          return Array.from(cuenta.entries());
+        })()}
         fechas={(() => {
           const set = new Set(
             elementos
@@ -863,6 +961,7 @@ export function OdontogramaDibujo({
         cerrar={() => {
           setEditando(null);
           setFiltroFecha(null);
+          setSignificado(null);
           if (pendiente) guardar();
           onCambiarFoco?.(null);
           setDienteSugerido(null);
@@ -952,6 +1051,9 @@ function PantallaCompleta(props: {
   tamanoSello: (delta: number) => void;
   fijarSello: () => void;
   quitarSello: () => void;
+  significado: string | null;
+  pintarTratamiento: (clave: string | null) => void;
+  resumenMarcas: [string, number][];
   estados: { key: string; label: string; ring: string }[];
   estadoActual: string;
   puedeRegistrar: boolean;
@@ -1120,6 +1222,26 @@ function PantallaCompleta(props: {
                   <X size={16} />
                 </button>
               </div>
+              <div className="mb-3">
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">Pintar a mano</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {TRATAMIENTOS_PINTADOS.map((t) => (
+                    <button
+                      key={t.clave}
+                      type="button"
+                      onClick={() => {
+                        props.pintarTratamiento(t.clave);
+                        setEstadoPanel(false);
+                      }}
+                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[12px] text-white/85"
+                    >
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.color }} />
+                      {t.clave}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">Diagnóstico</div>
               <div className="grid grid-cols-2 gap-1.5">
                 {props.estados.map((e) => (
                   <button
@@ -1207,6 +1329,17 @@ function PantallaCompleta(props: {
             </div>
           )}
 
+          {props.significado && !estadoPanel && (
+            <div className="absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-2 rounded-2xl bg-[#2b2118]/90 px-3 py-2 text-white shadow-lg">
+              <span className="text-[12px]">
+                Pintando: <b>{props.significado}</b>
+              </span>
+              <button onClick={() => props.pintarTratamiento(null)} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
+                Pincel libre
+              </button>
+            </div>
+          )}
+
           {avisoEstado && (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center">
               <span className="rounded-full bg-[#2E9E5B] px-4 py-1.5 text-[13px] font-semibold text-white shadow-lg">Diagnóstico guardado ✓</span>
@@ -1235,6 +1368,15 @@ function PantallaCompleta(props: {
                     >
                       {f === null ? "Todas" : props.etiquetaFecha(f)}
                     </button>
+                  ))}
+                </div>
+              )}
+              {props.resumenMarcas.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {props.resumenMarcas.map(([m, n]) => (
+                    <span key={m} className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-white/80">
+                      {m} ×{n}
+                    </span>
                   ))}
                 </div>
               )}
