@@ -508,9 +508,6 @@ const PAGINAS: Paso[][] = (() => {
   return unidas;
 })();
 
-// Niveles del "juego": una sección por nivel (las que encabezan página).
-const NIVELES: Seccion[] = Array.from(new Set(PAGINAS.map((pag) => pag[0].seccion)));
-
 const ICONO_SECCION: Record<Seccion, LucideIcon> = {
   "Ficha de identificación": IdCard,
   "Antecedentes heredofamiliares": Users,
@@ -690,41 +687,42 @@ export function HistoriaClinicaWizard({
 
   if (vista === "intro") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
+      <div className="relative flex min-h-dvh flex-col overflow-hidden" style={{ background: "#F7EFE7" }}>
+        {/* Decoración de la portada: parra arriba, diente y ondas abajo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="mx-auto h-auto w-56" />
-        <div className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Historia clínica</div>
-        <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
-        <p className="mt-4 max-w-xs text-[15px] text-[#8a8272]">
-          Hola {pacienteNombre.split(" ")[0]}, vamos a completar tu ficha antes de tu cita — nos ayuda a atenderte
-          mejor. Es rápido: unas cuantas preguntas por pantalla.
-        </p>
-        {puntosPremio ? (
-          <div className="mt-6 flex items-center gap-3 rounded-3xl border border-[#E3B9C1] bg-white/80 px-5 py-4 text-left shadow-[0_8px_24px_-12px_rgba(122,30,51,0.35)]">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#7A1E33] text-[22px]">🎁</div>
-            <div>
-              <div className="text-[15px] font-bold text-[#7A1E33]">Gana {puntosPremio} puntos</div>
-              <div className="text-[12px] text-[#8a8272]">Al completar tu ficha suman para tu próximo premio en Viña Sonrisas.</div>
-            </div>
+        <img src="/historia-intro-arriba.webp" alt="" aria-hidden className="pointer-events-none absolute inset-x-0 top-0 w-full"
+          style={{ maskImage: "linear-gradient(to bottom, #000 70%, transparent)", WebkitMaskImage: "linear-gradient(to bottom, #000 70%, transparent)" }}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/historia-intro-abajo.webp" alt="" aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 w-full"
+          style={{ maskImage: "linear-gradient(to top, #000 70%, transparent)", WebkitMaskImage: "linear-gradient(to top, #000 70%, transparent)" }}
+        />
+
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-40 pt-32 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="mx-auto h-auto w-72" />
+          <div className="mt-8 text-[12px] font-semibold uppercase tracking-[0.35em] text-[#B08A78]">Historia clínica</div>
+          <div className="mx-auto mt-3 h-px w-16 bg-[#7A1E33]" />
+          <div className="mt-3 text-[19px] font-bold text-[#5A1426]" style={{ fontFamily: "Georgia, serif" }}>
+            {DOCTORA.nombre}
           </div>
-        ) : null}
-        <div className="mt-6 flex items-center gap-2">
-          {NIVELES.map((sec) => {
-            const I = ICONO_SECCION[sec];
-            return (
-              <div key={sec} className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFD9D3] text-[#7A1E33]">
-                <I size={16} />
-              </div>
-            );
-          })}
+          <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-[#6f6458]">
+            Hola <b className="text-[#5A1426]">{pacienteNombre.split(" ")[0]}</b>, vamos a completar tu ficha antes de tu cita — nos
+            ayuda a atenderte mejor. Es rápido: unas cuantas preguntas por pantalla.
+          </p>
+          {puntosPremio ? (
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E3B9C1] bg-white/80 px-4 py-2 text-[13px] text-[#5A1426] shadow-sm backdrop-blur">
+              <span>🎁</span> Gana <b>{puntosPremio} puntos</b> al terminar · ~4 min
+            </div>
+          ) : null}
+          <button
+            onClick={() => setVista("pregunta")}
+            className="mt-7 flex items-center gap-2 rounded-full px-10 py-4 text-[16px] font-semibold text-white shadow-[0_14px_28px_-10px_rgba(90,20,38,0.75)]"
+            style={{ background: "linear-gradient(180deg, #8E2340 0%, #6A1429 100%)" }}
+          >
+            Comenzar <ArrowRight size={18} />
+          </button>
         </div>
-        <div className="mt-2 text-[12px] text-[#a49c8a]">{NIVELES.length} niveles · ~4 minutos</div>
-        <button
-          onClick={() => setVista("pregunta")}
-          className="mt-8 flex items-center gap-2 rounded-full bg-[#7A1E33] px-8 py-3.5 text-[15px] font-semibold text-white"
-        >
-          Comenzar <ArrowRight size={16} />
-        </button>
       </div>
     );
   }
