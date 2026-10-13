@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Pencil, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, HeartPulse, IdCard, Leaf, Pencil, Save, Smile, Stethoscope, Users, type LucideIcon } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import {
@@ -479,9 +479,49 @@ const SECCIONES: Seccion[] = [
   "Antecedentes médicos",
 ];
 
+// Páginas del cuestionario: al menos 3 preguntas por pantalla, sin
+// mezclar secciones. Las preguntas condicionales ("¿cuál?", etc.) se
+// quedan en la página de la pregunta que las abre y no cuentan para las
+// 3, así la página no se reacomoda al contestar.
+const PAGINAS: Paso[][] = (() => {
+  const paginas: Paso[][] = [];
+  let actual: Paso[] = [];
+  let fijas = 0;
+  for (const p of PASOS) {
+    const cambiaSeccion = actual.length > 0 && actual[0].seccion !== p.seccion;
+    if (cambiaSeccion || (fijas >= 3 && !p.mostrarSi)) {
+      paginas.push(actual);
+      actual = [];
+      fijas = 0;
+    }
+    actual.push(p);
+    if (!p.mostrarSi) fijas++;
+  }
+  if (actual.length) paginas.push(actual);
+  // Una sección con menos de 3 preguntas se une con la siguiente.
+  const unidas: Paso[][] = [];
+  for (const pag of paginas) {
+    const prev = unidas[unidas.length - 1];
+    if (prev && prev.filter((p) => !p.mostrarSi).length < 3) prev.push(...pag);
+    else unidas.push(pag);
+  }
+  return unidas;
+})();
+
+const ICONO_SECCION: Record<Seccion, LucideIcon> = {
+  "Ficha de identificación": IdCard,
+  "Antecedentes heredofamiliares": Users,
+  "Antecedentes personales": HeartPulse,
+  "Antecedentes personales no patológicos": Leaf,
+  "Antecedentes odontológicos": Smile,
+  "Antecedentes médicos": Stethoscope,
+};
+
+const GUINDA = "#7A1E33";
+
 function EtiquetaPregunta({ pregunta }: { pregunta: string }) {
   return (
-    <h2 className="text-xl font-semibold leading-snug text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
+    <h2 className="text-[19px] font-bold leading-snug" style={{ fontFamily: "Georgia, serif", color: GUINDA }}>
       {pregunta}
     </h2>
   );
@@ -611,8 +651,8 @@ export function HistoriaClinicaWizard({
   const edad = calcularEdad(pacienteFechaNacimiento);
   const pasosVisibles = PASOS.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad, datosPaciente));
 
-  function irASiguiente() {
-    if (pasoIndex + 1 >= pasosVisibles.length) {
+  function irASiguiente(total: number) {
+    if (pasoIndex + 1 >= total) {
       setVista("resumen");
     } else {
       setPasoIndex(pasoIndex + 1);
@@ -628,7 +668,9 @@ export function HistoriaClinicaWizard({
   }
 
   function editarSeccion(seccion: Seccion) {
-    const idx = pasosVisibles.findIndex((p) => p.seccion === seccion);
+    const idx = PAGINAS.map((pag) => pag.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad, datosPaciente)))
+      .filter((pag) => pag.length > 0)
+      .findIndex((pag) => pag.some((p) => p.seccion === seccion));
     setPasoIndex(idx === -1 ? 0 : idx);
     setVista("pregunta");
   }
@@ -642,11 +684,11 @@ export function HistoriaClinicaWizard({
         <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
         <p className="mt-4 max-w-xs text-[15px] text-[#8a8272]">
           Hola {pacienteNombre.split(" ")[0]}, vamos a completar tu ficha antes de tu cita — nos ayuda a atenderte
-          mejor. Es rápido: una pregunta a la vez.
+          mejor. Es rápido: unas cuantas preguntas por pantalla.
         </p>
         <button
           onClick={() => setVista("pregunta")}
-          className="mt-8 flex items-center gap-2 rounded-full bg-[#2b2118] px-8 py-3.5 text-[15px] font-semibold text-white"
+          className="mt-8 flex items-center gap-2 rounded-full bg-[#7A1E33] px-8 py-3.5 text-[15px] font-semibold text-white"
         >
           Comenzar <ArrowRight size={16} />
         </button>
@@ -738,212 +780,251 @@ export function HistoriaClinicaWizard({
     );
   }
 
-  // vista === "pregunta"
-  const paso = pasosVisibles[Math.min(pasoIndex, pasosVisibles.length - 1)];
-  const progreso = ((pasoIndex + 1) / pasosVisibles.length) * 100;
+  // vista === "pregunta": una página con varias preguntas
+  const campo = (paso: Paso) => (
+paso.tipo === "sexo" ? (
+    <div className="flex gap-3">
+      {(["F", "M"] as const).map((s) => (
+        <button
+          key={s}
+          type="button"
+          onClick={() => {
+            set("sexo", s);
+            if (s === "M") {
+              set("embarazada", null);
+              set("lactancia", null);
+            }
+          }}
+          className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
+            form.sexo === s ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+          }`}
+        >
+          {s === "F" ? "Femenino" : "Masculino"}
+        </button>
+      ))}
+    </div>
+  ) : paso.tipo === "bool" ? (
+    <BotonSiNo
+      valor={form[paso.key] as boolean | null}
+      onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+    />
+  ) : paso.tipo === "frecuencia" ? (
+    <BotonSiAVecesNo
+      valor={form[paso.key] as FrecuenciaConsumo | null}
+      onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+    />
+  ) : paso.tipo === "paciente_bool" ? (
+    <BotonSiNo
+      valor={datosPaciente[paso.key] as boolean | null}
+      onChange={(v) => onChangeDatosPaciente(paso.key, v as DatosPacienteWizard[typeof paso.key])}
+    />
+  ) : paso.tipo === "paciente_texto" ? (
+    <input
+                    type={paso.inputType ?? "text"}
+      value={(datosPaciente[paso.key] as string | null) ?? ""}
+      onChange={(e) => onChangeDatosPaciente(paso.key, (e.target.value || null) as DatosPacienteWizard[typeof paso.key])}
+      placeholder="Escribe tu respuesta…"
+      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+    />
+  ) : paso.tipo === "familiares" ? (
+    <TablaFamiliares
+      valor={parsearFamDetalle(form.fam_detalle)}
+      onChange={(v) => set("fam_detalle", serializarFamDetalle(v))}
+    />
+  ) : paso.tipo === "opciones" ? (
+    paso.key === "esquema_vacunacion" ? (
+      <Opciones
+        valor={form.esquema_vacunacion === true ? "completo" : form.esquema_vacunacion === false ? "incompleto" : null}
+        opciones={paso.opciones}
+        onChange={(v) => set("esquema_vacunacion", v === "completo")}
+      />
+    ) : (
+      <Opciones
+        valor={form[paso.key] as string | null}
+        opciones={paso.opciones}
+        onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
+      />
+    )
+  ) : paso.tipo === "multi" ? (
+    <MultiSelect
+      seleccionados={listaDesdeTexto(form[paso.key] as string | null)}
+      opciones={paso.opciones}
+      onChange={(v) => set(paso.key, textoDesdeLista(v) as FormStateHistoriaClinica[typeof paso.key])}
+    />
+  ) : paso.tipo === "fecha_nacimiento" ? (
+    <input
+                    type="date"
+      value={pacienteFechaNacimiento ?? ""}
+      max={hoyISO()}
+      onChange={(e) => onChangeFechaNacimiento(e.target.value || null)}
+      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+    />
+  ) : paso.tipo === "emergencia" ? (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Nombre</label>
+        <input
+                            value={form.emergencia_nombre ?? ""}
+          onChange={(e) => set("emergencia_nombre", e.target.value || null)}
+          placeholder="Nombre de la persona"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+        />
+      </div>
+      <div>
+        <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Número telefónico</label>
+        <input
+          type="tel"
+          value={form.emergencia_telefono ?? ""}
+          onChange={(e) => set("emergencia_telefono", e.target.value || null)}
+          placeholder="Número de contacto"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+        />
+      </div>
+      <div>
+        <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Parentesco</label>
+        <input
+          value={form.emergencia_parentesco ?? ""}
+          onChange={(e) => set("emergencia_parentesco", e.target.value || null)}
+          placeholder="Ej. mamá, esposo…"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+        />
+      </div>
+    </div>
+  ) : paso.tipo === "domicilio" ? (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Calle y número</label>
+        <input
+                            value={form.domicilio ?? ""}
+          onChange={(e) => set("domicilio", e.target.value || null)}
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Código postal</label>
+          <input
+            value={form.codigo_postal ?? ""}
+            onChange={(e) => set("codigo_postal", e.target.value || null)}
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Ciudad</label>
+          <input
+            value={form.ciudad ?? ""}
+            onChange={(e) => set("ciudad", e.target.value || null)}
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Estado</label>
+          <input
+            value={form.estado ?? ""}
+            onChange={(e) => set("estado", e.target.value || null)}
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">País</label>
+          <input
+            value={form.pais ?? ""}
+            onChange={(e) => set("pais", e.target.value || null)}
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          />
+        </div>
+      </div>
+    </div>
+  ) : (
+    <input
+                    value={(form[paso.key] as string | null) ?? ""}
+      onChange={(e) => set(paso.key, (e.target.value || null) as FormStateHistoriaClinica[typeof paso.key])}
+      placeholder="Escribe tu respuesta…"
+      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+    />
+  )
+  );
+
+  const paginas = PAGINAS.map((pag) => pag.filter((p) => !p.mostrarSi || p.mostrarSi(form, edad, datosPaciente))).filter(
+    (pag) => pag.length > 0
+  );
+  const pagina = paginas[Math.min(pasoIndex, paginas.length - 1)];
+  const progreso = ((pasoIndex + 1) / paginas.length) * 100;
+  const Icono = ICONO_SECCION[pagina[0].seccion];
+  const ultima = pasoIndex + 1 >= paginas.length;
 
   return (
-    <div className="flex min-h-dvh flex-col px-5 py-6">
-      <div className="mx-auto w-full max-w-md">
-        <div className="h-1 w-full overflow-hidden rounded-full bg-[#EFE9DC]">
-          <div className="h-full rounded-full bg-[#803449] transition-all" style={{ width: `${progreso}%` }} />
-        </div>
-        <div className="mt-2 text-[11px] text-[#a49c8a]">
-          Pregunta {pasoIndex + 1} de {pasosVisibles.length}
-        </div>
-      </div>
+    <div
+      className="relative flex min-h-dvh flex-col overflow-hidden px-5 py-6"
+      style={{ background: "linear-gradient(180deg, #F8F1EC 0%, #F3E6E1 100%)" }}
+    >
+      {/* Decoración de fondo */}
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#EFD9D3]/70 blur-2xl" />
+      <div className="pointer-events-none absolute -right-28 top-1/3 h-80 w-80 rounded-full border border-[#E3C6BE]" />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-64"
+        style={{ background: "radial-gradient(120% 90% at 0% 100%, rgba(122,30,51,0.22) 0%, rgba(122,30,51,0) 60%)" }}
+      />
 
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
-        <EtiquetaPregunta pregunta={paso.pregunta} />
-
-        <div className="mt-6">
-          {paso.tipo === "sexo" ? (
-            <div className="flex gap-3">
-              {(["F", "M"] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    set("sexo", s);
-                    if (s === "M") {
-                      set("embarazada", null);
-                      set("lactancia", null);
-                    }
-                  }}
-                  className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
-                    form.sexo === s ? "border-[#2b2118] bg-[#2b2118] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
-                  }`}
-                >
-                  {s === "F" ? "Femenino" : "Masculino"}
-                </button>
-              ))}
-            </div>
-          ) : paso.tipo === "bool" ? (
-            <BotonSiNo
-              valor={form[paso.key] as boolean | null}
-              onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
-            />
-          ) : paso.tipo === "frecuencia" ? (
-            <BotonSiAVecesNo
-              valor={form[paso.key] as FrecuenciaConsumo | null}
-              onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
-            />
-          ) : paso.tipo === "paciente_bool" ? (
-            <BotonSiNo
-              valor={datosPaciente[paso.key] as boolean | null}
-              onChange={(v) => onChangeDatosPaciente(paso.key, v as DatosPacienteWizard[typeof paso.key])}
-            />
-          ) : paso.tipo === "paciente_texto" ? (
-            <input
-              autoFocus
-              type={paso.inputType ?? "text"}
-              value={(datosPaciente[paso.key] as string | null) ?? ""}
-              onChange={(e) => onChangeDatosPaciente(paso.key, (e.target.value || null) as DatosPacienteWizard[typeof paso.key])}
-              placeholder="Escribe tu respuesta…"
-              className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-            />
-          ) : paso.tipo === "familiares" ? (
-            <TablaFamiliares
-              valor={parsearFamDetalle(form.fam_detalle)}
-              onChange={(v) => set("fam_detalle", serializarFamDetalle(v))}
-            />
-          ) : paso.tipo === "opciones" ? (
-            paso.key === "esquema_vacunacion" ? (
-              <Opciones
-                valor={form.esquema_vacunacion === true ? "completo" : form.esquema_vacunacion === false ? "incompleto" : null}
-                opciones={paso.opciones}
-                onChange={(v) => set("esquema_vacunacion", v === "completo")}
-              />
-            ) : (
-              <Opciones
-                valor={form[paso.key] as string | null}
-                opciones={paso.opciones}
-                onChange={(v) => set(paso.key, v as FormStateHistoriaClinica[typeof paso.key])}
-              />
-            )
-          ) : paso.tipo === "multi" ? (
-            <MultiSelect
-              seleccionados={listaDesdeTexto(form[paso.key] as string | null)}
-              opciones={paso.opciones}
-              onChange={(v) => set(paso.key, textoDesdeLista(v) as FormStateHistoriaClinica[typeof paso.key])}
-            />
-          ) : paso.tipo === "fecha_nacimiento" ? (
-            <input
-              autoFocus
-              type="date"
-              value={pacienteFechaNacimiento ?? ""}
-              max={hoyISO()}
-              onChange={(e) => onChangeFechaNacimiento(e.target.value || null)}
-              className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-            />
-          ) : paso.tipo === "emergencia" ? (
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Nombre</label>
-                <input
-                  autoFocus
-                  value={form.emergencia_nombre ?? ""}
-                  onChange={(e) => set("emergencia_nombre", e.target.value || null)}
-                  placeholder="Nombre de la persona"
-                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Número telefónico</label>
-                <input
-                  type="tel"
-                  value={form.emergencia_telefono ?? ""}
-                  onChange={(e) => set("emergencia_telefono", e.target.value || null)}
-                  placeholder="Número de contacto"
-                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Parentesco</label>
-                <input
-                  value={form.emergencia_parentesco ?? ""}
-                  onChange={(e) => set("emergencia_parentesco", e.target.value || null)}
-                  placeholder="Ej. mamá, esposo…"
-                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                />
-              </div>
-            </div>
-          ) : paso.tipo === "domicilio" ? (
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Calle y número</label>
-                <input
-                  autoFocus
-                  value={form.domicilio ?? ""}
-                  onChange={(e) => set("domicilio", e.target.value || null)}
-                  className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Código postal</label>
-                  <input
-                    value={form.codigo_postal ?? ""}
-                    onChange={(e) => set("codigo_postal", e.target.value || null)}
-                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Ciudad</label>
-                  <input
-                    value={form.ciudad ?? ""}
-                    onChange={(e) => set("ciudad", e.target.value || null)}
-                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">Estado</label>
-                  <input
-                    value={form.estado ?? ""}
-                    onChange={(e) => set("estado", e.target.value || null)}
-                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-[#8a8272]">País</label>
-                  <input
-                    value={form.pais ?? ""}
-                    onChange={(e) => set("pais", e.target.value || null)}
-                    className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <input
-              autoFocus
-              value={(form[paso.key] as string | null) ?? ""}
-              onChange={(e) => set(paso.key, (e.target.value || null) as FormStateHistoriaClinica[typeof paso.key])}
-              placeholder="Escribe tu respuesta…"
-              className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
-            />
-          )}
+      <div className="relative mx-auto w-full max-w-md">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[#E9DCD6]">
+          <div className="h-full rounded-full transition-all" style={{ width: `${progreso}%`, background: GUINDA }} />
+        </div>
+        <div className="mt-2 text-[12px] font-medium" style={{ color: GUINDA }}>
+          Página {pasoIndex + 1} de {paginas.length}
         </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-md gap-3">
+      <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col py-6">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-full shadow-[0_12px_30px_-8px_rgba(122,30,51,0.55)]"
+            style={{ background: `radial-gradient(circle at 30% 25%, #9B3048, ${GUINDA} 70%)` }}
+          >
+            <Icono size={34} className="text-white" strokeWidth={1.8} />
+          </div>
+          <h1 className="mt-4 text-[26px] font-bold leading-tight" style={{ fontFamily: "Georgia, serif", color: GUINDA }}>
+            {pagina[0].seccion}
+          </h1>
+          <div className="mt-3 h-1 w-14 rounded-full bg-[#D88A9A]" />
+        </div>
+
+        <div className="space-y-4">
+          {pagina.map((paso) => (
+            <div
+              key={String(paso.key) + paso.tipo}
+              className="rounded-3xl bg-white/85 p-5 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur"
+            >
+              <EtiquetaPregunta pregunta={paso.pregunta} />
+              <div className="mt-4">{campo(paso)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative mx-auto flex w-full max-w-md gap-3 pb-2">
         <button
           onClick={irAAnterior}
-          className="flex items-center justify-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-5 py-3 text-[14px] font-semibold text-[#2b2118]"
+          className="flex items-center justify-center gap-1.5 rounded-full border-2 border-[#E3B9C1] bg-white/80 px-6 py-3.5 text-[15px] font-semibold"
+          style={{ color: GUINDA }}
         >
-          <ArrowLeft size={15} /> Atrás
+          <ArrowLeft size={16} /> Atrás
         </button>
         <button
-          onClick={irASiguiente}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white"
+          onClick={() => {
+            irASiguiente(paginas.length);
+            window.scrollTo({ top: 0 });
+          }}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(122,30,51,0.8)]"
+          style={{ background: GUINDA }}
         >
-          {pasoIndex + 1 >= pasosVisibles.length ? (
+          {ultima ? (
             <>
-              Ver resumen <Check size={15} />
+              Ver resumen <Check size={16} />
             </>
           ) : (
             <>
-              Siguiente <ArrowRight size={15} />
+              Siguiente <ArrowRight size={16} />
             </>
           )}
         </button>
