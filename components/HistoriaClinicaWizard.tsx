@@ -1083,6 +1083,13 @@ paso.tipo === "sexo" ? (
   const progreso = ((pasoIndex + 1) / paginas.length) * 100;
   const Icono = ICONO_SECCION[pagina[0].seccion];
   const ultima = pasoIndex + 1 >= paginas.length;
+  // Estas dos son obligatorias: hay que elegir al menos una opción. Si la
+  // ficha ya estaba llena, las opciones vienen marcadas y no estorban.
+  const OBLIGATORIAS_MULTI: string[] = ["cepilla_momento", "higiene_utiliza"];
+  const faltantes = pagina.filter(
+    (p) => p.tipo === "multi" && OBLIGATORIAS_MULTI.includes(String(p.key)) && listaDesdeTexto(form[p.key] as string | null).length === 0
+  );
+  const bloqueado = faltantes.length > 0;
   const secciones = SECCIONES.filter((sec) => paginas.some((pag) => pag[0].seccion === sec));
   const nivelActual = Math.max(0, secciones.indexOf(pagina[0].seccion));
   const restantes = paginas.length - pasoIndex;
@@ -1176,7 +1183,9 @@ paso.tipo === "sexo" ? (
             .map((grupo) => (
               <div
                 key={String(grupo[0].key) + grupo[0].tipo + grupo[0].pregunta}
-                className="rounded-3xl bg-white/85 p-3 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur"
+                className={`rounded-3xl bg-white/85 p-3 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur ${
+                  grupo.some((g) => faltantes.includes(g)) ? "ring-2 ring-[#B0503A]/60" : ""
+                }`}
               >
                 <EtiquetaPregunta pregunta={grupo[0].pregunta} />
                 <div className="mt-2">{campo(grupo[0])}</div>
@@ -1191,6 +1200,11 @@ paso.tipo === "sexo" ? (
         </div>
       </div>
 
+      {bloqueado && (
+        <p className="relative mx-auto w-full max-w-md pb-1 text-center text-[12px] font-semibold text-[#B0503A]">
+          Elige al menos una opción para continuar
+        </p>
+      )}
       <div className="relative mx-auto flex w-full max-w-md gap-3 pb-1 pt-2">
         <button
           onClick={irAAnterior}
@@ -1200,6 +1214,7 @@ paso.tipo === "sexo" ? (
           <ArrowLeft size={16} /> Atrás
         </button>
         <button
+          disabled={bloqueado}
           onClick={() => {
             const siguiente = paginas[pasoIndex + 1];
             if (siguiente && siguiente[0].seccion !== pagina[0].seccion) setInsignia(pagina[0].seccion);
@@ -1207,7 +1222,7 @@ paso.tipo === "sexo" ? (
             irASiguiente(paginas.length);
             window.scrollTo({ top: 0 });
           }}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(122,30,51,0.8)]"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(122,30,51,0.8)] disabled:opacity-45"
           style={{ background: GUINDA }}
         >
           {ultima ? (
