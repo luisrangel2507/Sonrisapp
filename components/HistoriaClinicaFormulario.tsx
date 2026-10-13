@@ -287,16 +287,20 @@ export function MultiSelect({
 export function TablaFamiliares({
   valor,
   onChange,
+  parentescos,
 }: {
   valor: FamiliarDetalle[];
   onChange: (lista: FamiliarDetalle[]) => void;
+  // Si se pasa, solo se muestran esos parentescos (el wizard reparte la
+  // tabla en varias pantallas para que no haya que hacer scroll).
+  parentescos?: readonly string[];
 }) {
   function actualizar(parentesco: string, cambios: Partial<FamiliarDetalle>) {
     onChange(valor.map((f) => (f.parentesco === parentesco ? { ...f, ...cambios } : f)));
   }
   return (
     <div className="space-y-2">
-      {valor.map((f) => (
+      {valor.filter((f) => !parentescos || parentescos.includes(f.parentesco)).map((f) => (
         <div key={f.parentesco} className="rounded-xl border border-[#EFE9DC] p-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-semibold text-[#2b2118]">{f.parentesco}</span>

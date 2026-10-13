@@ -115,6 +115,7 @@ type Paso =
       tipo: "familiares";
       pregunta: string;
       seccion: Seccion;
+      parentescos?: string[];
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     }
   | {
@@ -184,6 +185,21 @@ const PASOS: Paso[] = [
     tipo: "familiares",
     pregunta: "¿Viven tus familiares directos? ¿Alguno tiene o tuvo alguna enfermedad?",
     seccion: "Antecedentes heredofamiliares",
+    parentescos: ["Madre", "Padre", "Hermanos"],
+  },
+  {
+    key: "fam_detalle",
+    tipo: "familiares",
+    pregunta: "Más familiares: ¿viven? ¿alguna enfermedad?",
+    seccion: "Antecedentes heredofamiliares",
+    parentescos: ["Hijos", "Primos", "Tíos"],
+  },
+  {
+    key: "fam_detalle",
+    tipo: "familiares",
+    pregunta: "Abuelos: ¿viven? ¿alguna enfermedad?",
+    seccion: "Antecedentes heredofamiliares",
+    parentescos: ["Abuelos"],
   },
   {
     key: "fam_enfermedad_sistemica",
@@ -479,33 +495,52 @@ const SECCIONES: Seccion[] = [
   "Antecedentes médicos",
 ];
 
-// Páginas del cuestionario: al menos 3 preguntas por pantalla, sin
-// mezclar secciones. Las preguntas condicionales ("¿cuál?", etc.) se
-// quedan en la página de la pregunta que las abre y no cuentan para las
-// 3, así la página no se reacomoda al contestar.
+// Páginas del cuestionario: cada página debe caber en la pantalla del
+// celular sin scroll. Se agrupan preguntas de una misma sección hasta
+// llenar un alto estimado (px). Las preguntas condicionales ("¿cuál?")
+// reservan su espacio en la página de la pregunta que las abre, para que
+// la pantalla no crezca al contestar.
+const ALTO_PAGINA = 425;
+
+function altoEstimado(p: Paso): number {
+  const largo = p.pregunta.length > 42 ? 20 : 0;
+  switch (p.tipo) {
+    case "domicilio":
+      return 380;
+    case "emergencia":
+      return 330;
+    case "familiares":
+      return 70 + (p.parentescos?.length ?? 7) * 108;
+    case "opciones":
+    case "multi":
+      return 90 + largo + Math.ceil(p.opciones.length / 2) * 44;
+    default:
+      return 105 + (p.pregunta.length > 42 ? 20 : 0);
+  }
+}
+
 const PAGINAS: Paso[][] = (() => {
   const paginas: Paso[][] = [];
   let actual: Paso[] = [];
-  let fijas = 0;
-  for (const p of PASOS) {
+  let alto = 0;
+  for (let i = 0; i < PASOS.length; i++) {
+    const p = PASOS[i];
+    // Una pregunta se mide junto con sus condicionales (las que vienen
+    // justo después), porque siempre van en su misma página.
+    let h = altoEstimado(p);
+    for (let j = i + 1; j < PASOS.length && PASOS[j].mostrarSi && !p.mostrarSi; j++) h += altoEstimado(PASOS[j]);
     const cambiaSeccion = actual.length > 0 && actual[0].seccion !== p.seccion;
-    if (cambiaSeccion || (fijas >= 3 && !p.mostrarSi)) {
+    if (cambiaSeccion || (!p.mostrarSi && actual.length > 0 && alto + h > ALTO_PAGINA)) {
       paginas.push(actual);
       actual = [];
-      fijas = 0;
+      alto = 0;
     }
     actual.push(p);
-    if (!p.mostrarSi) fijas++;
+    // Las condicionales ya se contaron junto con su pregunta.
+    if (!p.mostrarSi) alto += h;
   }
   if (actual.length) paginas.push(actual);
-  // Una sección con menos de 3 preguntas se une con la siguiente.
-  const unidas: Paso[][] = [];
-  for (const pag of paginas) {
-    const prev = unidas[unidas.length - 1];
-    if (prev && prev.filter((p) => !p.mostrarSi).length < 3) prev.push(...pag);
-    else unidas.push(pag);
-  }
-  return unidas;
+  return paginas;
 })();
 
 const ICONO_SECCION: Record<Seccion, LucideIcon> = {
@@ -521,7 +556,7 @@ const GUINDA = "#7A1E33";
 
 function EtiquetaPregunta({ pregunta }: { pregunta: string }) {
   return (
-    <h2 className="text-[19px] font-bold leading-snug" style={{ fontFamily: "Georgia, serif", color: GUINDA }}>
+    <h2 className="text-[15px] font-bold leading-snug" style={{ fontFamily: "Georgia, serif", color: GUINDA }}>
       {pregunta}
     </h2>
   );
@@ -533,7 +568,7 @@ function BotonSiNo({ valor, onChange }: { valor: boolean | null; onChange: (v: b
       <button
         type="button"
         onClick={() => onChange(true)}
-        className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
+        className={`flex-1 rounded-2xl border-2 py-2 text-base font-semibold transition-colors ${
           valor === true ? "border-[#3F6B33] bg-[#E8F0E3] text-[#3F6B33]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
         }`}
       >
@@ -542,7 +577,7 @@ function BotonSiNo({ valor, onChange }: { valor: boolean | null; onChange: (v: b
       <button
         type="button"
         onClick={() => onChange(false)}
-        className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
+        className={`flex-1 rounded-2xl border-2 py-2 text-base font-semibold transition-colors ${
           valor === false ? "border-[#B0503A] bg-[#F7E5E0] text-[#B0503A]" : "border-[#EFE9DC] bg-white text-[#8a8272]"
         }`}
       >
@@ -565,7 +600,7 @@ function BotonSiAVecesNo({ valor, onChange }: { valor: FrecuenciaConsumo | null;
           key={o.valor}
           type="button"
           onClick={() => onChange(o.valor)}
-          className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
+          className={`flex-1 rounded-2xl border-2 py-2 text-base font-semibold transition-colors ${
             valor === o.valor ? o.activo : "border-[#EFE9DC] bg-white text-[#8a8272]"
           }`}
         >
@@ -707,7 +742,7 @@ export function HistoriaClinicaWizard({
             Hola <b className="text-[#5A1426]">{pacienteNombre.split(" ")[0]}</b>, vamos a completar tu ficha antes de tu cita — nos
             ayuda a atenderte mejor. Es rápido: unas cuantas preguntas por pantalla.
           </p>
-          <div className="mt-5 text-[12px] text-[#a49c8a]">~4 minutos</div>
+          <div className="mt-5 text-[12px] text-[#a49c8a]">~5 minutos</div>
           <button
             onClick={() => setVista("pregunta")}
             className="mt-7 flex items-center gap-2 rounded-full px-10 py-4 text-[16px] font-semibold text-white shadow-[0_14px_28px_-10px_rgba(90,20,38,0.75)]"
@@ -756,7 +791,7 @@ export function HistoriaClinicaWizard({
           {SECCIONES.map((seccion) => {
             // La fecha de nacimiento ya se muestra arriba, en el bloque
             // de "Ficha de identificación" — no se repite en la lista.
-            const pasosSeccion = pasosVisibles.filter((p) => p.seccion === seccion && p.tipo !== "fecha_nacimiento");
+            const pasosSeccion = pasosVisibles.filter((p) => p.seccion === seccion && p.tipo !== "fecha_nacimiento" && !(p.tipo === "familiares" && p.parentescos?.[0] !== "Madre"));
             if (pasosSeccion.length === 0) return null;
             return (
               <div key={seccion} className="mt-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
@@ -819,7 +854,7 @@ paso.tipo === "sexo" ? (
               set("lactancia", null);
             }
           }}
-          className={`flex-1 rounded-2xl border-2 py-4 text-base font-semibold transition-colors ${
+          className={`flex-1 rounded-2xl border-2 py-2 text-base font-semibold transition-colors ${
             form.sexo === s ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
           }`}
         >
@@ -848,10 +883,11 @@ paso.tipo === "sexo" ? (
       value={(datosPaciente[paso.key] as string | null) ?? ""}
       onChange={(e) => onChangeDatosPaciente(paso.key, (e.target.value || null) as DatosPacienteWizard[typeof paso.key])}
       placeholder="Escribe tu respuesta…"
-      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
     />
   ) : paso.tipo === "familiares" ? (
     <TablaFamiliares
+      parentescos={paso.parentescos}
       valor={parsearFamDetalle(form.fam_detalle)}
       onChange={(v) => set("fam_detalle", serializarFamDetalle(v))}
     />
@@ -881,7 +917,7 @@ paso.tipo === "sexo" ? (
       value={pacienteFechaNacimiento ?? ""}
       max={hoyISO()}
       onChange={(e) => onChangeFechaNacimiento(e.target.value || null)}
-      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+      className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
     />
   ) : paso.tipo === "emergencia" ? (
     <div className="space-y-3">
@@ -891,7 +927,7 @@ paso.tipo === "sexo" ? (
                             value={form.emergencia_nombre ?? ""}
           onChange={(e) => set("emergencia_nombre", e.target.value || null)}
           placeholder="Nombre de la persona"
-          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
         />
       </div>
       <div>
@@ -901,7 +937,7 @@ paso.tipo === "sexo" ? (
           value={form.emergencia_telefono ?? ""}
           onChange={(e) => set("emergencia_telefono", e.target.value || null)}
           placeholder="Número de contacto"
-          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
         />
       </div>
       <div>
@@ -910,7 +946,7 @@ paso.tipo === "sexo" ? (
           value={form.emergencia_parentesco ?? ""}
           onChange={(e) => set("emergencia_parentesco", e.target.value || null)}
           placeholder="Ej. mamá, esposo…"
-          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
         />
       </div>
     </div>
@@ -921,7 +957,7 @@ paso.tipo === "sexo" ? (
         <input
                             value={form.domicilio ?? ""}
           onChange={(e) => set("domicilio", e.target.value || null)}
-          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+          className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -930,7 +966,7 @@ paso.tipo === "sexo" ? (
           <input
             value={form.codigo_postal ?? ""}
             onChange={(e) => set("codigo_postal", e.target.value || null)}
-            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
           />
         </div>
         <div>
@@ -938,7 +974,7 @@ paso.tipo === "sexo" ? (
           <input
             value={form.ciudad ?? ""}
             onChange={(e) => set("ciudad", e.target.value || null)}
-            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
           />
         </div>
         <div>
@@ -946,7 +982,7 @@ paso.tipo === "sexo" ? (
           <input
             value={form.estado ?? ""}
             onChange={(e) => set("estado", e.target.value || null)}
-            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
           />
         </div>
         <div>
@@ -954,7 +990,7 @@ paso.tipo === "sexo" ? (
           <input
             value={form.pais ?? ""}
             onChange={(e) => set("pais", e.target.value || null)}
-            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+            className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
           />
         </div>
       </div>
@@ -964,7 +1000,7 @@ paso.tipo === "sexo" ? (
                     value={(form[paso.key] as string | null) ?? ""}
       onChange={(e) => set(paso.key, (e.target.value || null) as FormStateHistoriaClinica[typeof paso.key])}
       placeholder="Escribe tu respuesta…"
-      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-3.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
+      className="w-full rounded-2xl border-2 border-[#EFE9DC] bg-white px-4 py-2.5 text-base text-[#2b2118] outline-none focus:border-[#803449]"
     />
   )
   );
@@ -982,7 +1018,7 @@ paso.tipo === "sexo" ? (
 
   return (
     <div
-      className="relative flex min-h-dvh flex-col overflow-hidden px-5 py-6"
+      className="relative flex min-h-dvh flex-col overflow-hidden px-4 py-4"
       style={{ background: "linear-gradient(180deg, #F8F1EC 0%, #F3E6E1 100%)" }}
     >
       {/* Decoración de fondo */}
@@ -1002,11 +1038,11 @@ paso.tipo === "sexo" ? (
             Nivel {nivelActual + 1} de {secciones.length} · Página {pasoIndex + 1} de {paginas.length}
           </span>
           <span className="text-[#a49c8a]">
-            {restantes <= 1 ? "¡Última página!" : `~${Math.max(1, Math.round((restantes * 25) / 60))} min`}
+            {restantes <= 1 ? "¡Última página!" : `~${Math.max(1, Math.round((restantes * 12) / 60))} min`}
           </span>
         </div>
         {/* Caminito de niveles */}
-        <div className="mt-3 flex items-center">
+        <div className="mt-2 flex items-center">
           {secciones.map((sec, i) => {
             const I = ICONO_SECCION[sec];
             const hecho = i < nivelActual;
@@ -1014,7 +1050,7 @@ paso.tipo === "sexo" ? (
             return (
               <div key={sec} className="flex flex-1 items-center last:flex-none">
                 <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all ${
                     hecho ? "bg-[#7A1E33] text-white" : actualN ? "scale-110 bg-white text-[#7A1E33] ring-2 ring-[#7A1E33]" : "bg-[#EADAD5] text-[#B99AA2]"
                   }`}
                 >
@@ -1045,34 +1081,33 @@ paso.tipo === "sexo" ? (
         </div>
       )}
 
-      <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col py-6">
-        <div className="mb-6 flex flex-col items-center text-center">
+      <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col py-3">
+        <div className="mb-3 flex items-center gap-3">
           <div
-            className="flex h-20 w-20 items-center justify-center rounded-full shadow-[0_12px_30px_-8px_rgba(122,30,51,0.55)]"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-[0_8px_18px_-6px_rgba(122,30,51,0.55)]"
             style={{ background: `radial-gradient(circle at 30% 25%, #9B3048, ${GUINDA} 70%)` }}
           >
-            <Icono size={34} className="text-white" strokeWidth={1.8} />
+            <Icono size={20} className="text-white" strokeWidth={1.8} />
           </div>
-          <h1 className="mt-4 text-[26px] font-bold leading-tight" style={{ fontFamily: "Georgia, serif", color: GUINDA }}>
+          <h1 className="text-[20px] font-bold leading-tight" style={{ fontFamily: "Georgia, serif", color: GUINDA }}>
             {pagina[0].seccion}
           </h1>
-          <div className="mt-3 h-1 w-14 rounded-full bg-[#D88A9A]" />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {pagina.map((paso) => (
             <div
-              key={String(paso.key) + paso.tipo}
-              className="rounded-3xl bg-white/85 p-5 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur"
+              key={String(paso.key) + paso.tipo + paso.pregunta}
+              className="rounded-3xl bg-white/85 p-3 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.25)] backdrop-blur"
             >
               <EtiquetaPregunta pregunta={paso.pregunta} />
-              <div className="mt-4">{campo(paso)}</div>
+              <div className="mt-2">{campo(paso)}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-md gap-3 pb-2">
+      <div className="relative mx-auto flex w-full max-w-md gap-3 pb-1 pt-2">
         <button
           onClick={irAAnterior}
           className="flex items-center justify-center gap-1.5 rounded-full border-2 border-[#E3B9C1] bg-white/80 px-6 py-3.5 text-[15px] font-semibold"
