@@ -274,15 +274,22 @@ export function MultiSelect({
   seleccionados,
   opciones,
   onChange,
+  exclusiva,
 }: {
   seleccionados: string[];
   opciones: { valor: string; label: string }[];
   onChange: (lista: string[]) => void;
+  // Opción que no se combina con las demás (ej. "No recuerdo").
+  exclusiva?: string;
 }) {
   function alternar(valor: string) {
-    onChange(
-      seleccionados.includes(valor) ? seleccionados.filter((v) => v !== valor) : [...seleccionados, valor]
-    );
+    if (seleccionados.includes(valor)) {
+      onChange(seleccionados.filter((v) => v !== valor));
+    } else if (exclusiva && valor === exclusiva) {
+      onChange([valor]);
+    } else {
+      onChange([...seleccionados.filter((v) => v !== exclusiva), valor]);
+    }
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -829,7 +836,9 @@ export function CamposHistoriaClinica({
               { valor: "protesis", label: "Prótesis" },
               { valor: "implantes", label: "Implantes" },
               { valor: "periodoncia", label: "Periodoncia" },
+              { valor: "no_recuerda", label: "No recuerdo" },
             ]}
+            exclusiva="no_recuerda"
             onChange={(v) => set("tratamientos_previos", textoDesdeLista(v))}
           />
         </Campo>

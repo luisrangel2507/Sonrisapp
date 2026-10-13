@@ -132,6 +132,7 @@ type Paso =
       pregunta: string;
       seccion: Seccion;
       opciones: { valor: string; label: string }[];
+      exclusiva?: string;
       mostrarSi?: (f: FormStateHistoriaClinica, edad: number | null, datosPaciente: DatosPacienteWizard) => boolean;
     };
 
@@ -450,7 +451,9 @@ const PASOS: Paso[] = [
       { valor: "protesis", label: "Prótesis" },
       { valor: "implantes", label: "Implantes" },
       { valor: "periodoncia", label: "Periodoncia" },
+      { valor: "no_recuerda", label: "No recuerdo" },
     ],
+    exclusiva: "no_recuerda",
   },
   {
     key: "traumatismos_dentales",
@@ -980,6 +983,7 @@ paso.tipo === "sexo" ? (
     <MultiSelect
       seleccionados={listaDesdeTexto(form[paso.key] as string | null)}
       opciones={paso.opciones}
+      exclusiva={paso.exclusiva}
       onChange={(v) => set(paso.key, textoDesdeLista(v) as FormStateHistoriaClinica[typeof paso.key])}
     />
   ) : paso.tipo === "fecha_nacimiento" ? (
