@@ -5,7 +5,6 @@ import { esFechaFutura } from "@/lib/fechas";
 import { guardarHistoriaClinica, obtenerHistoriaClinicaVigente } from "@/lib/historia-clinica";
 import { cifrar, descifrar } from "@/lib/crypto";
 import { registrarAcceso } from "@/lib/bitacora";
-import { PUNTOS_HISTORIA_CLINICA } from "@/lib/recompensas";
 
 // alergias_cual y antecedentes_medicos_cual son texto libre clínico —
 // se cifran en reposo (NOM-024) igual que la historia clínica.
@@ -113,19 +112,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
       esPublico: true,
     });
 
-    // Recompensa por completarla: solo la primera vez (la condición en el
-    // UPDATE evita duplicarla aunque el paciente la reenvíe).
-    const { rows: premio } = await query<{ puntos: number; meta_premio: number | null; premio_actual: string | null }>(
-      `UPDATE pacientes SET puntos = puntos + $2, historia_puntos_otorgados = true
-       WHERE id = $1 AND historia_puntos_otorgados = false
-       RETURNING puntos, meta_premio, premio_actual`,
-      [pacienteId, PUNTOS_HISTORIA_CLINICA]
-    );
-
-    return NextResponse.json({
-      historiaClinica,
-      recompensa: premio[0] ? { puntosGanados: PUNTOS_HISTORIA_CLINICA, ...premio[0] } : null,
-    });
+    return NextResponse.json({ historiaClinica });
   } catch (err) {
     return errorJson(err);
   }

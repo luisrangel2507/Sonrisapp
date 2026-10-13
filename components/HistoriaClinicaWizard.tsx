@@ -630,7 +630,6 @@ export function HistoriaClinicaWizard({
   onEnviar,
   guardando,
   error,
-  puntosPremio = null,
 }: {
   form: FormStateHistoriaClinica;
   set: <K extends keyof FormStateHistoriaClinica>(campo: K, valor: FormStateHistoriaClinica[K]) => void;
@@ -642,8 +641,6 @@ export function HistoriaClinicaWizard({
   onEnviar: () => void;
   guardando: boolean;
   error: string;
-  // Puntos que gana al terminar (null si ya los recibió antes).
-  puntosPremio?: number | null;
 }) {
   // vista === "intro": pantalla de bienvenida
   // vista === "pregunta": una pregunta a la vez, avanza con pasoIndex
@@ -710,11 +707,7 @@ export function HistoriaClinicaWizard({
             Hola <b className="text-[#5A1426]">{pacienteNombre.split(" ")[0]}</b>, vamos a completar tu ficha antes de tu cita — nos
             ayuda a atenderte mejor. Es rápido: unas cuantas preguntas por pantalla.
           </p>
-          {puntosPremio ? (
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E3B9C1] bg-white/80 px-4 py-2 text-[13px] text-[#5A1426] shadow-sm backdrop-blur">
-              <span>🎁</span> Gana <b>{puntosPremio} puntos</b> al terminar · ~4 min
-            </div>
-          ) : null}
+          <div className="mt-5 text-[12px] text-[#a49c8a]">~4 minutos</div>
           <button
             onClick={() => setVista("pregunta")}
             className="mt-7 flex items-center gap-2 rounded-full px-10 py-4 text-[16px] font-semibold text-white shadow-[0_14px_28px_-10px_rgba(90,20,38,0.75)]"

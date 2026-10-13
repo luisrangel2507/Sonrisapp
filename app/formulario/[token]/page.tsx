@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { HISTORIA_CLINICA_VACIA, type FormStateHistoriaClinica } from "@/components/HistoriaClinicaFormulario";
 import { HistoriaClinicaWizard, type DatosPacienteWizard } from "@/components/HistoriaClinicaWizard";
-import { PUNTOS_HISTORIA_CLINICA } from "@/lib/recompensas";
 
 interface PacientePublico {
   id: number;
@@ -20,13 +19,6 @@ interface PacientePublico {
   meta_premio?: number | null;
   premio_actual?: string | null;
   historia_puntos_otorgados?: boolean;
-}
-
-interface Recompensa {
-  puntosGanados: number;
-  puntos: number;
-  meta_premio: number | null;
-  premio_actual: string | null;
 }
 
 // Confeti hecho con CSS (sin librerías): piezas que caen con giro y
@@ -51,22 +43,6 @@ function Confeti() {
   );
 }
 
-function ContadorPuntos({ desde, hasta }: { desde: number; hasta: number }) {
-  const [v, setV] = useState(desde);
-  useEffect(() => {
-    let raf = 0;
-    const inicio = performance.now();
-    const paso = (t: number) => {
-      const k = Math.min(1, (t - inicio) / 1200);
-      setV(Math.round(desde + (hasta - desde) * (1 - Math.pow(1 - k, 3))));
-      if (k < 1) raf = requestAnimationFrame(paso);
-    };
-    raf = requestAnimationFrame(paso);
-    return () => cancelAnimationFrame(raf);
-  }, [desde, hasta]);
-  return <>{v}</>;
-}
-
 const DATOS_PACIENTE_VACIOS: DatosPacienteWizard = {
   telefono: null,
   email: null,
@@ -89,7 +65,6 @@ export default function FormularioPublicoPage() {
   const [guardando, setGuardando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState("");
-  const [recompensa, setRecompensa] = useState<Recompensa | null>(null);
 
   function set<K extends keyof FormStateHistoriaClinica>(campo: K, valor: FormStateHistoriaClinica[K]) {
     setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -145,11 +120,6 @@ export default function FormularioPublicoPage() {
         body: JSON.stringify({ ...form, fecha_nacimiento: fechaNacimiento, ...datosPaciente }),
       });
       if (!res.ok) throw new Error();
-      const data = await res.json().catch(() => ({}));
-      if (data.recompensa) {
-        setRecompensa(data.recompensa);
-        setPaciente((p) => (p ? { ...p, historia_puntos_otorgados: true } : p));
-      }
       setEnviado(true);
     } catch {
       setError("No se pudo enviar tu información. Intenta de nuevo.");
@@ -178,9 +148,7 @@ export default function FormularioPublicoPage() {
   }
 
   if (enviado) {
-    const meta = recompensa?.meta_premio ?? null;
-    const avance = recompensa && meta ? Math.min(100, (recompensa.puntos / meta) * 100) : 0;
-    return (
+      return (
       <div
         className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 text-center"
         style={{ background: "linear-gradient(180deg, #F8F1EC 0%, #F3E6E1 100%)" }}
@@ -194,29 +162,6 @@ export default function FormularioPublicoPage() {
             ¡Lo lograste, {paciente.nombre.split(" ")[0]}!
           </h1>
           <p className="mt-2 text-[14px] text-[#8a8272]">Completaste todos los niveles de tu historia clínica. ¡Gracias!</p>
-
-          {recompensa && (
-            <div className="mt-6 rounded-3xl bg-white/90 p-5 shadow-[0_8px_24px_-12px_rgba(122,30,51,0.35)]">
-              <div className="text-[13px] font-semibold uppercase tracking-wide text-[#a49c8a]">Ganaste</div>
-              <div className="text-[44px] font-bold leading-none text-[#7A1E33]">
-                +<ContadorPuntos desde={0} hasta={recompensa.puntosGanados} />
-              </div>
-              <div className="text-[13px] text-[#8a8272]">puntos</div>
-              {meta ? (
-                <div className="mt-4 text-left">
-                  <div className="mb-1 flex justify-between text-[12px] text-[#8a8272]">
-                    <span>{recompensa.premio_actual ?? "Tu próximo premio"}</span>
-                    <span>
-                      <ContadorPuntos desde={recompensa.puntos - recompensa.puntosGanados} hasta={recompensa.puntos} /> / {meta}
-                    </span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-[#EADAD5]">
-                    <div className="h-full rounded-full bg-[#7A1E33] transition-[width] duration-[1500ms]" style={{ width: `${avance}%` }} />
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          )}
 
           <p className="mt-6 text-[13px] text-[#8a8272]">Ya puedes cerrar esta ventana.</p>
           <button
@@ -243,7 +188,6 @@ export default function FormularioPublicoPage() {
         onEnviar={enviar}
         guardando={guardando}
         error={error}
-        puntosPremio={paciente.historia_puntos_otorgados ? null : PUNTOS_HISTORIA_CLINICA}
       />
     </div>
   );
