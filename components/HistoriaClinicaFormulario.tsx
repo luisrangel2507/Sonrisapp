@@ -86,8 +86,8 @@ export const PARENTESCOS_FAMILIA = [
   "Abuela materna",
   "Abuelo paterno",
   "Abuela paterna",
-  // Registro anterior (antes eran "Abuelos" en conjunto): solo se muestra
-  // si ya traía datos, para no perderlos.
+  // Registro anterior (antes eran "Abuelos" en conjunto): ya no se muestra,
+  // pero se conserva en lo guardado.
   "Abuelos",
 ] as const;
 
@@ -332,8 +332,9 @@ export function TablaFamiliares({
     <div className="space-y-2">
       {valor
         .filter((f) => {
-          const tieneDatos = f.vive !== null || !!f.enfermedades || !!f.no_aplica || !!f.si_aplica;
-          if (f.parentesco === "Abuelos") return tieneDatos && (!parentescos || parentescos.includes("Abuelo materno"));
+          // La fila antigua "Abuelos" ya no se muestra (se reemplazó por
+          // abuelos maternos y paternos); su dato queda guardado.
+          if (f.parentesco === "Abuelos") return false;
           return !parentescos || parentescos.includes(f.parentesco);
         })
         .map((f) => (
