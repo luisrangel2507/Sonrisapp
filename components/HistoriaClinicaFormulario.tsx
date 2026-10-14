@@ -476,13 +476,13 @@ export function CamposHistoriaClinica({
         <Campo label="Nombre del paciente">
           <div className={soloLecturaClase}>{pacienteNombre}</div>
         </Campo>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0 [&>*]:overflow-hidden">
           <Campo label="Fecha">
             <input
               type="date"
               value={form.fecha}
               onChange={(e) => set("fecha", e.target.value)}
-              className={`${inputClase} min-w-0`}
+              className={`${inputClase} block h-[38px] min-w-0 max-w-full appearance-none text-left [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:p-0`}
             />
           </Campo>
           <Campo label="Fecha de nacimiento">
