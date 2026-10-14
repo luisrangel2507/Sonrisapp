@@ -576,7 +576,7 @@ export function CamposHistoriaClinica({
           </div>
         </Campo>
 
-        <Campo label="Nombre del padre o tutor (si es menor de edad)">
+        <Campo label="Padre o tutor (si es menor)">
           <input
             value={form.nombre_padre_tutor ?? ""}
             onChange={(e) => set("nombre_padre_tutor", e.target.value || null)}
@@ -628,7 +628,7 @@ export function CamposHistoriaClinica({
           />
         </Campo>
         <div className="grid grid-cols-2 gap-3">
-          <Campo label="En caso de emergencia llamar a">
+          <Campo label="Contacto de emergencia">
             <input
               value={form.emergencia_nombre ?? ""}
               onChange={(e) => set("emergencia_nombre", e.target.value || null)}
@@ -664,7 +664,7 @@ export function CamposHistoriaClinica({
         <Campo label="Hipertensión arterial, diabetes, tuberculosis, sífilis, herpes, hepatitis, VIH, artritis reumatoide, cáncer, infartos, alergias, enfermedades psiquiátricas…">
           <TablaFamiliares valor={parsearFamDetalle(form.fam_detalle)} onChange={(v) => set("fam_detalle", serializarFamDetalle(v))} />
         </Campo>
-        <Campo label="¿Familiares con alguna otra enfermedad sistémica?">
+        <Campo label="¿Otro familiar con enfermedad sistémica?">
           <SiNo valor={form.fam_enfermedad_sistemica} onChange={(v) => set("fam_enfermedad_sistemica", v)} />
         </Campo>
         {form.fam_enfermedad_sistemica === true && (
@@ -727,7 +727,7 @@ export function CamposHistoriaClinica({
             />
           </Campo>
         )}
-        <Campo label="¿Ha sido intervenido quirúrgicamente?">
+        <Campo label="¿Intervención quirúrgica previa?">
           <SiNo valor={form.cirugia_previa} onChange={(v) => set("cirugia_previa", v)} />
         </Campo>
         {form.cirugia_previa === true && (
@@ -739,7 +739,7 @@ export function CamposHistoriaClinica({
             />
           </Campo>
         )}
-        <Campo label="¿Presenta problemas de sangrado o cicatrización?">
+        <Campo label="¿Sangrado o mala cicatrización?">
           <SiNo valor={form.problemas_sangrado} onChange={(v) => set("problemas_sangrado", v)} />
         </Campo>
         {form.sexo === "F" && (
@@ -778,7 +778,7 @@ export function CamposHistoriaClinica({
         <Campo label="¿Consume tabaco?">
           <SiAVecesNo valor={form.consume_tabaco} onChange={(v) => set("consume_tabaco", v)} />
         </Campo>
-        <Campo label="¿Enfermedades de transmisión sexual (VIH/VPH)?">
+        <Campo label="¿Enfermedad de transmisión sexual?">
           <SiNo valor={form.ets} onChange={(v) => set("ets", v)} />
         </Campo>
         {form.ets === true && (
@@ -841,7 +841,7 @@ export function CamposHistoriaClinica({
             onChange={(v) => set("cepillo_consistencia", v)}
           />
         </Campo>
-        <Campo label="¿Bruxismo (aprieta o rechina los dientes)?">
+        <Campo label="¿Bruxismo (rechina los dientes)?">
           <SiNo valor={form.bruxismo} onChange={(v) => set("bruxismo", v)} />
         </Campo>
         <Campo label="¿Realiza algún tipo de ejercicio?">
@@ -855,7 +855,7 @@ export function CamposHistoriaClinica({
 
       <Seccion titulo="Antecedentes odontológicos">
         <div className="grid grid-cols-2 gap-3">
-          <Campo label="Última consulta con el dentista">
+          <Campo label="Última consulta dental">
             <input
               value={form.ultima_consulta_dentista ?? ""}
               onChange={(e) => set("ultima_consulta_dentista", e.target.value || null)}
@@ -871,7 +871,7 @@ export function CamposHistoriaClinica({
             />
           </Campo>
         </div>
-        <Campo label="¿Ansiedad o mala experiencia dental?">
+        <Campo label="¿Ansiedad o mala experiencia?">
           <SiNo valor={form.ansiedad_dental} onChange={(v) => set("ansiedad_dental", v)} />
         </Campo>
         {form.ansiedad_dental === true && (
