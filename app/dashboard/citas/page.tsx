@@ -81,9 +81,23 @@ function iniciales(nombre: string) {
   return (primera + ultima).toUpperCase();
 }
 
-function SelectorVista({ vista, onCambiar }: { vista: Vista; onCambiar: (v: Vista) => void }) {
+function SelectorVista({
+  vista,
+  onCambiar,
+  escritorio = false,
+}: {
+  vista: Vista;
+  onCambiar: (v: Vista) => void;
+  escritorio?: boolean;
+}) {
   return (
-    <div className="flex rounded-full border border-[#EFE9DC] bg-white p-0.5 text-[12px]">
+    <div
+      className={
+        escritorio
+          ? "flex rounded-full bg-white/70 p-1 text-[14px]"
+          : "flex rounded-full border border-[#EFE9DC] bg-white p-0.5 text-[12px]"
+      }
+    >
       {(
         [
           ["dia", "Día"],
@@ -94,8 +108,12 @@ function SelectorVista({ vista, onCambiar }: { vista: Vista; onCambiar: (v: Vist
         <button
           key={v}
           onClick={() => onCambiar(v)}
-          className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition-colors ${
-            vista === v ? "bg-[#2b2118] text-white" : "text-[#8a8272]"
+          className={`flex-1 rounded-full font-semibold transition-colors ${escritorio ? "px-6 py-2.5" : "px-3 py-1.5"} ${
+            vista === v
+              ? escritorio
+                ? "bg-[#7A1E33] text-white shadow-sm"
+                : "bg-[#2b2118] text-white"
+              : "text-[#6f6458]"
           }`}
         >
           {label}
@@ -506,7 +524,17 @@ function CitaTimelineItem({
         <span className="text-[13px] font-semibold text-[#2b2118]">{formatearHora(cita.fecha_hora)}</span>
       </div>
 
-      <div className="mt-2 rounded-2xl bg-[#FBF9F5] p-3">
+      <div
+        className={`mt-2 rounded-2xl p-3 ${
+          cita.estado === "cancelada"
+            ? "bg-[#FBEAE8]"
+            : vencida
+              ? "bg-[#FDF1DC]"
+              : cita.estado === "completada"
+                ? "bg-[#EEF4EA]"
+                : "bg-[#FBF9F5]"
+        }`}
+      >
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[12px] font-semibold text-[#2b2118]">
             {iniciales(cita.paciente_nombre)}
@@ -1393,16 +1421,17 @@ export default function CitasPage() {
         {citasVencidas.length > 0 && (
           <button
             onClick={() => seleccionarDia(inicioDelDia(new Date(citasVencidas[0].fecha_hora)))}
-            className="mb-4 flex w-full items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-left text-[13px] text-[#B0503A]"
+            className="mb-4 flex w-full items-center gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F9E1DE] px-4 py-3 text-left text-[13px] text-[#B0503A]"
           >
-            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-            <span>
+            <AlertTriangle size={17} className="shrink-0" />
+            <span className="flex-1">
               <strong>
                 {citasVencidas.length} cita{citasVencidas.length === 1 ? "" : "s"} sin marcar como completada
                 {citasVencidas.length === 1 ? "" : "s"}
               </strong>{" "}
               — ya pasaron más de 2 horas. Tócalo para ir a la más antigua.
             </span>
+            <ChevronRight size={16} className="shrink-0" />
           </button>
         )}
 
@@ -1411,27 +1440,30 @@ export default function CitasPage() {
         ) : (
           <>
             <div className="mb-5 grid grid-cols-4 gap-4">
-              <StatCard icon={Calendar} iconBg="bg-[#F7E5E0] text-[#B0503A]" label="Citas de hoy" value={citasHoyTotal.length} />
-              <StatCard icon={Check} iconBg="bg-[#E8F0E3] text-[#3F6B33]" label="Confirmadas" value={confirmadasHoy} />
-              <StatCard icon={Clock} iconBg="bg-[#FCEFD2] text-[#B08419]" label="Pendientes" value={pendientesHoy} />
-              <StatCard icon={XCircle} iconBg="bg-[#EFE9DC] text-[#8a8272]" label="Canceladas" value={canceladasHoy} />
+              <StatCard compact icon={Calendar} iconBg="bg-[#F7E5E0] text-[#B0503A]" label="Citas de hoy" value={citasHoyTotal.length} />
+              <StatCard compact icon={Check} iconBg="bg-[#E8F0E3] text-[#3F6B33]" label="Confirmadas" value={confirmadasHoy} />
+              <StatCard compact icon={Clock} iconBg="bg-[#FCEFD2] text-[#B08419]" label="Pendientes" value={pendientesHoy} />
+              <StatCard compact icon={XCircle} iconBg="bg-[#EFE9DC] text-[#8a8272]" label="Canceladas" value={canceladasHoy} />
             </div>
 
-            <div className="mb-4 flex items-center justify-between gap-4 rounded-3xl border border-[#EFE9DC] bg-white/70 p-3">
-              <SelectorVista vista={vista} onCambiar={setVista} />
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <SelectorVista vista={vista} onCambiar={setVista} escritorio />
               {vista !== "mes" && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 rounded-full bg-white/70 p-1">
                   <button
                     onClick={() => moverSemanaAncla(-1)}
-                    className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
+                    className="rounded-full p-2 text-[#6f6458] hover:bg-[#EFE9DC]/70"
                     aria-label="Semana anterior"
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <span className="text-[14px] font-semibold capitalize text-[#2b2118]">{rangoSemanaLabel}</span>
+                  <span className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-semibold text-[#2b2118] shadow-sm">
+                    <Calendar size={15} className="text-[#7A1E33]" />
+                    {rangoSemanaLabel}
+                  </span>
                   <button
                     onClick={() => moverSemanaAncla(1)}
-                    className="rounded-full p-1.5 text-[#8a8272] hover:bg-[#EFE9DC]/70"
+                    className="rounded-full p-2 text-[#6f6458] hover:bg-[#EFE9DC]/70"
                     aria-label="Semana siguiente"
                   >
                     <ChevronRight size={16} />
@@ -1440,7 +1472,7 @@ export default function CitasPage() {
               )}
               <button
                 onClick={() => seleccionarDia(inicioDelDia(new Date()))}
-                className="rounded-full border border-[#EFE9DC] px-4 py-1.5 text-[13px] font-semibold text-[#2b2118] hover:bg-[#EFE9DC]/40"
+                className="rounded-full bg-white/70 px-6 py-2.5 text-[14px] font-semibold text-[#2b2118] hover:bg-white"
               >
                 Hoy
               </button>
@@ -1469,9 +1501,14 @@ export default function CitasPage() {
             )}
 
             {vista === "dia" && (
-              <div className="mx-auto max-w-2xl rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-                <div className="mb-3 text-[13px] font-bold capitalize text-[#2b2118]">
-                  {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+              <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-[16px] font-bold text-[#2b2118] first-letter:uppercase">
+                    {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                  </div>
+                  <div className="text-[13px] text-[#8a8272]">
+                    {citasDelDia.length} cita{citasDelDia.length === 1 ? "" : "s"}
+                  </div>
                 </div>
                 {citasDelDia.length === 0 ? (
                   <p className="text-sm text-[#8a8272]">Sin citas para este día.</p>
