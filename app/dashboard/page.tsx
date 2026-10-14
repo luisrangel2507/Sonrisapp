@@ -84,7 +84,7 @@ function Tendencia({ actual, anterior }: { actual: number; anterior: number }) {
 
 const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
 
-function MiniCalendario({ citasHoy }: { citasHoy: Cita[] | null }) {
+function MiniCalendario({ citasHoy, compacto = false }: { citasHoy: Cita[] | null; compacto?: boolean }) {
   const hoy = new Date();
   const [mesVisible, setMesVisible] = useState(() => new Date(hoy.getFullYear(), hoy.getMonth(), 1));
 
@@ -123,7 +123,7 @@ function MiniCalendario({ citasHoy }: { citasHoy: Cita[] | null }) {
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-y-1.5 text-center">
+      <div className={`grid grid-cols-7 text-center ${compacto ? "mt-2 gap-y-0" : "mt-3 gap-y-1.5"}`}>
         {DIAS_SEMANA.map((d, i) => (
           <div key={i} className="text-[10px] font-semibold uppercase text-[#a49c8a]">
             {d}
@@ -132,7 +132,7 @@ function MiniCalendario({ citasHoy }: { citasHoy: Cita[] | null }) {
         {celdas.map((dia, i) => {
           const esHoy = esMesActual && dia === hoy.getDate();
           return (
-            <div key={i} className="flex items-center justify-center py-0.5">
+            <div key={i} className={`flex items-center justify-center ${compacto ? "py-0" : "py-0.5"}`}>
               {dia && (
                 <span
                   className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] ${
@@ -502,9 +502,9 @@ export default function PanelPage() {
     </div>
 
       {/* ---- Vista de escritorio ---- */}
-      <div className="hidden md:block">
+      <div className="hidden md:flex md:h-[calc(100dvh-140px)] md:flex-col">
         {(errorResumen || errorCitas) && (
-          <div className="mb-5 space-y-2">
+          <div className="mb-3 space-y-2">
             {errorResumen && (
               <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
                 {errorResumen}
@@ -521,7 +521,7 @@ export default function PanelPage() {
         {citasVencidas.length > 0 && (
           <Link
             href={`/dashboard/citas?ir=${claveDiaLocal(citasVencidas[0].fecha_hora)}`}
-            className="mb-4 flex items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]"
+            className="mb-3 flex shrink-0 items-start gap-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-2 text-[13px] text-[#B0503A]"
           >
             <AlertTriangle size={16} className="mt-0.5 shrink-0" />
             <span>
@@ -537,7 +537,7 @@ export default function PanelPage() {
         {citasPendientesAprobacion.length > 0 && (
           <Link
             href="/dashboard/citas"
-            className="mb-4 flex items-start gap-2.5 rounded-2xl border border-[#E8CFA0] bg-[#F7ECD9] px-4 py-3 text-[13px] text-[#B0834A]"
+            className="mb-3 flex shrink-0 items-start gap-2.5 rounded-2xl border border-[#E8CFA0] bg-[#F7ECD9] px-4 py-2 text-[13px] text-[#B0834A]"
           >
             <AlertTriangle size={16} className="mt-0.5 shrink-0" />
             <span>
@@ -551,22 +551,22 @@ export default function PanelPage() {
         )}
 
         {/* Encabezado de bienvenida */}
-        <div className="flex overflow-hidden rounded-[28px] border border-[#EFE9DC] bg-white/70">
-          <div className="flex-1 p-7">
+        <div className="flex shrink-0 overflow-hidden rounded-3xl border border-[#EFE9DC] bg-white/70">
+          <div className="flex-1 px-6 py-3.5">
             <h1
-              className="text-[26px] font-bold text-[#2b2118]"
+              className="text-[22px] font-bold leading-tight text-[#2b2118]"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
               ¡{saludoPorHora()}, {nombreBienvenida ?? "…"}! 👋
             </h1>
             <p className="mt-1 text-sm text-[#8a8272]">{fechaLarga()}</p>
-            <p className="mt-5 max-w-sm text-[15px] italic leading-relaxed text-[#2b2118]/80">
+            <p className="mt-1.5 max-w-md text-[13px] italic leading-snug text-[#2b2118]/80">
               &ldquo;La gente sale de tu consultorio con una sonrisa.
               <br />
               Eso no tiene comparación.&rdquo;
             </p>
           </div>
-          <div className="relative hidden w-72 shrink-0 lg:block">
+          <div className="relative hidden w-56 shrink-0 lg:block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/hero-diente-atardecer.webp"
@@ -578,8 +578,9 @@ export default function PanelPage() {
         </div>
 
         {/* Tarjetas de estadísticas */}
-        <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mt-3 grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
+            compact
             icon={Calendar}
             iconBg="bg-[#F7E5E0] text-[#B0503A]"
             label="Citas esta semana"
@@ -591,6 +592,7 @@ export default function PanelPage() {
             }
           />
           <StatCard
+            compact
             icon={TrendingUp}
             iconBg="bg-[#E8F0E3] text-[#3F6B33]"
             label="Ingresos del mes"
@@ -602,10 +604,11 @@ export default function PanelPage() {
             }
           />
           <StatCard
+            compact
             icon={Award}
             iconBg="bg-[#FCEFD2] text-[#B08419]"
             label="Top del mes"
-            valueClassName="text-[15px] leading-snug"
+            valueClassName="text-[14px] leading-snug"
             value={!resumen ? "…" : resumen.top_servicios_mes[0]?.tratamiento ?? "—"}
             sub={
               resumen && resumen.top_servicios_mes.length > 0
@@ -616,6 +619,7 @@ export default function PanelPage() {
             }
           />
           <StatCard
+            compact
             icon={Users}
             iconBg="bg-[#EFE3F0] text-[#7A4D8A]"
             label="Pacientes activos"
@@ -624,8 +628,8 @@ export default function PanelPage() {
         </div>
 
         {/* Agenda de hoy + pacientes recientes + calendario/acciones */}
-        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_280px_320px]">
-          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_280px_300px]">
+          <div className="min-h-0 overflow-y-auto rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-[15px] font-bold text-[#2b2118]">
                 <Calendar size={16} className="text-[#803449]" />
@@ -672,7 +676,7 @@ export default function PanelPage() {
                     <Link
                       key={c.id}
                       href={`/dashboard/citas?ir=${claveDiaLocal(c.fecha_hora)}`}
-                      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                      className="flex items-center gap-3 py-2 first:pt-0 last:pb-0"
                     >
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${paleta.bg} ${paleta.text}`}
@@ -694,7 +698,7 @@ export default function PanelPage() {
             )}
           </div>
 
-          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
+          <div className="min-h-0 overflow-y-auto rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
             <div className="flex items-center justify-between">
               <div className="text-[13px] font-bold text-[#2b2118]">Pacientes recientes</div>
               <Link href="/dashboard/pacientes" className="text-[11px] font-semibold text-[#803449]">
@@ -734,19 +738,19 @@ export default function PanelPage() {
             )}
           </div>
 
-          <div className="space-y-5">
-            <MiniCalendario citasHoy={citasHoy} />
+          <div className="min-h-0 space-y-3 overflow-y-auto">
+            <MiniCalendario citasHoy={citasHoy} compacto />
 
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => router.push("/dashboard/citas?nuevo=1")}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5C2235] py-3 text-[14px] font-semibold text-white"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5C2235] py-2.5 text-[13px] font-semibold text-white"
               >
                 <Plus size={15} /> Nueva cita
               </button>
               <button
                 onClick={() => router.push("/dashboard/pacientes?nuevo=1")}
-                className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#2b2118]"
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2.5 text-[13px] font-semibold text-[#2b2118]"
               >
                 <UserPlus size={15} /> Nuevo paciente
               </button>
