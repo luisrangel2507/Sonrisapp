@@ -106,10 +106,26 @@ export default function HistoriaClinicaPage() {
         <ChevronLeft size={15} /> {paciente.nombre}
       </Link>
 
-      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Historia clínica</div>
-        <div className="mt-1 text-sm font-medium text-[#2b2118]">{DOCTORA.nombre}</div>
-        <div className="text-xs text-[#a49c8a]">Cédula profesional: {DOCTORA.cedula}</div>
+      <div className="relative flex items-center gap-4 overflow-hidden rounded-3xl border border-[#EFE9DC] bg-gradient-to-r from-[#F3E3E3] to-[#F8EEEA] p-5">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#E9D3D6] text-[24px] font-bold text-[#7A1E33]">
+          {paciente.nombre
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((p) => p[0])
+            .join("")
+            .toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#8a7a78]">Historia clínica</div>
+          <div className="mt-1 text-[17px] font-bold leading-tight text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
+            {DOCTORA.nombre}
+          </div>
+          <div className="mt-1 text-[13px] text-[#8a7a78]">Cédula profesional: {DOCTORA.cedula}</div>
+        </div>
+        <svg viewBox="0 0 64 80" className="hidden h-16 w-14 shrink-0 text-[#C9A5A8] min-[400px]:block" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden>
+          <path d="M32 16c-6-8-24-8-24 10 0 12 6 14 8 28 1 8 4 14 8 14 5 0 4-14 8-14s3 14 8 14c4 0 7-6 8-14 2-14 8-16 8-28 0-18-18-18-24-10z" />
+        </svg>
       </div>
 
       {hayHistoria && !confirmado && (

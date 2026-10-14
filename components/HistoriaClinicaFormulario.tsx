@@ -1,3 +1,8 @@
+import { useState } from "react";
+import {
+  Activity, Briefcase, Cake, CalendarDays, ChevronDown, CircleDot, ClipboardList, HeartPulse, IdCard, Leaf, MapPin,
+  MessageSquare, Phone, Pill, ShieldAlert, Smile, Stethoscope, User, Users, Venus
+} from "lucide-react";
 import type { HistoriaClinica } from "@/lib/types";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 
@@ -148,32 +153,83 @@ export function calcularEdad(fechaNacimiento: string | null) {
   return edad < 0 ? null : edad;
 }
 
+function iconoDeSeccion(titulo: string) {
+  const p = { size: 22, className: "shrink-0 text-[#7A1E33]", strokeWidth: 1.9 };
+  switch (titulo) {
+    case "Ficha de identificación":
+      return <IdCard {...p} />;
+    case "Antecedentes heredofamiliares":
+      return <Users {...p} />;
+    case "Antecedentes personales":
+      return <HeartPulse {...p} />;
+    case "Antecedentes personales no patológicos":
+      return <Leaf {...p} />;
+    case "Antecedentes odontológicos":
+      return <Smile {...p} />;
+    case "Exploración física y signos vitales":
+      return <Activity {...p} />;
+    case "Cabeza, cuello y cavidad bucal":
+      return <Stethoscope {...p} />;
+    default:
+      return <ClipboardList {...p} />;
+  }
+}
+
+// Sección plegable con ícono guinda en el encabezado.
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  const [abierta, setAbierta] = useState(true);
   return (
-    <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-      <div className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">{titulo}</div>
-      <div className="space-y-4">{children}</div>
+    <div className="rounded-[28px] border border-[#EFE9DC] bg-white/80 p-5 shadow-[0_10px_30px_-18px_rgba(122,30,51,0.35)]">
+      <button type="button" onClick={() => setAbierta((v) => !v)} className="flex w-full items-center gap-3 text-left">
+        {iconoDeSeccion(titulo)}
+        <span className="flex-1 text-[17px] font-bold text-[#7A1E33]">{titulo}</span>
+        <ChevronDown size={18} className={`shrink-0 text-[#7A1E33] transition-transform ${abierta ? "rotate-180" : ""}`} />
+      </button>
+      {abierta && <div className="mt-5 space-y-5">{children}</div>}
     </div>
   );
+}
+
+// Ícono de cada campo según su etiqueta.
+function iconoDeCampo(label: string) {
+  const p = { size: 16, className: "shrink-0 text-[#7A1E33]", strokeWidth: 1.8 };
+  const l = label.toLowerCase();
+  if (l === "fecha") return <CalendarDays {...p} />;
+  if (l.includes("nacimiento")) return <Cake {...p} />;
+  if (l === "edad") return <Cake {...p} />;
+  if (l.includes("teléfono") || l.includes("telefono")) return <Phone {...p} />;
+  if (l.includes("nombre del paciente")) return <User {...p} />;
+  if (l.includes("padre") || l.includes("tutor")) return <Users {...p} />;
+  if (l.includes("calle") || l.includes("ciudad") || l.includes("estado") || l.includes("país") || l.includes("postal")) return <MapPin {...p} />;
+  if (l === "sexo") return <Venus {...p} />;
+  if (l.includes("ocupaci")) return <Briefcase {...p} />;
+  if (l.includes("motivo")) return <MessageSquare {...p} />;
+  if (l.includes("alerg")) return <ShieldAlert {...p} />;
+  if (l.includes("medicamento")) return <Pill {...p} />;
+  if (l.includes("cepill") || l.includes("dent") || l.includes("higiene")) return <Smile {...p} />;
+  return <CircleDot {...p} />;
 }
 
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <label className="mb-1.5 block text-[11px] font-medium text-[#a49c8a]">{label}</label>
+      <label className="mb-1.5 flex items-center gap-2 text-[13px] font-medium text-[#7b6f64]">
+        {iconoDeCampo(label)}
+        <span className="min-w-0">{label}</span>
+      </label>
       {children}
     </div>
   );
 }
 
 const inputClase =
-  "w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]";
+  "w-full rounded-2xl border border-[#EFE9DC] bg-white px-4 py-2.5 text-[15px] text-[#2b2118] outline-none placeholder:text-[#b8b0a0] focus:border-[#7A1E33]";
 
 // Mismo tamaño/caja que un input, pero de solo lectura (dato que viene
 // del paciente, no se edita aquí) — para que no se vea "chueco" al
 // lado de un campo editable real dentro del mismo grid.
 const soloLecturaClase =
-  "w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3 py-2 text-sm text-[#2b2118]";
+  "w-full rounded-2xl border border-[#EFE9DC] bg-[#FBF9F4] px-4 py-2.5 text-[15px] text-[#2b2118]";
 
 export function SiNo({
   valor,
@@ -482,7 +538,7 @@ export function CamposHistoriaClinica({
               type="date"
               value={form.fecha}
               onChange={(e) => set("fecha", e.target.value)}
-              className={`${inputClase} block h-[38px] min-w-0 max-w-full appearance-none text-left [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:p-0`}
+              className={`${inputClase} block h-[46px] min-w-0 max-w-full appearance-none text-left [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:p-0`}
             />
           </Campo>
           <Campo label="Fecha de nacimiento">
