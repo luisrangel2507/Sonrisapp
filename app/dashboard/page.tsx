@@ -36,14 +36,15 @@ function saludoPorHora() {
   return "Buenas noches";
 }
 
-function fechaLarga() {
-  const texto = new Date().toLocaleDateString("es-MX", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+function fechaCorta() {
+  const d = new Date();
+  const dia = d.toLocaleDateString("es-MX", { weekday: "long" });
+  const mes = d.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+  return {
+    dia: dia.charAt(0).toUpperCase() + dia.slice(1),
+    num: d.getDate(),
+    resto: mes.charAt(0).toUpperCase() + mes.slice(1),
+  };
 }
 
 // Mismos tonos que la lista de Pacientes — para que los avatares de
@@ -551,29 +552,34 @@ export default function PanelPage() {
         )}
 
         {/* Encabezado de bienvenida */}
-        <div className="flex shrink-0 overflow-hidden rounded-3xl border border-[#EFE9DC] bg-white/70">
-          <div className="flex-1 px-6 py-3.5">
-            <h1
-              className="text-[22px] font-bold leading-tight text-[#2b2118]"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-            >
-              ¡{saludoPorHora()}, {nombreBienvenida ?? "…"}! 👋
-            </h1>
-            <p className="mt-1 text-sm text-[#8a8272]">{fechaLarga()}</p>
-            <p className="mt-1.5 max-w-md text-[13px] italic leading-snug text-[#2b2118]/80">
-              &ldquo;La gente sale de tu consultorio con una sonrisa.
-              <br />
-              Eso no tiene comparación.&rdquo;
-            </p>
+        <div className="flex shrink-0 gap-4">
+          <div
+            className="relative flex flex-1 overflow-hidden rounded-3xl border border-[#EFE9DC]"
+            style={{ background: "linear-gradient(90deg, #FCEDE8 0%, #FBE3D8 55%, #F8D5C4 100%)" }}
+          >
+            <div className="relative z-10 flex-1 px-6 py-3.5">
+              <h1
+                className="text-[22px] font-bold leading-tight text-[#2b2118]"
+                style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              >
+                ¡{saludoPorHora()}, {nombreBienvenida ?? "…"}!
+              </h1>
+              <p className="mt-1.5 max-w-md text-[13px] italic leading-snug text-[#2b2118]/80">
+                &ldquo;La gente sale de tu consultorio con una sonrisa.
+                <br />
+                Eso no tiene comparación.&rdquo;
+              </p>
+            </div>
+            <div className="relative hidden w-[46%] shrink-0 lg:block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/hero-diente-atardecer.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FBE3D8] via-[#FBE3D8]/30 to-transparent" />
+            </div>
           </div>
-          <div className="relative hidden w-56 shrink-0 lg:block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero-diente-atardecer.webp"
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/0" />
+          <div className="hidden w-40 shrink-0 flex-col justify-center rounded-3xl border border-[#EFE9DC] bg-white/70 px-5 lg:flex">
+            <div className="text-[13px] text-[#6f6458]">{fechaCorta().dia}</div>
+            <div className="text-[34px] font-bold leading-none text-[#2b2118]">{fechaCorta().num}</div>
+            <div className="text-[13px] text-[#6f6458]">{fechaCorta().resto}</div>
           </div>
         </div>
 
@@ -700,7 +706,10 @@ export default function PanelPage() {
 
           <div className="min-h-0 overflow-y-auto rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
             <div className="flex items-center justify-between">
-              <div className="text-[13px] font-bold text-[#2b2118]">Pacientes recientes</div>
+              <div className="flex items-center gap-1.5 text-[13px] font-bold text-[#2b2118]">
+                <Users size={15} className="text-[#803449]" />
+                Pacientes recientes
+              </div>
               <Link href="/dashboard/pacientes" className="text-[11px] font-semibold text-[#803449]">
                 Ver todos →
               </Link>

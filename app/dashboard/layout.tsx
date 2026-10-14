@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserCog, Activity, Users, Calendar, Package, BarChart3, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package, BarChart3, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X, Settings, ChevronDown } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 
 const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
@@ -125,20 +125,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
+        <Link
+          href="/dashboard/perfil"
+          className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
+            esActivo("/dashboard/perfil") ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
+          }`}
+        >
+          <Settings size={16} /> Configuración
+        </Link>
       </aside>
 
       <div className="min-w-0 flex-1">
         {/* Barra superior — solo escritorio */}
         <div className="sticky top-0 z-10 hidden items-center justify-between border-b border-[#EFE9DC] bg-[#F5F1EA]/90 px-8 py-4 backdrop-blur md:flex">
-          <form onSubmit={buscar} className="w-full max-w-sm">
+          <form onSubmit={buscar} className="w-full max-w-md">
             <div className="flex items-center gap-2 rounded-full border border-[#EFE9DC] bg-white px-4 py-2.5">
               <Search size={15} className="shrink-0 text-[#a49c8a]" />
               <input
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar pacientes…"
+                placeholder="Buscar pacientes, citas, tratamientos…"
                 className="w-full bg-transparent text-sm text-[#2b2118] outline-none placeholder:text-[#a49c8a]"
               />
+              <kbd className="hidden shrink-0 rounded-lg bg-[#F5F1EA] px-2 py-0.5 text-[11px] font-semibold text-[#8a8272] lg:block">⌘ K</kbd>
             </div>
           </form>
 
@@ -147,9 +156,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/dashboard/citas"
               aria-label="Agenda"
               title="Agenda"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white text-[#8a8272] hover:text-[#2b2118]"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#EFE9DC] bg-white text-[#8a8272] hover:text-[#2b2118]"
             >
               <Bell size={16} />
+              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#E5484D]" />
             </Link>
             <Link href="/dashboard/perfil" className="flex items-center gap-2.5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow-sm">
@@ -161,6 +171,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </div>
               <span className="text-[15px] font-semibold text-[#2b2118]">{nombre}</span>
+              <ChevronDown size={14} className="text-[#8a8272]" />
             </Link>
           </div>
         </div>

@@ -22,15 +22,15 @@ export function StatCard({
 }) {
   if (compact) {
     return (
-      <div className="min-w-0 rounded-2xl border border-[#EFE9DC] bg-white/70 px-3.5 py-2.5">
-        <div className="flex items-center gap-2">
-          <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
-            <Icon size={12} strokeWidth={2.25} />
-          </div>
-          <div className="truncate text-[10px] font-semibold uppercase tracking-wide text-[#a49c8a]">{label}</div>
+      <div className="flex min-w-0 items-center gap-3.5 rounded-3xl border border-[#EFE9DC] bg-white/70 px-4 py-3">
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+          <Icon size={20} strokeWidth={2} />
         </div>
-        <div className={`mt-1 break-words font-semibold text-[#2b2118] ${valueClassName}`}>{value}</div>
-        {sub && <div className={`break-words text-[11px] ${subColor}`}>{sub}</div>}
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[11px] font-medium uppercase tracking-wide text-[#6f6458]">{label}</div>
+          <div className={`break-words font-semibold leading-tight text-[#2b2118] ${valueClassName}`}>{value}</div>
+          {sub && <div className={`break-words text-[11px] ${subColor}`}>{sub}</div>}
+        </div>
       </div>
     );
   }
