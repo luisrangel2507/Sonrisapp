@@ -125,20 +125,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        <Link
-          href="/dashboard/perfil"
-          className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
-            esActivo("/dashboard/perfil") ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
-          }`}
-        >
-          {foto ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={foto} alt="" className="h-4 w-4 rounded-full object-cover" />
-          ) : (
-            <UserCog size={16} />
-          )}
-          Perfil
-        </Link>
       </aside>
 
       <div className="min-w-0 flex-1">
@@ -166,15 +152,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell size={16} />
             </Link>
             <Link href="/dashboard/perfil" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#EFE9DC] bg-white">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow-sm">
                 {foto ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={foto} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <UserCog size={16} className="text-[#2b2118]" />
+                  <UserCog size={20} className="text-[#2b2118]" />
                 )}
               </div>
-              <span className="text-[14px] font-semibold text-[#2b2118]">{nombre}</span>
+              <span className="text-[15px] font-semibold text-[#2b2118]">{nombre}</span>
             </Link>
           </div>
         </div>

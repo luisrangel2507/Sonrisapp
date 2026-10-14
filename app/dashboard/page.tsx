@@ -502,7 +502,7 @@ export default function PanelPage() {
     </div>
 
       {/* ---- Vista de escritorio ---- */}
-      <div className="hidden md:flex md:h-[calc(100dvh-140px)] md:flex-col">
+      <div className="hidden md:flex md:h-[calc(100dvh-148px)] md:flex-col">
         {(errorResumen || errorCitas) && (
           <div className="mb-3 space-y-2">
             {errorResumen && (
