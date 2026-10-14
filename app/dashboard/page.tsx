@@ -9,7 +9,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  MessageCircle,
   MoreVertical,
   Plus,
   TrendingUp,
@@ -20,7 +19,6 @@ import {
 } from "lucide-react";
 import { Hero } from "@/components/Hero";
 import { StatCard } from "@/components/StatCard";
-import { BotChat } from "@/components/BotChat";
 import { formatearDinero } from "@/lib/dinero";
 import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { pagoConfirmado } from "@/lib/citas";
@@ -170,7 +168,6 @@ const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
 
 export default function PanelPage() {
   const router = useRouter();
-  const [showChat, setShowChat] = useState(false);
   const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
   const [citasHoy, setCitasHoy] = useState<Cita[] | null>(null);
   const [citasVencidas, setCitasVencidas] = useState<Cita[]>([]);
@@ -502,20 +499,6 @@ export default function PanelPage() {
         />
       </div>
 
-      <div className="mx-4 mt-6">
-        {!showChat ? (
-          <button
-            onClick={() => setShowChat(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3.5 text-[15px] font-semibold text-[#2b2118]"
-          >
-            <MessageCircle size={16} /> Probar el bot de WhatsApp
-          </button>
-        ) : (
-          <div className="h-[440px]">
-            <BotChat />
-          </div>
-        )}
-      </div>
     </div>
 
       {/* ---- Vista de escritorio ---- */}

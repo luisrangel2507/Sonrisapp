@@ -9,7 +9,6 @@ export const config = {
     "/api/pagos/:path*",
     "/api/dashboard/:path*",
     "/api/reportes/:path*",
-    "/api/bot/:path*",
     "/api/precios-servicios/:path*",
     "/api/estados-diente/:path*",
     "/api/perfil/:path*",

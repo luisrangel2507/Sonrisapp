@@ -5,7 +5,7 @@ Panel clínico y de lealtad para consultorios dentales. Next.js 14 (App Router) 
 ## Módulos
 
 - **Login** (`/login`) — acceso del consultorio (un solo usuario). Todo `/dashboard` y las APIs de datos están protegidas por `middleware.ts`; sin sesión válida, redirige aquí.
-- **Panel** (`/dashboard`) — citas de hoy, citas de la semana, ingresos del mes, por cobrar, y simulador del bot de WhatsApp.
+- **Panel** (`/dashboard`) — citas de hoy, citas de la semana, ingresos del mes, por cobrar.
 - **Pacientes** (`/dashboard/pacientes`) — lista con búsqueda y alta; `/dashboard/pacientes/[id]` es el expediente clínico completo (datos, antecedentes/alergias/medicamentos, historial general y, al final, el odontograma interactivo de ese paciente — mapa de los 32 dientes en notación FDI/Universal con historial de tratamientos por diente).
 - **Citas** (`/dashboard/citas`) — agenda: crear cita (con monto), marcar completada/cancelada, registrar pagos (abonos parciales o completos, por método).
 - **Lealtad** (`/dashboard/lealtad`) — lista de todos los pacientes con su status de puntos/progreso; `/dashboard/lealtad/[id]` es la tarjeta individual con aviso de cumpleaños.
@@ -28,7 +28,6 @@ Ver `.env.example`:
 - `DATABASE_URL` — cadena de conexión de Postgres.
 - `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` — WhatsApp Cloud API, para felicitaciones de cumpleaños y avisos de meta de puntos. Si faltan, los mensajes solo se registran en consola (no se envían).
 - `CRON_SECRET` — protege `POST /api/cron`.
-- `ANTHROPIC_API_KEY` — opcional, habilita el simulador del bot en el Panel (`/api/bot`).
 - `APP_LOGIN_USER` / `APP_LOGIN_PASSWORD` — credenciales del único usuario del consultorio. Sin ellas, `/api/auth/login` responde error 500 (login no configurado).
 - `SESSION_SECRET` — cadena aleatoria larga que firma la cookie de sesión (`openssl rand -hex 32` o similar). Cámbiala y se cierran todas las sesiones activas.
 
@@ -50,7 +49,6 @@ Ver `.env.example`:
    - `DATABASE_URL` — usa la referencia `${{Postgres.DATABASE_URL}}` de Railway (autocompletado al escribir `${{`) en vez de copiarla a mano.
    - `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` — credenciales de WhatsApp Cloud API.
    - `CRON_SECRET` — cualquier cadena aleatoria larga.
-   - `ANTHROPIC_API_KEY` — opcional, para el bot del Panel.
    - `APP_LOGIN_USER` / `APP_LOGIN_PASSWORD` — el usuario y contraseña con los que entrarás en `/login`.
    - `SESSION_SECRET` — otra cadena aleatoria larga (distinta a `CRON_SECRET`).
 4. Antes de que el primer deploy reciba tráfico real, corre `db/schema.sql` contra la base: en la pestaña del servicio Postgres usa **Connect** para obtener la cadena y corre `psql "$DATABASE_URL" -f db/schema.sql` desde tu máquina (o el botón "Query" del dashboard de Railway pegando el contenido del archivo).
