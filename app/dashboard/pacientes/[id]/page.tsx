@@ -31,6 +31,7 @@ import { OdontogramaFoto } from "@/components/OdontogramaFoto";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
+import { NUMEROS_FDI } from "@/lib/dental";
 
 function totalPresupuesto(items: { cantidad: number; precio_unitario: number }[]) {
   return items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
@@ -499,6 +500,12 @@ export default function PacienteDetallePage() {
 
   function actualizarItemPresupuesto(index: number, campo: "concepto" | "cantidad" | "precio_unitario", valor: string) {
     setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, [campo]: valor } : it)));
+    // Brackets / ortodoncia abarcan toda la boca: se marcan todos los
+    // dientes y el concepto se cobra una sola vez (no por diente).
+    if (campo === "concepto" && /bracket|ortodoncia/i.test(valor)) {
+      setDientesPresupuesto((d) => (d.length === 0 ? [...NUMEROS_FDI] : d));
+      setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, porDiente: false } : it)));
+    }
   }
 
   async function crearPresupuesto() {
@@ -1207,6 +1214,24 @@ export default function PacienteDetallePage() {
               <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">
                 Dientes relacionados (opcional)
               </label>
+              <div className="mb-1.5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDientesPresupuesto([...NUMEROS_FDI])}
+                  className="rounded-full border border-[#803449]/40 px-3 py-1 text-[11px] font-medium text-[#803449]"
+                >
+                  Todos los dientes
+                </button>
+                {dientesPresupuesto.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDientesPresupuesto([])}
+                    className="rounded-full border border-[#EFE9DC] px-3 py-1 text-[11px] font-medium text-[#8a8272]"
+                  >
+                    Quitar todos
+                  </button>
+                )}
+              </div>
               <OdontogramaFoto seleccionados={dientesPresupuesto} onCambiar={setDientesPresupuesto} />
             </div>
 

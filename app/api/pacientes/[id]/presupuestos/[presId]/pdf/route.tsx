@@ -74,6 +74,9 @@ const e = StyleSheet.create({
   },
   bandaTexto: { color: "#ffffff", fontSize: 11, fontFamily: "Helvetica-Bold", letterSpacing: 1 },
   caja: { borderWidth: 1, borderColor: PDF_COLOR.border, backgroundColor: "#FBF9F4", padding: 8, marginBottom: 12 },
+  dienteTitulo: { fontSize: 9.5, fontFamily: "Helvetica-Bold" },
+  dienteEstado: { color: PDF_COLOR.rose },
+  dienteLinea: { fontSize: 8.5, color: PDF_COLOR.muted, marginLeft: 8, marginTop: 1 },
   tablaCab: { flexDirection: "row", backgroundColor: PDF_COLOR.rose, paddingVertical: 5 },
   celdaCab: { color: "#ffffff", fontSize: 8, fontFamily: "Helvetica-Bold", textTransform: "uppercase", paddingHorizontal: 5 },
   fila: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: PDF_COLOR.border, paddingVertical: 5 },
@@ -131,13 +134,7 @@ function PresupuestoPdf({
   const porDiente = items.filter((it) => it.por_diente && nDientes > 0);
   const generales = items.filter((it) => !(it.por_diente && nDientes > 0));
   const estadoDe = (n: number) => dientesInfo.find((d) => d.numero === n)?.estado ?? "Sin hallazgos registrados";
-  const costoPorDiente = porDiente.reduce((t, it) => t + (it.cantidad / nDientes) * it.precio_unitario, 0);
-  const requiere = porDiente
-    .map((it) => {
-      const q = it.cantidad / nDientes;
-      return q === 1 ? it.concepto : `${it.concepto} ×${q}`;
-    })
-    .join(", ");
+  const todosLosDientes = nDientes >= NUMEROS_FDI.length;
   const hayPlan = (presupuesto.mensualidades ?? 0) > 0;
   const inicial = presupuesto.pago_inicial ?? 0;
   const mensualidad = hayPlan ? Math.max(0, total - inicial) / (presupuesto.mensualidades as number) : 0;
@@ -186,31 +183,48 @@ function PresupuestoPdf({
           <OdontogramaPresupuestoPdf dientes={presupuesto.dientes} />
 
           <View style={{ marginTop: 10 }}>
-            <View style={e.tablaCab}>
-              <Text style={{ ...e.celdaCab, width: "12%" }}>Diente</Text>
-              <Text style={{ ...e.celdaCab, width: "30%" }}>Qué tiene</Text>
-              <Text style={{ ...e.celdaCab, width: "40%" }}>Qué ocupa</Text>
-              <Text style={{ ...e.celdaCab, width: "18%", textAlign: "right" }}>Costo</Text>
-            </View>
-            {presupuesto.dientes
-              .slice()
-              .sort((a, b) => a - b)
-              .map((n) => (
-                <View key={n} style={e.fila} wrap={false}>
-                  <Text style={{ ...e.celda, width: "12%", fontFamily: "Helvetica-Bold" }}>{n}</Text>
-                  <Text style={{ ...e.celda, width: "30%" }}>{estadoDe(n)}</Text>
-                  <Text style={{ ...e.celda, width: "40%" }}>{requiere || "—"}</Text>
-                  <Text style={{ ...e.celda, width: "18%", textAlign: "right" }}>
-                    {porDiente.length > 0 ? formatearDinero(costoPorDiente) : "—"}
+            {todosLosDientes ? (
+              <View wrap={false}>
+                <Text style={e.dienteTitulo}>
+                  Todos los dientes ({nDientes}) — <Text style={e.dienteEstado}>{presupuesto.titulo}</Text>
+                </Text>
+                {porDiente.map((it) => (
+                  <Text key={it.id} style={e.dienteLinea}>
+                    {it.concepto} : {formatearDinero(it.cantidad * it.precio_unitario)}
                   </Text>
-                </View>
-              ))}
+                ))}
+              </View>
+            ) : (
+              presupuesto.dientes
+                .slice()
+                .sort((a, b) => a - b)
+                .map((n) => (
+                  <View key={n} style={{ marginBottom: 5 }} wrap={false}>
+                    <Text style={e.dienteTitulo}>
+                      Diente {n} — <Text style={e.dienteEstado}>{estadoDe(n)}</Text>
+                    </Text>
+                    {porDiente.length === 0 ? (
+                      <Text style={e.dienteLinea}>Se incluye en los conceptos del presupuesto</Text>
+                    ) : (
+                      porDiente.map((it) => (
+                        <Text key={it.id} style={e.dienteLinea}>
+                          {it.concepto}
+                          {it.cantidad / nDientes !== 1 ? ` ×${it.cantidad / nDientes}` : ""} :{" "}
+                          {formatearDinero((it.cantidad / nDientes) * it.precio_unitario)}
+                        </Text>
+                      ))
+                    )}
+                  </View>
+                ))
+            )}
           </View>
         </View>
       )}
 
       <View style={estilosPdf.seccion}>
-        <Text style={estilosPdf.seccionTitulo}>{nDientes > 0 && generales.length > 0 ? "Otros conceptos" : "Conceptos"}</Text>
+        {(nDientes === 0 || generales.length > 0) && (
+          <Text style={estilosPdf.seccionTitulo}>{nDientes > 0 ? "Otros conceptos" : "Conceptos"}</Text>
+        )}
         {(nDientes === 0 || generales.length > 0) && (
           <View>
             <View style={e.tablaCab}>
