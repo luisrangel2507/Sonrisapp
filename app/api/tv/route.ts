@@ -6,12 +6,33 @@ export const dynamic = "force-dynamic";
 
 const MODOS = ["espera", "bienvenida", "gracias"];
 
+// Lo que se muestra en la TV: primero lo que se eligió a mano (vale 10
+// minutos); si no hay nada, se arma solo con la agenda — bienvenida a quien
+// tiene cita agendada ahora (de 30 min antes a 30 min después de su hora) y
+// agradecimiento a quien ya se atendió hace menos de 90 minutos.
 export async function GET() {
   try {
-    const { rows } = await query<{ modo: string; nombre: string | null; actualizado_en: string }>(
-      `SELECT modo, nombre, actualizado_en FROM pantalla_tv WHERE id = 1`
+    const { rows } = await query<{ modo: string; nombre: string | null; vigente: boolean }>(
+      `SELECT modo, nombre, (actualizado_en > now() - interval '10 minutes') AS vigente FROM pantalla_tv WHERE id = 1`
     );
-    return NextResponse.json(rows[0] ?? { modo: "espera", nombre: null, actualizado_en: null });
+    const manual = rows[0];
+    if (manual && manual.modo !== "espera" && manual.vigente && manual.nombre) {
+      return NextResponse.json({ modo: manual.modo, nombres: [manual.nombre], origen: "manual" });
+    }
+
+    const { rows: citas } = await query<{ nombre: string; estado: string }>(
+      `SELECT p.nombre, c.estado
+       FROM citas c JOIN pacientes p ON p.id = c.paciente_id
+       WHERE c.pendiente_aprobacion IS NOT TRUE
+         AND ((c.estado = 'agendada' AND c.fecha_hora BETWEEN now() - interval '30 minutes' AND now() + interval '30 minutes')
+           OR (c.estado = 'completada' AND c.fecha_hora BETWEEN now() - interval '90 minutes' AND now()))
+       ORDER BY c.fecha_hora`
+    );
+    const bienvenida = citas.filter((c) => c.estado === "agendada").map((c) => c.nombre);
+    const gracias = citas.filter((c) => c.estado === "completada").map((c) => c.nombre);
+    if (bienvenida.length > 0) return NextResponse.json({ modo: "bienvenida", nombres: bienvenida, origen: "agenda" });
+    if (gracias.length > 0) return NextResponse.json({ modo: "gracias", nombres: gracias, origen: "agenda" });
+    return NextResponse.json({ modo: "espera", nombres: [], origen: "agenda" });
   } catch (err) {
     return errorJson(err);
   }

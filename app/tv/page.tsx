@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 
 interface EstadoTv {
   modo: "espera" | "bienvenida" | "gracias";
-  nombre: string | null;
+  nombres: string[];
 }
 
 // Pantalla para la TV de la sala de espera: se abre una vez en la TV (con
 // la sesión iniciada) y se actualiza sola según lo que se elija en
 // /dashboard/tv. Solo muestra el nombre de pila.
 export default function PaginaTv() {
-  const [estado, setEstado] = useState<EstadoTv>({ modo: "espera", nombre: null });
+  const [estado, setEstado] = useState<EstadoTv>({ modo: "espera", nombres: [] });
   const [sinSesion, setSinSesion] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,13 @@ export default function PaginaTv() {
     };
   }, []);
 
-  const primerNombre = estado.nombre?.trim().split(/\s+/)[0] ?? "";
+  // Solo nombres de pila, sin repetir: "Ana", "Ana y Luis", "Ana, Luis y Rosa".
+  const pilas = [...new Set((estado.nombres ?? []).map((n) => n.trim().split(/\s+/)[0]).filter(Boolean))];
+  const primerNombre =
+    pilas.length <= 1 ? (pilas[0] ?? "") : `${pilas.slice(0, -1).join(", ")} y ${pilas[pilas.length - 1]}`;
+
+  // Más nombres o nombres largos → letra más chica para que quepan.
+  const tamanoNombre = `clamp(2.5rem, ${Math.min(11, 150 / Math.max(primerNombre.length, 8))}vw, 10rem)`;
 
   return (
     <main className="fixed inset-0 flex flex-col items-center justify-center bg-[#F5F1EA] px-8 text-center text-[#2b2118]">
@@ -52,8 +58,8 @@ export default function PaginaTv() {
         </a>
       ) : estado.modo === "bienvenida" && primerNombre ? (
         <div key={`b-${primerNombre}`} className="animate-[fadein_.8s_ease]">
-          <p className="text-[clamp(1.5rem,3.5vw,3rem)] font-light tracking-wide text-[#8a8272]">Bienvenido(a)</p>
-          <h1 className="mt-2 font-serif text-[clamp(3.5rem,11vw,10rem)] font-semibold leading-none text-[#803449]">
+          <p className="text-[clamp(1.5rem,3.5vw,3rem)] font-light tracking-wide text-[#8a8272]">{pilas.length > 1 ? "Bienvenidos" : "Bienvenido(a)"}</p>
+          <h1 className="mt-2 font-serif font-semibold leading-none text-[#803449]" style={{ fontSize: tamanoNombre }}>
             {primerNombre}
           </h1>
           <p className="mt-8 text-[clamp(1.2rem,2.5vw,2.2rem)] text-[#8a8272]">Es un gusto tenerte en Viña Sonrisas</p>
@@ -61,7 +67,7 @@ export default function PaginaTv() {
       ) : estado.modo === "gracias" && primerNombre ? (
         <div key={`g-${primerNombre}`} className="animate-[fadein_.8s_ease]">
           <p className="text-[clamp(1.5rem,3.5vw,3rem)] font-light tracking-wide text-[#8a8272]">Gracias por tu visita</p>
-          <h1 className="mt-2 font-serif text-[clamp(3.5rem,11vw,10rem)] font-semibold leading-none text-[#803449]">
+          <h1 className="mt-2 font-serif font-semibold leading-none text-[#803449]" style={{ fontSize: tamanoNombre }}>
             {primerNombre}
           </h1>
           <p className="mt-8 text-[clamp(1.2rem,2.5vw,2.2rem)] text-[#8a8272]">¡Cuida tu sonrisa, te esperamos pronto!</p>

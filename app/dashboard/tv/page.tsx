@@ -9,7 +9,7 @@ export default function ControlTv() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [elegido, setElegido] = useState<Paciente | null>(null);
-  const [actual, setActual] = useState<{ modo: string; nombre: string | null } | null>(null);
+  const [actual, setActual] = useState<{ modo: string; nombres: string[]; origen?: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
   const [otroAbierto, setOtroAbierto] = useState(false);
@@ -55,7 +55,7 @@ export default function ControlTv() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modo, nombre }),
       });
-      if (res.ok) setActual({ modo, nombre });
+      if (res.ok) setActual({ modo, nombres: nombre ? [nombre] : [], origen: modo === "espera" ? "agenda" : "manual" });
     } finally {
       setEnviando(false);
     }
@@ -76,18 +76,20 @@ export default function ControlTv() {
         </Link>
       </div>
       <p className="text-sm text-[#8a8272]">
-        Abre <b>/tv</b> en el navegador de la TV (una sola vez, con la sesión iniciada). Toca Bienvenida cuando llegue
-        el paciente de su cita y Gracias cuando termine; la TV cambia sola. Solo se muestra el nombre de pila.
+        Abre <b>/tv</b> en el navegador de la TV (una sola vez, con la sesión iniciada). La TV saluda sola a quien tiene
+        cita agendada (de 30 min antes a 30 min después de su hora) y agradece a quien ya se atendió. Los botones sirven
+        para forzarlo a mano por 10 minutos. Solo se muestra el nombre de pila.
       </p>
 
       <div className="rounded-2xl border border-[#EFE9DC] bg-white/70 p-3 text-sm">
         En pantalla ahora:{" "}
         <b>
           {actual?.modo === "bienvenida"
-            ? `Bienvenida a ${actual.nombre?.split(" ")[0]}`
+            ? `Bienvenida a ${actual.nombres.map((n) => n.split(" ")[0]).join(", ")}`
             : actual?.modo === "gracias"
-              ? `Agradecimiento a ${actual.nombre?.split(" ")[0]}`
-              : "Logo de la clínica"}
+              ? `Agradecimiento a ${actual.nombres.map((n) => n.split(" ")[0]).join(", ")}`
+              : "Logo de la clínica"}{" "}
+          <span className="font-normal text-[#a49c8a]">({actual?.origen === "manual" ? "elegido a mano" : "según la agenda"})</span>
         </b>
       </div>
 
