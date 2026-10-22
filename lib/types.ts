@@ -112,6 +112,7 @@ export interface Presupuesto {
   dientes: number[];
   pago_inicial?: number | null;
   mensualidades?: number | null;
+  monto_ajuste?: number | null;
   vigente: boolean;
   motivo_anulacion: string | null;
   anulado_por_nombre: string | null;

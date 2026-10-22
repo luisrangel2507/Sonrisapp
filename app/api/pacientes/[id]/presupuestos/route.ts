@@ -23,7 +23,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const { rows: presupuestos } = await query(
       `SELECT id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes,
-              pago_inicial::float8 AS pago_inicial, mensualidades, vigente, motivo_anulacion, anulado_por_nombre, anulado_en
+              pago_inicial::float8 AS pago_inicial, mensualidades, monto_ajuste::float8 AS monto_ajuste, vigente, motivo_anulacion, anulado_por_nombre, anulado_en
        FROM presupuestos WHERE paciente_id = $1 ORDER BY creado_en DESC`,
       [pacienteId]
     );
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const body = await req.json().catch(() => ({}));
-    const { titulo, notas, items, dientes, pago_inicial, mensualidades } = body ?? {};
+    const { titulo, notas, items, dientes, pago_inicial, mensualidades, monto_ajuste } = body ?? {};
 
     if (!titulo || typeof titulo !== "string" || !titulo.trim()) {
       return NextResponse.json({ error: "título es requerido" }, { status: 400 });
@@ -110,10 +110,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const token = generarHistorialToken();
 
     const { rows } = await query(
-      `INSERT INTO presupuestos (paciente_id, titulo, notas, token, dientes, pago_inicial, mensualidades)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO presupuestos (paciente_id, titulo, notas, token, dientes, pago_inicial, mensualidades, monto_ajuste)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes,
-                 pago_inicial::float8 AS pago_inicial, mensualidades`,
+                 pago_inicial::float8 AS pago_inicial, mensualidades, monto_ajuste::float8 AS monto_ajuste`,
       [
         pacienteId,
         titulo.trim(),
@@ -122,6 +122,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         dientesValidos,
         Number.isFinite(Number(pago_inicial)) && Number(pago_inicial) > 0 ? Number(pago_inicial) : null,
         Number.isInteger(Number(mensualidades)) && Number(mensualidades) > 0 ? Number(mensualidades) : null,
+        Number.isFinite(Number(monto_ajuste)) && Number(monto_ajuste) > 0 ? Number(monto_ajuste) : null,
       ]
     );
     const presupuestoId = rows[0].id;

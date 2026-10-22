@@ -148,6 +148,7 @@ export default function PacienteDetallePage() {
   const [dientesPresupuesto, setDientesPresupuesto] = useState<number[]>([]);
   const [pagoInicialPres, setPagoInicialPres] = useState("");
   const [mensualidadesPres, setMensualidadesPres] = useState("");
+  const [montoAjustePres, setMontoAjustePres] = useState("");
   const [creandoPresupuesto, setCreandoPresupuesto] = useState(false);
   const [eliminandoPresupuestoId, setEliminandoPresupuestoId] = useState<number | null>(null);
   const [compartiendoPresupuestoId, setCompartiendoPresupuestoId] = useState<number | null>(null);
@@ -492,7 +493,7 @@ export default function PacienteDetallePage() {
     return it.porDiente && dientesPresupuesto.length > 0 ? base * dientesPresupuesto.length : base;
   }
 
-  const hayOrtodoncia = itemsPresupuesto.some((it) => it.concepto.toLowerCase().includes("ortodoncia"));
+  const hayOrtodoncia = itemsPresupuesto.some((it) => /ortodoncia|bracket/i.test(it.concepto));
 
   function alternarPorDiente(index: number) {
     setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, porDiente: !it.porDiente } : it)));
@@ -527,6 +528,7 @@ export default function PacienteDetallePage() {
         dientes: dientesPresupuesto,
         pago_inicial: hayOrtodoncia ? Number(pagoInicialPres) || null : null,
         mensualidades: hayOrtodoncia ? Number(mensualidadesPres) || null : null,
+        monto_ajuste: hayOrtodoncia ? Number(montoAjustePres) || null : null,
       }),
     });
     setTituloPresupuesto("");
@@ -534,6 +536,7 @@ export default function PacienteDetallePage() {
     setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
     setDientesPresupuesto([]);
     setPagoInicialPres("");
+    setMontoAjustePres("");
     setMensualidadesPres("");
     setFormPresupuestoAbierto(false);
     setCreandoPresupuesto(false);
@@ -1219,43 +1222,40 @@ export default function PacienteDetallePage() {
 
             {hayOrtodoncia && (
               <div className="space-y-2 rounded-xl border border-[#EFE9DC] bg-[#FBF9F5] p-3">
-                <div className="text-[12px] font-semibold text-[#7A1E33]">Plan de pagos de ortodoncia</div>
-                <div className="flex gap-2">
+                <div className="text-[12px] font-semibold text-[#7A1E33]">Plan de pagos de ortodoncia (brackets)</div>
+                <div className="space-y-2">
                   <input
                     type="number"
                     min="0"
                     value={pagoInicialPres}
                     onChange={(e) => setPagoInicialPres(e.target.value)}
-                    placeholder="Pago inicial"
-                    className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
+                    placeholder="Cuota inicial"
+                    className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
                   />
-                  <input
-                    type="number"
-                    min="1"
-                    value={mensualidadesPres}
-                    onChange={(e) => setMensualidadesPres(e.target.value)}
-                    placeholder="Mensualidades"
-                    className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={montoAjustePres}
+                      onChange={(e) => setMontoAjustePres(e.target.value)}
+                      placeholder="Por ajuste / mantenimiento"
+                      className="min-w-0 flex-[3] rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      value={mensualidadesPres}
+                      onChange={(e) => setMensualidadesPres(e.target.value)}
+                      placeholder="N.º ajustes"
+                      className="min-w-0 flex-[2] rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
+                    />
+                  </div>
                 </div>
-                {Number(mensualidadesPres) > 0 && (
+                {Number(montoAjustePres) > 0 && (
                   <div className="text-[12px] text-[#8a8272]">
-                    {mensualidadesPres} mensualidades de{" "}
-                    <b className="text-[#2b2118]">
-                      {formatearDinero(
-                        Math.max(
-                          0,
-                          (totalPresupuesto(
-                            itemsPresupuesto.map((it) => ({
-                              cantidad: cantidadEfectiva(it),
-                              precio_unitario: Number(it.precio_unitario) || 0,
-                            }))
-                          ) -
-                            (Number(pagoInicialPres) || 0)) /
-                            Number(mensualidadesPres)
-                        )
-                      )}
-                    </b>
+                    Cuota inicial <b className="text-[#2b2118]">{formatearDinero(Number(pagoInicialPres) || 0)}</b> y{" "}
+                    <b className="text-[#2b2118]">{formatearDinero(Number(montoAjustePres))}</b> por cada ajuste
+                    {Number(mensualidadesPres) > 0 ? ` (${mensualidadesPres} ajustes)` : ""}
                   </div>
                 )}
               </div>

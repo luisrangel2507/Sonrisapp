@@ -5,7 +5,7 @@ import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { formatearDinero } from "@/lib/dinero";
-import { obtenerDatosReporte, ReporteClinicoPdf, formatearFecha } from "@/lib/pdf/reporte-clinico";
+import { obtenerDatosReporte, formatearFecha } from "@/lib/pdf/reporte-clinico";
 import { NUMEROS_FDI, POLIGONOS_DIENTE, construirMapaEstados } from "@/lib/dental";
 import { estadosPersonalizados } from "@/lib/estados-diente";
 import { DOCTORA } from "@/lib/panel-data";
@@ -104,8 +104,6 @@ function PresupuestoPdf({
   presupuesto,
   items,
   pacienteNombre,
-  folio,
-  telefono,
   fechaCita,
   dientesInfo,
   presId,
@@ -120,11 +118,10 @@ function PresupuestoPdf({
     dientes: number[];
     pago_inicial: number | null;
     mensualidades: number | null;
+    monto_ajuste: number | null;
   };
   items: PresupuestoItem[];
   pacienteNombre: string;
-  folio: string | null;
-  telefono: string | null;
   fechaCita: string | null;
   dientesInfo: DientePres[];
   presId: number;
@@ -135,9 +132,10 @@ function PresupuestoPdf({
   const generales = items.filter((it) => !(it.por_diente && nDientes > 0));
   const estadoDe = (n: number) => dientesInfo.find((d) => d.numero === n)?.estado ?? "Sin hallazgos registrados";
   const todosLosDientes = nDientes >= NUMEROS_FDI.length;
-  const hayPlan = (presupuesto.mensualidades ?? 0) > 0;
+  const porAjuste = (presupuesto.monto_ajuste ?? 0) > 0;
+  const hayPlan = porAjuste || (presupuesto.mensualidades ?? 0) > 0 || (presupuesto.pago_inicial ?? 0) > 0;
   const inicial = presupuesto.pago_inicial ?? 0;
-  const mensualidad = hayPlan ? Math.max(0, total - inicial) / (presupuesto.mensualidades as number) : 0;
+  const mensualidad = !porAjuste && (presupuesto.mensualidades ?? 0) > 0 ? Math.max(0, total - inicial) / (presupuesto.mensualidades as number) : 0;
 
   return (
     <PaginaPdf>
@@ -155,16 +153,8 @@ function PresupuestoPdf({
             <Text style={{ ...estilosPdf.datoValor, fontFamily: "Helvetica-Bold" }}>{pacienteNombre}</Text>
           </View>
           <View style={estilosPdf.dato}>
-            <Text style={estilosPdf.datoLabel}>Folio</Text>
-            <Text style={estilosPdf.datoValor}>{folio ?? "—"}</Text>
-          </View>
-          <View style={estilosPdf.dato}>
             <Text style={estilosPdf.datoLabel}>Fecha de la cita</Text>
             <Text style={estilosPdf.datoValor}>{formatearFecha(fechaCita ?? presupuesto.creado_en)}</Text>
-          </View>
-          <View style={estilosPdf.dato}>
-            <Text style={estilosPdf.datoLabel}>Teléfono</Text>
-            <Text style={estilosPdf.datoValor}>{telefono ?? "—"}</Text>
           </View>
           <View style={estilosPdf.dato}>
             <Text style={estilosPdf.datoLabel}>Fecha del presupuesto</Text>
@@ -255,7 +245,7 @@ function PresupuestoPdf({
 
       {hayPlan && (
         <View style={estilosPdf.seccion} wrap={false}>
-          <Text style={estilosPdf.seccionTitulo}>Plan de pagos — ortodoncia</Text>
+          <Text style={estilosPdf.seccionTitulo}>Plan de pagos — ortodoncia (brackets)</Text>
           <View style={e.tablaCab}>
             <Text style={{ ...e.celdaCab, width: "40%" }}>Concepto</Text>
             <Text style={{ ...e.celdaCab, width: "30%", textAlign: "right" }}>Pagos</Text>
@@ -266,11 +256,25 @@ function PresupuestoPdf({
             <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>1</Text>
             <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>{formatearDinero(inicial)}</Text>
           </View>
-          <View style={e.fila}>
-            <Text style={{ ...e.celda, width: "40%" }}>Mensualidades</Text>
-            <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>{presupuesto.mensualidades}</Text>
-            <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>{formatearDinero(mensualidad)} c/u</Text>
-          </View>
+          {porAjuste ? (
+            <View style={e.fila}>
+              <Text style={{ ...e.celda, width: "40%" }}>Ajuste / mantenimiento</Text>
+              <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>
+                {presupuesto.mensualidades ? `${presupuesto.mensualidades} visitas` : "Cada visita"}
+              </Text>
+              <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>
+                {formatearDinero(presupuesto.monto_ajuste as number)} c/u
+              </Text>
+            </View>
+          ) : (
+            (presupuesto.mensualidades ?? 0) > 0 && (
+              <View style={e.fila}>
+                <Text style={{ ...e.celda, width: "40%" }}>Mensualidades</Text>
+                <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>{presupuesto.mensualidades}</Text>
+                <Text style={{ ...e.celda, width: "30%", textAlign: "right" }}>{formatearDinero(mensualidad)} c/u</Text>
+              </View>
+            )
+          )}
         </View>
       )}
 
@@ -316,9 +320,10 @@ export async function GET(
       dientes: number[];
       pago_inicial: number | null;
       mensualidades: number | null;
+      monto_ajuste: number | null;
     }>(
       `SELECT titulo, notas, estado, nombre_respuesta, respondido_en, creado_en, dientes,
-              pago_inicial::float8 AS pago_inicial, mensualidades
+              pago_inicial::float8 AS pago_inicial, mensualidades, monto_ajuste::float8 AS monto_ajuste
        FROM presupuestos WHERE id = $1 AND paciente_id = $2`,
       [presupuestoId, pacienteId]
     );
@@ -362,13 +367,10 @@ export async function GET(
           presupuesto={presupuesto}
           items={items}
           pacienteNombre={datosReporte.paciente.nombre}
-          folio={datosReporte.paciente.folio}
-          telefono={datosReporte.paciente.telefono}
           fechaCita={citaRows[0]?.fecha_hora ?? null}
           dientesInfo={dientesInfo}
           presId={presupuestoId}
         />
-        <ReporteClinicoPdf datos={datosReporte} />
       </DocumentoPdf>
     );
 

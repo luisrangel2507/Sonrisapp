@@ -728,3 +728,7 @@ CREATE TABLE IF NOT EXISTS pantalla_tv (
   nombre VARCHAR(80),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Brackets: cuota inicial + monto por cada ajuste o mantenimiento
+-- (mensualidades pasa a ser el número de ajustes, opcional).
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS monto_ajuste NUMERIC(12,2);
