@@ -711,3 +711,10 @@ ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historia_puntos_otorgados BOOLEAN
 ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS por_diente BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS pago_inicial NUMERIC(12,2);
 ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS mensualidades INTEGER;
+
+-- Tratamientos que la doctora escribe a mano al agendar; se suman a la
+-- lista fija (TRATAMIENTOS) y quedan guardados para la próxima vez.
+CREATE TABLE IF NOT EXISTS tratamientos_personalizados (
+  nombre VARCHAR(120) PRIMARY KEY,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);

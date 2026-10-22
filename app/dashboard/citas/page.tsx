@@ -138,6 +138,109 @@ function SelectorPaciente({
   );
 }
 
+function SelectorTratamiento({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [extras, setExtras] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/tratamientos")
+      .then((r) => (r.ok ? r.json() : { tratamientos: [] }))
+      .then((d) => setExtras(d.tratamientos ?? []))
+      .catch(() => {});
+  }, []);
+
+  const todos = useMemo(() => {
+    const lista = [...TRATAMIENTOS, ...extras.filter((t) => !TRATAMIENTOS.includes(t))];
+    return lista.sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  }, [extras]);
+  const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const texto = busqueda.trim().replace(/\s+/g, " ");
+  const filtrados = todos.filter((t) => norm(t).includes(norm(texto)));
+  const existe = todos.some((t) => norm(t) === norm(texto));
+
+  function elegir(v: string) {
+    onChange(v);
+    setAbierto(false);
+    setBusqueda("");
+  }
+
+  async function crear() {
+    if (!texto) return;
+    const nombre = texto;
+    setExtras((e) => [...e, nombre]);
+    elegir(nombre);
+    fetch("/api/tratamientos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre }),
+    }).catch(() => {});
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className={`w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-left text-sm outline-none focus:border-[#803449] ${
+          value ? "" : "text-[#a49c8a]"
+        }`}
+      >
+        {value || "Selecciona tratamiento…"}
+      </button>
+      {abierto && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#F5F1EA]">
+          <div className="flex items-center gap-2 border-b border-[#EFE9DC] bg-white p-3">
+            <input
+              autoFocus
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Escribe el tratamiento…"
+              className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-base outline-none focus:border-[#803449]"
+            />
+            <button
+              type="button"
+              onClick={() => setAbierto(false)}
+              aria-label="Cerrar"
+              className="rounded-full p-2 text-[#803449] hover:bg-[#F5E7E9]"
+            >
+              <X size={22} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {texto && !existe && (
+                <button
+                  type="button"
+                  onClick={crear}
+                  className="flex min-h-[72px] items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[#803449]/50 bg-[#F5E7E9] p-3 text-center text-sm font-semibold text-[#803449]"
+                >
+                  <Plus size={16} /> Agregar “{texto}”
+                </button>
+              )}
+              {filtrados.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => elegir(t)}
+                  className={`flex min-h-[72px] items-center justify-center rounded-2xl border bg-white p-3 text-center text-sm font-semibold leading-tight text-[#2b2118] shadow-sm ${
+                    t === value ? "border-[#803449] ring-2 ring-[#803449]/30" : "border-[#EFE9DC]"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            {filtrados.length === 0 && !texto && (
+              <p className="py-8 text-center text-sm text-[#a49c8a]">Escribe un tratamiento para agregarlo.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function formatearHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 }
@@ -768,20 +871,7 @@ function CitaTimelineItem({
 
         {editando && (
           <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
-            <select
-              value={editTratamiento}
-              onChange={(e) => setEditTratamiento(e.target.value)}
-              className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
-            >
-              {editTratamiento && !TRATAMIENTOS.includes(editTratamiento) && (
-                <option value={editTratamiento}>{editTratamiento}</option>
-              )}
-              {TRATAMIENTOS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            <SelectorTratamiento value={editTratamiento} onChange={setEditTratamiento} />
             <div>
               <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">Fecha</label>
               <input
@@ -1264,18 +1354,7 @@ export default function CitasPage() {
           </div>
         )}
 
-        <select
-          value={tratamiento}
-          onChange={(e) => elegirTratamiento(e.target.value)}
-          className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-        >
-          <option value="">Selecciona tratamiento…</option>
-          {TRATAMIENTOS.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <SelectorTratamiento value={tratamiento} onChange={elegirTratamiento} />
         <div>
           <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">Fecha</label>
           <input
