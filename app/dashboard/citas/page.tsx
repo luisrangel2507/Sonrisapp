@@ -49,6 +49,21 @@ const DIA_NO_LABORAL = 0;
 
 type Vista = "dia" | "semana" | "mes";
 
+// Mientras un selector a pantalla completa está abierto se bloquea el
+// scroll de la página, y al cerrarlo se regresa arriba: en iPhone el
+// teclado deja la página desplazada y la barra de abajo "flotando".
+function useBloquearPagina(abierto: boolean) {
+  useEffect(() => {
+    if (!abierto) return;
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previo;
+      setTimeout(() => window.scrollTo(0, 0), 50);
+    };
+  }, [abierto]);
+}
+
 function SelectorPaciente({
   pacientes,
   value,
@@ -60,6 +75,7 @@ function SelectorPaciente({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  useBloquearPagina(abierto);
   const ordenados = useMemo(
     () => [...pacientes].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
     [pacientes]
@@ -141,6 +157,7 @@ function SelectorPaciente({
 function SelectorTratamiento({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  useBloquearPagina(abierto);
   const [extras, setExtras] = useState<string[]>([]);
 
   useEffect(() => {
