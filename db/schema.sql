@@ -718,3 +718,13 @@ CREATE TABLE IF NOT EXISTS tratamientos_personalizados (
   nombre VARCHAR(120) PRIMARY KEY,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Pantalla de TV de la sala de espera: una sola fila (id = 1) con lo que
+-- se muestra ahora. Solo se guarda el nombre de pila para no exponer datos.
+CREATE TABLE IF NOT EXISTS pantalla_tv (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  modo VARCHAR(12) NOT NULL DEFAULT 'espera',
+  -- 'espera' | 'bienvenida' | 'gracias'
+  nombre VARCHAR(80),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserCog, Activity, Users, Calendar, Package, BarChart3, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X, Settings, ChevronDown } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package, BarChart3, Tv, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X, Settings, ChevronDown } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 
 const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
@@ -18,6 +18,7 @@ const TABS = [
   { href: "/dashboard/citas", label: "Agenda", icon: Calendar },
   { href: "/dashboard/inventario", label: "Inventario", icon: Package },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/dashboard/tv", label: "Pantalla TV", icon: Tv },
 ];
 
 // Barra inferior — solo celular. "Inicio"/"Agenda" van directo; el resto
@@ -31,6 +32,7 @@ const NAV_INFERIOR_DER = [{ href: "/dashboard/citas", label: "Agenda", icon: Cal
 const NAV_MAS = [
   { href: "/dashboard/inventario", label: "Inventario", icon: Package },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/dashboard/tv", label: "Pantalla TV", icon: Tv },
   { href: "/dashboard/perfil", label: "Perfil", icon: UserCog },
 ];
 

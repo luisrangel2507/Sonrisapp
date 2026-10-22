@@ -4,6 +4,8 @@ import { COOKIE_SESION, verificarSesionToken } from "@/lib/auth";
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/tv",
+    "/api/tv/:path*",
     "/api/pacientes/:path*",
     "/api/citas/:path*",
     "/api/pagos/:path*",
