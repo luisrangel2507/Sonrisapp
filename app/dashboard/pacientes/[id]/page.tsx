@@ -143,7 +143,7 @@ export default function PacienteDetallePage() {
   const [formPresupuestoAbierto, setFormPresupuestoAbierto] = useState(false);
   const [tituloPresupuesto, setTituloPresupuesto] = useState("");
   const [notasPresupuesto, setNotasPresupuesto] = useState("");
-  const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "" }]);
+  const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
   const [dientesPresupuesto, setDientesPresupuesto] = useState<number[]>([]);
   const [creandoPresupuesto, setCreandoPresupuesto] = useState(false);
   const [eliminandoPresupuestoId, setEliminandoPresupuestoId] = useState<number | null>(null);
@@ -475,11 +475,22 @@ export default function PacienteDetallePage() {
   }
 
   function agregarItemPresupuesto() {
-    setItemsPresupuesto((prev) => [...prev, { concepto: "", cantidad: "1", precio_unitario: "" }]);
+    setItemsPresupuesto((prev) => [...prev, { concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
   }
 
   function quitarItemPresupuesto(index: number) {
     setItemsPresupuesto((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+  }
+
+  // Cantidad real de un concepto: si va "por diente", se multiplica por los
+  // dientes marcados en el presupuesto.
+  function cantidadEfectiva(it: { cantidad: string; porDiente: boolean }) {
+    const base = Number(it.cantidad) || 0;
+    return it.porDiente && dientesPresupuesto.length > 0 ? base * dientesPresupuesto.length : base;
+  }
+
+  function alternarPorDiente(index: number) {
+    setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, porDiente: !it.porDiente } : it)));
   }
 
   function actualizarItemPresupuesto(index: number, campo: "concepto" | "cantidad" | "precio_unitario", valor: string) {
@@ -498,7 +509,7 @@ export default function PacienteDetallePage() {
         notas: notasPresupuesto || null,
         items: itemsValidos.map((it) => ({
           concepto: it.concepto.trim(),
-          cantidad: Number(it.cantidad) || 1,
+          cantidad: cantidadEfectiva(it) || 1,
           precio_unitario: Number(it.precio_unitario) || 0,
         })),
         dientes: dientesPresupuesto,
@@ -506,7 +517,7 @@ export default function PacienteDetallePage() {
     });
     setTituloPresupuesto("");
     setNotasPresupuesto("");
-    setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "" }]);
+    setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
     setDientesPresupuesto([]);
     setFormPresupuestoAbierto(false);
     setCreandoPresupuesto(false);
@@ -1125,7 +1136,8 @@ export default function PacienteDetallePage() {
 
             <div className="space-y-2">
               {itemsPresupuesto.map((it, i) => (
-                <div key={i} className="flex gap-1.5">
+                <div key={i} className="space-y-1">
+                  <div className="flex gap-1.5">
                   <input
                     value={it.concepto}
                     onChange={(e) => actualizarItemPresupuesto(i, "concepto", e.target.value)}
@@ -1157,6 +1169,20 @@ export default function PacienteDetallePage() {
                   >
                     <X size={15} />
                   </button>
+                  </div>
+                  {dientesPresupuesto.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => alternarPorDiente(i)}
+                      className={`ml-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                        it.porDiente ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+                      }`}
+                    >
+                      {it.porDiente
+                        ? `× ${dientesPresupuesto.length} diente${dientesPresupuesto.length === 1 ? "" : "s"} = ${cantidadEfectiva(it)} · ${formatearDinero(cantidadEfectiva(it) * (Number(it.precio_unitario) || 0))}`
+                        : "Cobrar por diente"}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1189,7 +1215,7 @@ export default function PacienteDetallePage() {
                 {formatearDinero(
                   totalPresupuesto(
                     itemsPresupuesto.map((it) => ({
-                      cantidad: Number(it.cantidad) || 0,
+                      cantidad: cantidadEfectiva(it),
                       precio_unitario: Number(it.precio_unitario) || 0,
                     }))
                   )
