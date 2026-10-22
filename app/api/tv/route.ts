@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 const MODOS = ["espera", "bienvenida", "gracias"];
 
 // Lo que se muestra en la TV: primero lo que se eligió a mano (vale 10
-// minutos); si no hay nada, se arma solo con la agenda — bienvenida a quien
-// tiene cita agendada ahora (de 30 min antes a 30 min después de su hora) y
-// agradecimiento a quien ya se atendió hace menos de 90 minutos.
+// minutos); si no hay nada, se arma solo con la agenda de hoy — bienvenida
+// al paciente que sigue con cita agendada y, si ya no queda ninguno,
+// agradecimiento al último que se atendió.
 export async function GET() {
   try {
     const { rows } = await query<{ modo: string; nombre: string | null; vigente: boolean }>(
@@ -20,18 +20,23 @@ export async function GET() {
       return NextResponse.json({ modo: manual.modo, nombres: [manual.nombre], origen: "manual" });
     }
 
-    const { rows: citas } = await query<{ nombre: string; estado: string }>(
-      `SELECT p.nombre, c.estado
-       FROM citas c JOIN pacientes p ON p.id = c.paciente_id
-       WHERE c.pendiente_aprobacion IS NOT TRUE
-         AND ((c.estado = 'agendada' AND c.fecha_hora BETWEEN now() - interval '30 minutes' AND now() + interval '30 minutes')
-           OR (c.estado = 'completada' AND c.fecha_hora BETWEEN now() - interval '90 minutes' AND now()))
-       ORDER BY c.fecha_hora`
+    const hoy = `(c.fecha_hora AT TIME ZONE 'America/Mexico_City')::date = (now() AT TIME ZONE 'America/Mexico_City')::date`;
+    const { rows: agendadas } = await query<{ nombre: string }>(
+      `SELECT p.nombre FROM citas c JOIN pacientes p ON p.id = c.paciente_id
+       WHERE c.estado = 'agendada' AND c.pendiente_aprobacion IS NOT TRUE AND ${hoy}
+       ORDER BY c.fecha_hora LIMIT 1`
     );
-    const bienvenida = citas.filter((c) => c.estado === "agendada").map((c) => c.nombre);
-    const gracias = citas.filter((c) => c.estado === "completada").map((c) => c.nombre);
-    if (bienvenida.length > 0) return NextResponse.json({ modo: "bienvenida", nombres: bienvenida, origen: "agenda" });
-    if (gracias.length > 0) return NextResponse.json({ modo: "gracias", nombres: gracias, origen: "agenda" });
+    if (agendadas[0]) {
+      return NextResponse.json({ modo: "bienvenida", nombres: [agendadas[0].nombre], origen: "agenda" });
+    }
+    const { rows: atendidas } = await query<{ nombre: string }>(
+      `SELECT p.nombre FROM citas c JOIN pacientes p ON p.id = c.paciente_id
+       WHERE c.estado = 'completada' AND ${hoy}
+       ORDER BY c.fecha_hora DESC LIMIT 1`
+    );
+    if (atendidas[0]) {
+      return NextResponse.json({ modo: "gracias", nombres: [atendidas[0].nombre], origen: "agenda" });
+    }
     return NextResponse.json({ modo: "espera", nombres: [], origen: "agenda" });
   } catch (err) {
     return errorJson(err);

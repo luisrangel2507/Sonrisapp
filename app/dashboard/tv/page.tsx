@@ -76,9 +76,9 @@ export default function ControlTv() {
         </Link>
       </div>
       <p className="text-sm text-[#8a8272]">
-        Abre <b>/tv</b> en el navegador de la TV (una sola vez, con la sesión iniciada). La TV saluda sola a quien tiene
-        cita agendada (de 30 min antes a 30 min después de su hora) y agradece a quien ya se atendió. Los botones sirven
-        para forzarlo a mano por 10 minutos. Solo se muestra el nombre de pila.
+        Abre <b>/tv</b> en el navegador de la TV (una sola vez, con la sesión iniciada). La TV saluda sola al paciente
+        que sigue con cita agendada hoy y, cuando ya no queda ninguno, agradece al último que se atendió. Los botones
+        sirven para forzarlo a mano por 10 minutos. Solo se muestra el nombre de pila.
       </p>
 
       <div className="rounded-2xl border border-[#EFE9DC] bg-white/70 p-3 text-sm">
