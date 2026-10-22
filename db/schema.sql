@@ -732,3 +732,6 @@ CREATE TABLE IF NOT EXISTS pantalla_tv (
 -- Brackets: cuota inicial + monto por cada ajuste o mantenimiento
 -- (mensualidades pasa a ser el número de ajustes, opcional).
 ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS monto_ajuste NUMERIC(12,2);
+
+-- Hora de la cita que se muestra en la TV (texto "HH:MM").
+ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS hora VARCHAR(8);

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { Tv, Smile, Heart, EyeOff, ExternalLink } from "lucide-react";
 import type { Cita, Paciente } from "@/lib/types";
 
+function horaDe(fechaHora: string) {
+  return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 export default function ControlTv() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busqueda, setBusqueda] = useState("");
@@ -44,7 +48,7 @@ export default function ControlTv() {
     [pacientes, busqueda]
   );
 
-  async function mostrar(modo: "bienvenida" | "gracias" | "espera", nombreCita?: string) {
+  async function mostrar(modo: "bienvenida" | "gracias" | "espera", nombreCita?: string, hora?: string) {
     const quien = nombreCita ?? elegido?.nombre;
     if (modo !== "espera" && !quien) return;
     setEnviando(true);
@@ -53,7 +57,7 @@ export default function ControlTv() {
       const res = await fetch("/api/tv", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modo, nombre }),
+        body: JSON.stringify({ modo, nombre, hora }),
       });
       if (res.ok) setActual({ modo, nombres: nombre ? [nombre] : [], origen: modo === "espera" ? "agenda" : "manual" });
     } finally {
@@ -112,14 +116,14 @@ export default function ControlTv() {
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 disabled={enviando}
-                onClick={() => mostrar("bienvenida", c.paciente_nombre)}
+                onClick={() => mostrar("bienvenida", c.paciente_nombre, horaDe(c.fecha_hora))}
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-[#803449] px-2 py-2 text-sm font-semibold text-white disabled:opacity-40"
               >
                 <Smile size={15} /> Bienvenida
               </button>
               <button
                 disabled={enviando}
-                onClick={() => mostrar("gracias", c.paciente_nombre)}
+                onClick={() => mostrar("gracias", c.paciente_nombre, horaDe(c.fecha_hora))}
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-[#3F6B33] px-2 py-2 text-sm font-semibold text-white disabled:opacity-40"
               >
                 <Heart size={15} /> Gracias
