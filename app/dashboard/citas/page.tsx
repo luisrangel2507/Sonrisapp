@@ -49,6 +49,95 @@ const DIA_NO_LABORAL = 0;
 
 type Vista = "dia" | "semana" | "mes";
 
+function SelectorPaciente({
+  pacientes,
+  value,
+  onChange,
+}: {
+  pacientes: Paciente[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const ordenados = useMemo(
+    () => [...pacientes].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
+    [pacientes]
+  );
+  const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const filtrados = ordenados.filter((p) => norm(`${p.nombre} ${p.folio ?? ""}`).includes(norm(busqueda.trim())));
+  const actual = pacientes.find((p) => String(p.id) === value);
+  const etiqueta = value === NUEVO_PACIENTE ? "+ Paciente nuevo (dar de alta)" : actual ? actual.nombre : "Selecciona paciente…";
+
+  function elegir(v: string) {
+    onChange(v);
+    setAbierto(false);
+    setBusqueda("");
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className={`w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-left text-sm outline-none focus:border-[#803449] ${
+          value ? "" : "text-[#a49c8a]"
+        }`}
+      >
+        {etiqueta}
+      </button>
+      {abierto && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#F5F1EA]">
+          <div className="flex items-center gap-2 border-b border-[#EFE9DC] bg-white p-3">
+            <input
+              autoFocus
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Escribe el nombre del paciente…"
+              className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-base outline-none focus:border-[#803449]"
+            />
+            <button
+              type="button"
+              onClick={() => setAbierto(false)}
+              aria-label="Cerrar"
+              className="rounded-full p-2 text-[#803449] hover:bg-[#F5E7E9]"
+            >
+              <X size={22} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              <button
+                type="button"
+                onClick={() => elegir(NUEVO_PACIENTE)}
+                className="flex min-h-[72px] items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[#803449]/50 bg-[#F5E7E9] p-3 text-center text-sm font-semibold text-[#803449]"
+              >
+                <UserPlus size={16} /> Paciente nuevo
+              </button>
+              {filtrados.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => elegir(String(p.id))}
+                  className={`flex min-h-[72px] flex-col items-center justify-center rounded-2xl border bg-white p-3 text-center shadow-sm ${
+                    String(p.id) === value ? "border-[#803449] ring-2 ring-[#803449]/30" : "border-[#EFE9DC]"
+                  }`}
+                >
+                  <span className="text-sm font-semibold leading-tight text-[#2b2118]">{p.nombre}</span>
+                  {p.folio && <span className="mt-0.5 text-[11px] text-[#a49c8a]">{p.folio}</span>}
+                </button>
+              ))}
+            </div>
+            {filtrados.length === 0 && (
+              <p className="py-8 text-center text-sm text-[#a49c8a]">Sin resultados para “{busqueda}”.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function formatearHora(fechaHora: string) {
   return new Date(fechaHora).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 }
@@ -1150,19 +1239,7 @@ export default function CitasPage() {
   function formularioNuevaCita(className = "") {
     return (
       <div className={`space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 shadow-sm ${className}`}>
-        <select
-          value={pacienteId}
-          onChange={(e) => setPacienteId(e.target.value)}
-          className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
-        >
-          <option value="">Selecciona paciente…</option>
-          <option value={NUEVO_PACIENTE}>+ Paciente nuevo (dar de alta)</option>
-          {pacientes.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre} {p.folio ? `· ${p.folio}` : ""}
-            </option>
-          ))}
-        </select>
+        <SelectorPaciente pacientes={pacientes} value={pacienteId} onChange={setPacienteId} />
 
         {esNuevo && (
           <div className="space-y-2 rounded-xl border border-[#803449]/30 bg-[#F5E7E9] p-3">
