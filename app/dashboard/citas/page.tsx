@@ -208,6 +208,9 @@ function SelectorTratamiento({ value, onChange }: { value: string; onChange: (v:
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-3">
+            <p className="mb-3 text-center text-sm text-[#8a8272]">
+              ¿No lo encuentras? Escríbelo arriba y agrégalo; se queda guardado para la próxima.
+            </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {texto && !existe && (
                 <button
