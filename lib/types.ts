@@ -95,6 +95,7 @@ export interface PresupuestoItem {
   concepto: string;
   cantidad: number;
   precio_unitario: number;
+  por_diente?: boolean;
 }
 
 export interface Presupuesto {
@@ -109,6 +110,8 @@ export interface Presupuesto {
   creado_en: string;
   items: PresupuestoItem[];
   dientes: number[];
+  pago_inicial?: number | null;
+  mensualidades?: number | null;
   vigente: boolean;
   motivo_anulacion: string | null;
   anulado_por_nombre: string | null;

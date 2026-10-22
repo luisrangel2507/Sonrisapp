@@ -705,3 +705,9 @@ CREATE INDEX IF NOT EXISTS idx_odontograma_dibujos_paciente ON odontograma_dibuj
 -- Puntos de lealtad por completar la historia clínica en línea: se
 -- otorgan una sola vez por paciente.
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historia_puntos_otorgados BOOLEAN NOT NULL DEFAULT false;
+
+-- Presupuestos: conceptos que se cobran por diente y plan de pagos de
+-- ortodoncia (pago inicial + mensualidades).
+ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS por_diente BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS pago_inicial NUMERIC(12,2);
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS mensualidades INTEGER;

@@ -10,6 +10,7 @@ interface ItemEntrada {
   concepto: string;
   cantidad: number;
   precio_unitario: number;
+  por_diente?: boolean;
 }
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const { rows: presupuestos } = await query(
       `SELECT id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes,
-              vigente, motivo_anulacion, anulado_por_nombre, anulado_en
+              pago_inicial::float8 AS pago_inicial, mensualidades, vigente, motivo_anulacion, anulado_por_nombre, anulado_en
        FROM presupuestos WHERE paciente_id = $1 ORDER BY creado_en DESC`,
       [pacienteId]
     );
@@ -33,7 +34,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const ids = presupuestos.map((p) => p.id);
     const { rows: items } = await query<PresupuestoItem & { presupuesto_id: number }>(
-      `SELECT id, presupuesto_id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario
+      `SELECT id, presupuesto_id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente
        FROM presupuesto_items WHERE presupuesto_id = ANY($1) ORDER BY id`,
       [ids]
     );
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const body = await req.json().catch(() => ({}));
-    const { titulo, notas, items, dientes } = body ?? {};
+    const { titulo, notas, items, dientes, pago_inicial, mensualidades } = body ?? {};
 
     if (!titulo || typeof titulo !== "string" || !titulo.trim()) {
       return NextResponse.json({ error: "título es requerido" }, { status: 400 });
@@ -103,16 +104,25 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       if (!Number.isFinite(precioUnitario) || precioUnitario < 0) {
         return NextResponse.json({ error: `precio inválido en "${it.concepto}"` }, { status: 400 });
       }
-      itemsValidos.push({ concepto: it.concepto.trim(), cantidad, precio_unitario: precioUnitario });
+      itemsValidos.push({ concepto: it.concepto.trim(), cantidad, precio_unitario: precioUnitario, por_diente: !!it.por_diente });
     }
 
     const token = generarHistorialToken();
 
     const { rows } = await query(
-      `INSERT INTO presupuestos (paciente_id, titulo, notas, token, dientes)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes`,
-      [pacienteId, titulo.trim(), notas ? cifrar(notas) : null, token, dientesValidos]
+      `INSERT INTO presupuestos (paciente_id, titulo, notas, token, dientes, pago_inicial, mensualidades)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, paciente_id, titulo, notas, token, estado, nombre_respuesta, respondido_en, creado_en, dientes,
+                 pago_inicial::float8 AS pago_inicial, mensualidades`,
+      [
+        pacienteId,
+        titulo.trim(),
+        notas ? cifrar(notas) : null,
+        token,
+        dientesValidos,
+        Number.isFinite(Number(pago_inicial)) && Number(pago_inicial) > 0 ? Number(pago_inicial) : null,
+        Number.isInteger(Number(mensualidades)) && Number(mensualidades) > 0 ? Number(mensualidades) : null,
+      ]
     );
     const presupuestoId = rows[0].id;
     const presupuesto = { ...rows[0], notas: descifrar(rows[0].notas) };
@@ -120,10 +130,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const itemsGuardados: PresupuestoItem[] = [];
     for (const it of itemsValidos) {
       const { rows: itemRows } = await query<PresupuestoItem>(
-        `INSERT INTO presupuesto_items (presupuesto_id, concepto, cantidad, precio_unitario)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario`,
-        [presupuestoId, cifrar(it.concepto), it.cantidad, it.precio_unitario]
+        `INSERT INTO presupuesto_items (presupuesto_id, concepto, cantidad, precio_unitario, por_diente)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente`,
+        [presupuestoId, cifrar(it.concepto), it.cantidad, it.precio_unitario, !!it.por_diente]
       );
       itemsGuardados.push({ ...itemRows[0], concepto: descifrar(itemRows[0].concepto) ?? itemRows[0].concepto });
     }

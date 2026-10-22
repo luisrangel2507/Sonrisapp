@@ -145,6 +145,8 @@ export default function PacienteDetallePage() {
   const [notasPresupuesto, setNotasPresupuesto] = useState("");
   const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
   const [dientesPresupuesto, setDientesPresupuesto] = useState<number[]>([]);
+  const [pagoInicialPres, setPagoInicialPres] = useState("");
+  const [mensualidadesPres, setMensualidadesPres] = useState("");
   const [creandoPresupuesto, setCreandoPresupuesto] = useState(false);
   const [eliminandoPresupuestoId, setEliminandoPresupuestoId] = useState<number | null>(null);
   const [compartiendoPresupuestoId, setCompartiendoPresupuestoId] = useState<number | null>(null);
@@ -489,6 +491,8 @@ export default function PacienteDetallePage() {
     return it.porDiente && dientesPresupuesto.length > 0 ? base * dientesPresupuesto.length : base;
   }
 
+  const hayOrtodoncia = itemsPresupuesto.some((it) => it.concepto.toLowerCase().includes("ortodoncia"));
+
   function alternarPorDiente(index: number) {
     setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, porDiente: !it.porDiente } : it)));
   }
@@ -511,14 +515,19 @@ export default function PacienteDetallePage() {
           concepto: it.concepto.trim(),
           cantidad: cantidadEfectiva(it) || 1,
           precio_unitario: Number(it.precio_unitario) || 0,
+          por_diente: it.porDiente && dientesPresupuesto.length > 0,
         })),
         dientes: dientesPresupuesto,
+        pago_inicial: hayOrtodoncia ? Number(pagoInicialPres) || null : null,
+        mensualidades: hayOrtodoncia ? Number(mensualidadesPres) || null : null,
       }),
     });
     setTituloPresupuesto("");
     setNotasPresupuesto("");
     setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
     setDientesPresupuesto([]);
+    setPagoInicialPres("");
+    setMensualidadesPres("");
     setFormPresupuestoAbierto(false);
     setCreandoPresupuesto(false);
     const res = await fetch(`/api/pacientes/${pacienteId}/presupuestos`);
@@ -1200,6 +1209,50 @@ export default function PacienteDetallePage() {
               </label>
               <OdontogramaFoto seleccionados={dientesPresupuesto} onCambiar={setDientesPresupuesto} />
             </div>
+
+            {hayOrtodoncia && (
+              <div className="space-y-2 rounded-xl border border-[#EFE9DC] bg-[#FBF9F5] p-3">
+                <div className="text-[12px] font-semibold text-[#7A1E33]">Plan de pagos de ortodoncia</div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={pagoInicialPres}
+                    onChange={(e) => setPagoInicialPres(e.target.value)}
+                    placeholder="Pago inicial"
+                    className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={mensualidadesPres}
+                    onChange={(e) => setMensualidadesPres(e.target.value)}
+                    placeholder="Mensualidades"
+                    className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#803449]"
+                  />
+                </div>
+                {Number(mensualidadesPres) > 0 && (
+                  <div className="text-[12px] text-[#8a8272]">
+                    {mensualidadesPres} mensualidades de{" "}
+                    <b className="text-[#2b2118]">
+                      {formatearDinero(
+                        Math.max(
+                          0,
+                          (totalPresupuesto(
+                            itemsPresupuesto.map((it) => ({
+                              cantidad: cantidadEfectiva(it),
+                              precio_unitario: Number(it.precio_unitario) || 0,
+                            }))
+                          ) -
+                            (Number(pagoInicialPres) || 0)) /
+                            Number(mensualidadesPres)
+                        )
+                      )}
+                    </b>
+                  </div>
+                )}
+              </div>
+            )}
 
             <textarea
               value={notasPresupuesto}
