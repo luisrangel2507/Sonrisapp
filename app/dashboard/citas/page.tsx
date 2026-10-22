@@ -898,7 +898,7 @@ function CitaTimelineItem({
                 type="datetime-local"
                 value={editFechaHora}
                 onChange={(e) => setEditFechaHora(e.target.value)}
-                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+                className="block w-full min-w-0 max-w-full appearance-none rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
               />
             </div>
             <div className="relative">
@@ -951,7 +951,7 @@ function CitaTimelineItem({
                 type="datetime-local"
                 value={fechaPosponer}
                 onChange={(e) => setFechaPosponer(e.target.value)}
-                className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
+                className="block w-full min-w-0 max-w-full appearance-none rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
               />
             </div>
             <div className="flex gap-2">
@@ -1381,7 +1381,7 @@ export default function CitasPage() {
             type="datetime-local"
             value={fechaHora}
             onChange={(e) => setFechaHora(e.target.value)}
-            className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            className="block w-full min-w-0 max-w-full appearance-none rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
           />
         </div>
         <div className="relative">
