@@ -79,7 +79,11 @@ export function OdontogramaFoto({
           ? soloLectura
             ? "Sin dientes marcados."
             : "Toca los dientes en la foto para marcarlos."
-          : `Dientes marcados: ${[...seleccionados].sort((a, b) => a - b).join(", ")}`}
+          : seleccionados.length === NUMEROS_FDI.length
+            ? `Todos los dientes (${NUMEROS_FDI.length})`
+            : seleccionados.length === 1
+              ? `Diente marcado: n.º ${seleccionados[0]}`
+              : `${seleccionados.length} dientes marcados (n.º ${[...seleccionados].sort((a, b) => a - b).join(", ")})`}
       </p>
     </div>
   );

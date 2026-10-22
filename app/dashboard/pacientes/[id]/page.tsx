@@ -1214,24 +1214,6 @@ export default function PacienteDetallePage() {
               <label className="mb-1 block text-[11px] font-medium text-[#a49c8a]">
                 Dientes relacionados (opcional)
               </label>
-              <div className="mb-1.5 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDientesPresupuesto([...NUMEROS_FDI])}
-                  className="rounded-full border border-[#803449]/40 px-3 py-1 text-[11px] font-medium text-[#803449]"
-                >
-                  Todos los dientes
-                </button>
-                {dientesPresupuesto.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setDientesPresupuesto([])}
-                    className="rounded-full border border-[#EFE9DC] px-3 py-1 text-[11px] font-medium text-[#8a8272]"
-                  >
-                    Quitar todos
-                  </button>
-                )}
-              </div>
               <OdontogramaFoto seleccionados={dientesPresupuesto} onCambiar={setDientesPresupuesto} />
             </div>
 
