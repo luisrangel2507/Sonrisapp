@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import { createPortal } from "react-dom";
 import { COLOCACION_DIENTES, ODONTOGRAMA_VERSION } from "@/lib/odontograma-version";
 import { Eraser, Save, Stamp, Type, Undo2, X, Trash2, Check, History } from "lucide-react";
-import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, type HistorialDental, type SimboloEstado } from "@/lib/dental";
+import { ARCO_SUPERIOR, ARCO_INFERIOR, SIMBOLO_DIENTE, significadoAbreviatura, type HistorialDental, type SimboloEstado } from "@/lib/dental";
 
 // ---- Geometría de la carta (unidades del viewBox) ----
 // El fondo es la carta dental anatómica de la doctora
@@ -1165,12 +1165,16 @@ function PantallaCompleta(props: {
                           if (fijo) props.setColor(fijo);
                           setPanel(false);
                         }}
-                        className={`rounded-xl py-2.5 font-serif text-[18px] font-bold italic tracking-wide shadow-sm ${
+                        className={`rounded-xl px-1 py-2 shadow-sm ${
                           props.abreviatura === a ? "bg-white ring-2 ring-[#F0C24E]" : "bg-white/90"
                         }`}
-                        style={{ color }}
                       >
-                        {a}
+                        <span className="block font-serif text-[18px] font-bold italic tracking-wide" style={{ color }}>
+                          {a}
+                        </span>
+                        <span className="block text-[9px] leading-tight text-[#6b6050]">
+                          {significadoAbreviatura(a)}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1272,7 +1276,12 @@ function PantallaCompleta(props: {
                 {herramienta === "sello" ? (
                   <MiniSello forma={props.sello} color={color} />
                 ) : (
-                  <b className="font-serif italic" style={{ color }}>{props.abreviatura}</b>
+                  <>
+                    <b className="font-serif italic" style={{ color }}>{props.abreviatura}</b>
+                    {significadoAbreviatura(props.abreviatura) && (
+                      <span className="text-white/70">({significadoAbreviatura(props.abreviatura)})</span>
+                    )}
+                  </>
                 )}
               </span>
             </div>

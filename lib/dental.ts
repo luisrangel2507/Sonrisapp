@@ -232,3 +232,46 @@ export interface HistorialDiente {
 }
 
 export type HistorialDental = Record<number, HistorialDiente>;
+
+// Significado de cada abreviatura del odontograma. En el diente solo se
+// escribe la abreviatura; el nombre completo se usa en el selector y en
+// los reportes.
+export const SIGNIFICADO_ABREVIATURA: Record<string, string> = {
+  S: "Sellante",
+  RR: "Resto radicular",
+  MAC: "Material de obturación definitivo (buen estado)",
+  MIC: "Material de obturación temporal",
+  M1: "Mesial 1",
+  M2: "Mesial 2",
+  M3: "Mesial 3",
+  IMP: "Implante",
+  ATR: "Atrición",
+  ABR: "Abrasión",
+  ERS: "Erosión",
+  ABF: "Abfracción",
+  TCC: "Tratamiento de conductos",
+  PC: "Prótesis completa",
+  PP: "Prótesis parcial",
+  CT: "Corona temporal",
+  CC: "Corona completa",
+  CPP: "Corona parcial permanente",
+  CMA: "Corona metal-acrílico",
+  CMP: "Corona metal-porcelana",
+  CF: "Corona de fundición",
+  "C¾": "Corona ¾",
+  CP: "Corona de porcelana",
+  CR: "Corona de resina",
+  CM: "Corona metálica",
+  PMA: "Póntico metal-acrílico",
+  PMP: "Póntico metal-porcelana",
+  PM: "Póntico metálico",
+  CLM: "Corona libre de metal",
+  CAC: "Corona acrílico",
+  INC: "Incrustación",
+  PF: "Prótesis fija",
+  PR: "Prótesis removible",
+};
+
+export function significadoAbreviatura(a: string): string | null {
+  return SIGNIFICADO_ABREVIATURA[a.toUpperCase()] ?? null;
+}
