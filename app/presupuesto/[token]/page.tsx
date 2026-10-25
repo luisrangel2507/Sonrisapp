@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, CheckCircle2, X, XCircle } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
-import { formatearDinero } from "@/lib/dinero";
+import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
 import type { PresupuestoItem } from "@/lib/types";
 
@@ -124,7 +124,7 @@ export default function PresupuestoPublicoPage() {
     );
   }
 
-  const total = datos.items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
+  const total = datos.items.reduce((suma, it) => suma + importeConcepto(it), 0);
   const yaRespondido = datos.estado !== "pendiente";
 
   return (
@@ -155,7 +155,7 @@ export default function PresupuestoPublicoPage() {
                   )}
                 </div>
                 <div className="shrink-0 font-semibold text-[#2b2118]">
-                  {formatearDinero(it.cantidad * it.precio_unitario)}
+                  {formatearDinero(importeConcepto(it))}
                 </div>
               </div>
             ))}

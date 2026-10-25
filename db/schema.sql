@@ -735,3 +735,8 @@ ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS monto_ajuste NUMERIC(12,2);
 
 -- Hora de la cita que se muestra en la TV (texto "HH:MM").
 ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS hora VARCHAR(8);
+
+-- Plan de tratamiento por etapas: cada concepto puede llevar etapa y
+-- porcentaje de descuento.
+ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS etapa VARCHAR(120);
+ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS descuento NUMERIC(5,2) NOT NULL DEFAULT 0;

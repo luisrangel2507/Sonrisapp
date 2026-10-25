@@ -11,6 +11,8 @@ interface ItemEntrada {
   cantidad: number;
   precio_unitario: number;
   por_diente?: boolean;
+  etapa?: string;
+  descuento?: number;
 }
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -34,7 +36,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const ids = presupuestos.map((p) => p.id);
     const { rows: items } = await query<PresupuestoItem & { presupuesto_id: number }>(
-      `SELECT id, presupuesto_id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente
+      `SELECT id, presupuesto_id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente,
+              etapa, descuento::float8 AS descuento
        FROM presupuesto_items WHERE presupuesto_id = ANY($1) ORDER BY id`,
       [ids]
     );
@@ -104,7 +107,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       if (!Number.isFinite(precioUnitario) || precioUnitario < 0) {
         return NextResponse.json({ error: `precio inválido en "${it.concepto}"` }, { status: 400 });
       }
-      itemsValidos.push({ concepto: it.concepto.trim(), cantidad, precio_unitario: precioUnitario, por_diente: !!it.por_diente });
+      const descuento = Math.min(100, Math.max(0, Number(it.descuento) || 0));
+      const etapa = typeof it.etapa === "string" && it.etapa.trim() ? it.etapa.trim().slice(0, 120) : undefined;
+      itemsValidos.push({ concepto: it.concepto.trim(), cantidad, precio_unitario: precioUnitario, por_diente: !!it.por_diente, etapa, descuento });
     }
 
     const token = generarHistorialToken();
@@ -131,10 +136,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const itemsGuardados: PresupuestoItem[] = [];
     for (const it of itemsValidos) {
       const { rows: itemRows } = await query<PresupuestoItem>(
-        `INSERT INTO presupuesto_items (presupuesto_id, concepto, cantidad, precio_unitario, por_diente)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente`,
-        [presupuestoId, cifrar(it.concepto), it.cantidad, it.precio_unitario, !!it.por_diente]
+        `INSERT INTO presupuesto_items (presupuesto_id, concepto, cantidad, precio_unitario, por_diente, etapa, descuento)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente,
+                   etapa, descuento::float8 AS descuento`,
+        [presupuestoId, cifrar(it.concepto), it.cantidad, it.precio_unitario, !!it.por_diente, it.etapa ?? null, it.descuento ?? 0]
       );
       itemsGuardados.push({ ...itemRows[0], concepto: descifrar(itemRows[0].concepto) ?? itemRows[0].concepto });
     }

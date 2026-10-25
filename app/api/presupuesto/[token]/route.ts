@@ -45,7 +45,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
     }
 
     const { rows: items } = await query<PresupuestoItem>(
-      `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario
+      `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, descuento::float8 AS descuento
        FROM presupuesto_items WHERE presupuesto_id = $1 ORDER BY id`,
       [presupuesto.id]
     );

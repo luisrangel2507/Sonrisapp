@@ -29,12 +29,12 @@ import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
-import { formatearDinero } from "@/lib/dinero";
+import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
 
-function totalPresupuesto(items: { cantidad: number; precio_unitario: number }[]) {
-  return items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
+function totalPresupuesto(items: { cantidad: number; precio_unitario: number; descuento?: number | null }[]) {
+  return items.reduce((suma, it) => suma + importeConcepto(it), 0);
 }
 
 function formatearFecha(fecha: string) {
@@ -144,7 +144,7 @@ export default function PacienteDetallePage() {
   const [formPresupuestoAbierto, setFormPresupuestoAbierto] = useState(false);
   const [tituloPresupuesto, setTituloPresupuesto] = useState("");
   const [notasPresupuesto, setNotasPresupuesto] = useState("");
-  const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
+  const [itemsPresupuesto, setItemsPresupuesto] = useState([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true, etapa: "", descuento: "" }]);
   const [dientesPresupuesto, setDientesPresupuesto] = useState<number[]>([]);
   const [pagoInicialPres, setPagoInicialPres] = useState("");
   const [mensualidadesPres, setMensualidadesPres] = useState("");
@@ -479,7 +479,7 @@ export default function PacienteDetallePage() {
   }
 
   function agregarItemPresupuesto() {
-    setItemsPresupuesto((prev) => [...prev, { concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
+    setItemsPresupuesto((prev) => [...prev, { concepto: "", cantidad: "1", precio_unitario: "", porDiente: true, etapa: "", descuento: "" }]);
   }
 
   function quitarItemPresupuesto(index: number) {
@@ -499,7 +499,7 @@ export default function PacienteDetallePage() {
     setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, porDiente: !it.porDiente } : it)));
   }
 
-  function actualizarItemPresupuesto(index: number, campo: "concepto" | "cantidad" | "precio_unitario", valor: string) {
+  function actualizarItemPresupuesto(index: number, campo: "concepto" | "cantidad" | "precio_unitario" | "etapa" | "descuento", valor: string) {
     setItemsPresupuesto((prev) => prev.map((it, i) => (i === index ? { ...it, [campo]: valor } : it)));
     // Brackets / ortodoncia abarcan toda la boca: se marcan todos los
     // dientes y el concepto se cobra una sola vez (no por diente).
@@ -524,6 +524,8 @@ export default function PacienteDetallePage() {
           cantidad: cantidadEfectiva(it) || 1,
           precio_unitario: Number(it.precio_unitario) || 0,
           por_diente: it.porDiente && dientesPresupuesto.length > 0,
+          etapa: it.etapa.trim() || undefined,
+          descuento: Number(it.descuento) || 0,
         })),
         dientes: dientesPresupuesto,
         pago_inicial: hayOrtodoncia ? Number(pagoInicialPres) || null : null,
@@ -533,7 +535,7 @@ export default function PacienteDetallePage() {
     });
     setTituloPresupuesto("");
     setNotasPresupuesto("");
-    setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true }]);
+    setItemsPresupuesto([{ concepto: "", cantidad: "1", precio_unitario: "", porDiente: true, etapa: "", descuento: "" }]);
     setDientesPresupuesto([]);
     setPagoInicialPres("");
     setMontoAjustePres("");
@@ -1092,7 +1094,7 @@ export default function PacienteDetallePage() {
                         {it.concepto}
                         {it.cantidad !== 1 && ` ×${it.cantidad}`}
                       </span>
-                      <span className="shrink-0">{formatearDinero(it.cantidad * it.precio_unitario)}</span>
+                      <span className="shrink-0">{formatearDinero(importeConcepto(it))}</span>
                     </div>
                   ))}
                 </div>
@@ -1198,10 +1200,27 @@ export default function PacienteDetallePage() {
                       }`}
                     >
                       {it.porDiente
-                        ? `× ${dientesPresupuesto.length} diente${dientesPresupuesto.length === 1 ? "" : "s"} = ${cantidadEfectiva(it)} · ${formatearDinero(cantidadEfectiva(it) * (Number(it.precio_unitario) || 0))}`
+                        ? `× ${dientesPresupuesto.length} diente${dientesPresupuesto.length === 1 ? "" : "s"} = ${cantidadEfectiva(it)} · ${formatearDinero(importeConcepto({ cantidad: cantidadEfectiva(it), precio_unitario: Number(it.precio_unitario) || 0, descuento: Number(it.descuento) || 0 }))}`
                         : "Cobrar por diente"}
                     </button>
                   )}
+                  <div className="mt-1 flex gap-1.5">
+                    <input
+                      value={it.etapa}
+                      onChange={(e) => actualizarItemPresupuesto(i, "etapa", e.target.value)}
+                      placeholder="Etapa (ej. 01. Valoración)"
+                      className="min-w-0 flex-1 rounded-xl border border-[#EFE9DC] px-2.5 py-1.5 text-[12px] outline-none focus:border-[#803449]"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={it.descuento}
+                      onChange={(e) => actualizarItemPresupuesto(i, "descuento", e.target.value)}
+                      placeholder="Desc. %"
+                      className="w-20 rounded-xl border border-[#EFE9DC] px-2 py-1.5 text-[12px] outline-none focus:border-[#803449]"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

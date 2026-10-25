@@ -4,7 +4,7 @@ import path from "node:path";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
-import { formatearDinero } from "@/lib/dinero";
+import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { obtenerDatosReporte, formatearFecha } from "@/lib/pdf/reporte-clinico";
 import { NUMEROS_FDI, POLIGONOS_DIENTE, construirMapaEstados } from "@/lib/dental";
 import { estadosPersonalizados } from "@/lib/estados-diente";
@@ -74,6 +74,11 @@ const e = StyleSheet.create({
   },
   bandaTexto: { color: "#ffffff", fontSize: 11, fontFamily: "Helvetica-Bold", letterSpacing: 1 },
   caja: { borderWidth: 1, borderColor: PDF_COLOR.border, backgroundColor: "#FBF9F4", padding: 8, marginBottom: 12 },
+  titulo: { fontSize: 16, fontFamily: "Helvetica-Bold", color: PDF_COLOR.rose },
+  intro: { fontSize: 9, color: PDF_COLOR.muted, marginTop: 3 },
+  leyenda: { fontSize: 8.5, marginTop: 2 },
+  leyendaTipo: { fontFamily: "Helvetica-Bold", color: PDF_COLOR.rose },
+  nota: { fontSize: 7, color: PDF_COLOR.mutedLight, fontStyle: "italic", marginTop: 5 },
   dienteTitulo: { fontSize: 9.5, fontFamily: "Helvetica-Bold" },
   dienteEstado: { color: PDF_COLOR.rose },
   dienteLinea: { fontSize: 8.5, color: PDF_COLOR.muted, marginLeft: 8, marginTop: 1 },
@@ -126,12 +131,20 @@ function PresupuestoPdf({
   dientesInfo: DientePres[];
   presId: number;
 }) {
-  const total = items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
+  const total = items.reduce((suma, it) => suma + importeConcepto(it), 0);
+  const subtotal = items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
+  const descuentoTotal = subtotal - total;
   const nDientes = presupuesto.dientes.length;
   const porDiente = items.filter((it) => it.por_diente && nDientes > 0);
-  const generales = items.filter((it) => !(it.por_diente && nDientes > 0));
-  const estadoDe = (n: number) => dientesInfo.find((d) => d.numero === n)?.estado ?? "Sin hallazgos registrados";
-  const todosLosDientes = nDientes >= NUMEROS_FDI.length;
+  const listaPiezas =
+    nDientes >= NUMEROS_FDI.length ? `Todos (${nDientes})` : presupuesto.dientes.slice().sort((x, y) => x - y).join(", ");
+  // Hallazgos: dientes del presupuesto agrupados por su estado registrado.
+  const hallazgosMapa = new Map<string, number[]>();
+  for (const n of presupuesto.dientes.slice().sort((x, y) => x - y)) {
+    const est = dientesInfo.find((d) => d.numero === n)?.estado;
+    if (est) hallazgosMapa.set(est, [...(hallazgosMapa.get(est) ?? []), n]);
+  }
+  const hallazgos = [...hallazgosMapa.entries()];
   const porAjuste = (presupuesto.monto_ajuste ?? 0) > 0;
   const hayPlan = porAjuste || (presupuesto.mensualidades ?? 0) > 0 || (presupuesto.pago_inicial ?? 0) > 0;
   const inicial = presupuesto.pago_inicial ?? 0;
@@ -142,7 +155,7 @@ function PresupuestoPdf({
       <EncabezadoPdf titulo="Presupuesto / Cotización" />
 
       <View style={e.banda}>
-        <Text style={e.bandaTexto}>PRESUPUESTO DE TRATAMIENTO</Text>
+        <Text style={e.bandaTexto}>PLAN DE TRATAMIENTO</Text>
         <Text style={e.bandaTexto}>No. {String(presId).padStart(4, "0")}</Text>
       </View>
 
@@ -167,75 +180,74 @@ function PresupuestoPdf({
         </View>
       </View>
 
+      <View style={{ marginBottom: 8 }}>
+        <Text style={e.titulo}>Tratamiento propuesto</Text>
+        <Text style={e.intro}>Procedimientos incluidos en esta propuesta y su organización por etapas.</Text>
+      </View>
+
       {nDientes > 0 && (
         <View style={estilosPdf.seccion}>
-          <Text style={estilosPdf.seccionTitulo}>Odontograma — dientes a tratar</Text>
           <OdontogramaPresupuestoPdf dientes={presupuesto.dientes} />
-
-          <View style={{ marginTop: 10 }}>
-            {todosLosDientes ? (
-              <View wrap={false}>
-                <Text style={e.dienteTitulo}>
-                  Todos los dientes ({nDientes}) — <Text style={e.dienteEstado}>{presupuesto.titulo}</Text>
-                </Text>
-                {porDiente.map((it) => (
-                  <Text key={it.id} style={e.dienteLinea}>
-                    {it.concepto} : {formatearDinero(it.cantidad * it.precio_unitario)}
-                  </Text>
-                ))}
-              </View>
-            ) : (
-              presupuesto.dientes
-                .slice()
-                .sort((a, b) => a - b)
-                .map((n) => (
-                  <View key={n} style={{ marginBottom: 5 }} wrap={false}>
-                    <Text style={e.dienteTitulo}>
-                      Diente {n} — <Text style={e.dienteEstado}>{estadoDe(n)}</Text>
-                    </Text>
-                    {porDiente.length === 0 ? (
-                      <Text style={e.dienteLinea}>Se incluye en los conceptos del presupuesto</Text>
-                    ) : (
-                      porDiente.map((it) => (
-                        <Text key={it.id} style={e.dienteLinea}>
-                          {it.concepto}
-                          {it.cantidad / nDientes !== 1 ? ` ×${it.cantidad / nDientes}` : ""} :{" "}
-                          {formatearDinero((it.cantidad / nDientes) * it.precio_unitario)}
-                        </Text>
-                      ))
-                    )}
-                  </View>
-                ))
-            )}
+          <View style={{ marginTop: 8 }}>
+            {hallazgos.map(([estado, dientes]) => (
+              <Text key={estado} style={e.leyenda}>
+                <Text style={e.leyendaTipo}>Hallazgo · </Text>
+                {estado}: {dientes.join(", ")}
+              </Text>
+            ))}
+            {porDiente.map((it) => (
+              <Text key={it.id} style={e.leyenda}>
+                <Text style={e.leyendaTipo}>Propuesta · </Text>
+                {it.concepto}: {listaPiezas}
+              </Text>
+            ))}
+            <Text style={e.nota}>
+              Esquema ilustrativo de los registros del plan. Los dientes marcados son los que reciben tratamiento.
+              La propuesta no sustituye la valoración clínica y puede cambiar según la evolución del paciente.
+            </Text>
           </View>
         </View>
       )}
 
       <View style={estilosPdf.seccion}>
-        {(nDientes === 0 || generales.length > 0) && (
-          <Text style={estilosPdf.seccionTitulo}>{nDientes > 0 ? "Otros conceptos" : "Conceptos"}</Text>
-        )}
-        {(nDientes === 0 || generales.length > 0) && (
-          <View>
-            <View style={e.tablaCab}>
-              <Text style={{ ...e.celdaCab, width: "52%" }}>Concepto</Text>
-              <Text style={{ ...e.celdaCab, width: "12%", textAlign: "right" }}>Cant.</Text>
-              <Text style={{ ...e.celdaCab, width: "18%", textAlign: "right" }}>Precio</Text>
-              <Text style={{ ...e.celdaCab, width: "18%", textAlign: "right" }}>Importe</Text>
+        <View style={e.tablaCab}>
+          <Text style={{ ...e.celdaCab, width: "34%" }}>Procedimiento</Text>
+          <Text style={{ ...e.celdaCab, width: "20%" }}>Piezas</Text>
+          <Text style={{ ...e.celdaCab, width: "8%", textAlign: "right" }}>Cant.</Text>
+          <Text style={{ ...e.celdaCab, width: "14%", textAlign: "right" }}>Precio unit.</Text>
+          <Text style={{ ...e.celdaCab, width: "9%", textAlign: "right" }}>Desc.</Text>
+          <Text style={{ ...e.celdaCab, width: "15%", textAlign: "right" }}>Importe</Text>
+        </View>
+        {items.map((it) => (
+          <View key={it.id} style={e.fila} wrap={false}>
+            <View style={{ width: "34%", paddingHorizontal: 5 }}>
+              <Text style={{ fontSize: 9 }}>{it.concepto}</Text>
+              {it.etapa ? <Text style={{ fontSize: 7.5, color: PDF_COLOR.muted, marginTop: 1 }}>Etapa: {it.etapa}</Text> : null}
             </View>
-            {(nDientes === 0 ? items : generales).map((it) => (
-              <View key={it.id} style={e.fila} wrap={false}>
-                <Text style={{ ...e.celda, width: "52%" }}>{it.concepto}</Text>
-                <Text style={{ ...e.celda, width: "12%", textAlign: "right" }}>{it.cantidad}</Text>
-                <Text style={{ ...e.celda, width: "18%", textAlign: "right" }}>{formatearDinero(it.precio_unitario)}</Text>
-                <Text style={{ ...e.celda, width: "18%", textAlign: "right" }}>{formatearDinero(it.cantidad * it.precio_unitario)}</Text>
-              </View>
-            ))}
+            <Text style={{ ...e.celda, width: "20%", fontSize: 8 }}>
+              {it.por_diente && nDientes > 0 ? listaPiezas : "—"}
+            </Text>
+            <Text style={{ ...e.celda, width: "8%", textAlign: "right" }}>{it.cantidad}</Text>
+            <Text style={{ ...e.celda, width: "14%", textAlign: "right" }}>{formatearDinero(it.precio_unitario)}</Text>
+            <Text style={{ ...e.celda, width: "9%", textAlign: "right" }}>{it.descuento ?? 0}%</Text>
+            <Text style={{ ...e.celda, width: "15%", textAlign: "right" }}>{formatearDinero(importeConcepto(it))}</Text>
           </View>
-        )}
+        ))}
         {presupuesto.notas && <Text style={{ ...estilosPdf.parrafo, marginTop: 8 }}>{presupuesto.notas}</Text>}
 
         <View style={e.totalCaja} wrap={false}>
+          {descuentoTotal > 0 && (
+            <>
+              <View style={e.totalFila}>
+                <Text style={{ fontSize: 9, color: PDF_COLOR.muted }}>Subtotal</Text>
+                <Text style={{ fontSize: 9, color: PDF_COLOR.muted }}>{formatearDinero(subtotal)}</Text>
+              </View>
+              <View style={e.totalFila}>
+                <Text style={{ fontSize: 9, color: PDF_COLOR.muted }}>Descuento</Text>
+                <Text style={{ fontSize: 9, color: PDF_COLOR.muted }}>-{formatearDinero(descuentoTotal)}</Text>
+              </View>
+            </>
+          )}
           <View style={e.totalFila}>
             <Text style={{ fontSize: 11, fontFamily: "Helvetica-Bold", color: PDF_COLOR.rose }}>TOTAL</Text>
             <Text style={{ fontSize: 11, fontFamily: "Helvetica-Bold", color: PDF_COLOR.rose }}>{formatearDinero(total)}</Text>
@@ -333,7 +345,8 @@ export async function GET(
     const presupuesto = { ...presupuestoRows[0], notas: descifrar(presupuestoRows[0].notas) };
 
     const { rows: itemsRows } = await query<PresupuestoItem>(
-      `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente
+      `SELECT id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente,
+              etapa, descuento::float8 AS descuento
        FROM presupuesto_items WHERE presupuesto_id = $1 ORDER BY id`,
       [presupuestoId]
     );

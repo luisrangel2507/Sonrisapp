@@ -96,6 +96,8 @@ export interface PresupuestoItem {
   cantidad: number;
   precio_unitario: number;
   por_diente?: boolean;
+  etapa?: string | null;
+  descuento?: number;
 }
 
 export interface Presupuesto {
