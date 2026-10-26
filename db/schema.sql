@@ -743,3 +743,12 @@ ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS descuento NUMERIC(5,2) NO
 
 -- Firma dibujada por el paciente al aprobar el presupuesto (PNG en data URL).
 ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS firma_paciente TEXT;
+
+-- Límite de uso de las rutas públicas (agendar, aprobar presupuesto,
+-- formularios): cuántas veces llamó cada IP a cada acción en la ventana
+-- actual. Vive en la base para que sobreviva un reinicio del servidor.
+CREATE TABLE IF NOT EXISTS limites_publicos (
+  clave VARCHAR(200) PRIMARY KEY,
+  ventana_inicio TIMESTAMPTZ NOT NULL DEFAULT now(),
+  conteo INTEGER NOT NULL DEFAULT 0
+);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitarPublico } from "@/lib/limite-publico";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { descifrar } from "@/lib/crypto";
@@ -66,6 +67,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
 }
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const limitado = await limitarPublico(req, "presupuesto", 10, 60);
+  if (limitado) return limitado;
   const params = await props.params;
   try {
     const body = await req.json().catch(() => ({}));

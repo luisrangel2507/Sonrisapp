@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitarPublico } from "@/lib/limite-publico";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { obtenerPasskeyPorCredentialId, actualizarContadorPasskey } from "@/lib/webauthn-store";
@@ -10,6 +11,8 @@ import { DOCTORA } from "@/lib/panel-data";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const limitado = await limitarPublico(req, "passkey", 20, 15);
+  if (limitado) return limitado;
   try {
     const body = await req.json().catch(() => null);
     const credencial = body?.credencial;

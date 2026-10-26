@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitarPublico } from "@/lib/limite-publico";
 import { query } from "@/lib/db";
 import { generarFolio } from "@/lib/folio";
 import { generarHistorialToken } from "@/lib/historial-token";
@@ -16,6 +17,8 @@ export const dynamic = "force-dynamic";
 // como "pendiente de aprobación" — la doctora la revisa y confirma
 // desde el dashboard antes de que sea una cita oficial.
 export async function POST(req: NextRequest) {
+  const limitado = await limitarPublico(req, "agendar", 5, 60);
+  if (limitado) return limitado;
   try {
     const body = await req.json();
     const { nombre, telefono, tratamiento, fecha_hora } = body ?? {};
