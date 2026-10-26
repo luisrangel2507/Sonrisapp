@@ -106,6 +106,12 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
         pacienteValores.push(PACIENTE_CAMPOS_CIFRABLES.has(campo) ? cifrar(valor) : valor);
       }
     }
+    if (body.aviso_privacidad === true) {
+      await query(
+        `UPDATE pacientes SET aviso_privacidad_aceptado_en = COALESCE(aviso_privacidad_aceptado_en, now()) WHERE id = $1`,
+        [pacienteId]
+      );
+    }
     if (pacienteCampos.length > 0) {
       const asignaciones = pacienteCampos.map((campo, i) => `${campo} = $${i + 2}`).join(", ");
       await query(`UPDATE pacientes SET ${asignaciones} WHERE id = $1`, [pacienteId, ...pacienteValores]);

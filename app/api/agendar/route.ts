@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (limitado) return limitado;
   try {
     const body = await req.json();
-    const { nombre, telefono, tratamiento, fecha_hora } = body ?? {};
+    const { nombre, telefono, tratamiento, fecha_hora, aviso_privacidad } = body ?? {};
 
     if (!nombre || typeof nombre !== "string" || !nombre.trim()) {
       return NextResponse.json({ error: "nombre es requerido" }, { status: 400 });
@@ -31,6 +31,12 @@ export async function POST(req: NextRequest) {
     }
     if (!tratamiento || typeof tratamiento !== "string") {
       return NextResponse.json({ error: "elige qué tipo de consulta quieres" }, { status: 400 });
+    }
+    if (aviso_privacidad !== true) {
+      return NextResponse.json({ error: "acepta el aviso de privacidad para continuar" }, { status: 400 });
+    }
+    if (typeof tratamiento === "string" && tratamiento.length > 160) {
+      return NextResponse.json({ error: "tratamiento inválido" }, { status: 400 });
     }
     if (!fecha_hora || typeof fecha_hora !== "string") {
       return NextResponse.json({ error: "elige fecha y hora" }, { status: 400 });
@@ -61,8 +67,8 @@ export async function POST(req: NextRequest) {
     const historialToken = generarHistorialToken();
 
     const { rows: pacienteRows } = await query(
-      `INSERT INTO pacientes (nombre, telefono, folio, historial_token)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO pacientes (nombre, telefono, folio, historial_token, aviso_privacidad_aceptado_en)
+       VALUES ($1, $2, $3, $4, now())
        RETURNING ${PACIENTE_COLUMNAS}`,
       [nombre.trim(), telefono.trim(), folio, historialToken]
     );

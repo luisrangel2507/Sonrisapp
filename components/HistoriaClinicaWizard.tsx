@@ -738,6 +738,8 @@ export function HistoriaClinicaWizard({
   onChangeDatosPaciente,
   onEnviar,
   guardando,
+  aceptaAviso,
+  onAceptaAviso,
   error,
 }: {
   form: FormStateHistoriaClinica;
@@ -749,6 +751,8 @@ export function HistoriaClinicaWizard({
   onChangeDatosPaciente: <K extends keyof DatosPacienteWizard>(campo: K, valor: DatosPacienteWizard[K]) => void;
   onEnviar: () => void;
   guardando: boolean;
+  aceptaAviso: boolean;
+  onAceptaAviso: (v: boolean) => void;
   error: string;
 }) {
   // vista === "intro": pantalla de bienvenida
@@ -890,11 +894,27 @@ export function HistoriaClinicaWizard({
             );
           })}
 
+          <label className="mt-5 flex items-start gap-2 text-[13px] text-[#6f6458]">
+            <input
+              type="checkbox"
+              checked={aceptaAviso}
+              onChange={(e) => onAceptaAviso(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#7A1E33]"
+            />
+            <span>
+              He leído y acepto el{" "}
+              <a href="/aviso-privacidad" target="_blank" className="font-semibold text-[#7A1E33] underline">
+                aviso de privacidad
+              </a>{" "}
+              y autorizo el uso de mis datos de salud para mi atención.
+            </span>
+          </label>
+
           {error && <p className="mt-4 text-center text-sm text-[#B0503A]">{error}</p>}
 
           <button
             onClick={onEnviar}
-            disabled={guardando}
+            disabled={guardando || !aceptaAviso}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#7A1E33] py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
           >
             <Save size={16} /> {guardando ? "Enviando…" : "Mi información es correcta, enviar"}

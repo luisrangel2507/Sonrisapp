@@ -110,6 +110,8 @@ export default function FormularioPublicoPage() {
     })();
   }, [token]);
 
+  const [aceptaAviso, setAceptaAviso] = useState(false);
+
   async function enviar() {
     setGuardando(true);
     setError("");
@@ -117,7 +119,7 @@ export default function FormularioPublicoPage() {
       const res = await fetch(`/api/formulario/${token}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, fecha_nacimiento: fechaNacimiento, ...datosPaciente }),
+        body: JSON.stringify({ ...form, fecha_nacimiento: fechaNacimiento, ...datosPaciente, aviso_privacidad: aceptaAviso }),
       });
       if (!res.ok) throw new Error();
       setEnviado(true);
@@ -187,6 +189,8 @@ export default function FormularioPublicoPage() {
         onChangeDatosPaciente={setDato}
         onEnviar={enviar}
         guardando={guardando}
+        aceptaAviso={aceptaAviso}
+        onAceptaAviso={setAceptaAviso}
         error={error}
       />
     </div>

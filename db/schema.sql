@@ -752,3 +752,7 @@ CREATE TABLE IF NOT EXISTS limites_publicos (
   ventana_inicio TIMESTAMPTZ NOT NULL DEFAULT now(),
   conteo INTEGER NOT NULL DEFAULT 0
 );
+
+-- Cuándo aceptó el paciente el aviso de privacidad (LFPDPPP), desde el
+-- link para agendar o el formulario de historia clínica.
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS aviso_privacidad_aceptado_en TIMESTAMPTZ;

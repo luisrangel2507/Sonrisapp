@@ -24,6 +24,7 @@ function slotsDelDia(dia: Date): Slot[] {
 export default function AgendarPage() {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [aceptaAviso, setAceptaAviso] = useState(false);
   const [tratamiento, setTratamiento] = useState(OPCIONES_CONSULTA[0]);
 
   const dias = useMemo(() => {
@@ -71,6 +72,7 @@ export default function AgendarPage() {
           telefono: telefono.trim(),
           tratamiento,
           fecha_hora: slotSeleccionado.iso,
+          aviso_privacidad: aceptaAviso,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -202,11 +204,27 @@ export default function AgendarPage() {
           )}
         </div>
 
+        <label className="flex items-start gap-2 px-1 text-[12px] text-[#6f6458]">
+          <input
+            type="checkbox"
+            checked={aceptaAviso}
+            onChange={(e) => setAceptaAviso(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#7A1E33]"
+          />
+          <span>
+            He leído y acepto el{" "}
+            <a href="/aviso-privacidad" target="_blank" className="font-semibold text-[#7A1E33] underline">
+              aviso de privacidad
+            </a>
+            .
+          </span>
+        </label>
+
         {error && <p className="px-1 text-[12px] font-medium text-[#B0503A]">{error}</p>}
 
         <button
           onClick={agendar}
-          disabled={!nombre.trim() || !telefono.trim() || !slotSeleccionado || enviando}
+          disabled={!nombre.trim() || !telefono.trim() || !slotSeleccionado || !aceptaAviso || enviando}
           className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50"
           style={{ background: "linear-gradient(135deg, #B2485F 0%, #803449 130%)" }}
         >
