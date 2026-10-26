@@ -6,6 +6,7 @@ export const config = {
     "/dashboard/:path*",
     "/tv",
     "/api/tv/:path*",
+    "/api/tratamientos/:path*",
     "/api/pacientes/:path*",
     "/api/citas/:path*",
     "/api/pagos/:path*",
