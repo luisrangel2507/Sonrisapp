@@ -736,39 +736,39 @@ export default function PacienteDetallePage() {
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
             href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
-            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#E3C3C9] bg-[#F5E7E9] px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#7A1E33] shadow-sm disabled:opacity-50"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><ClipboardList size={14} /></span> Historia clínica
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#803449]"><ClipboardList size={14} /></span> Historia clínica
           </Link>
           <button
             onClick={compartirLink}
             disabled={enviandoLink}
-            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#E8D8A0] bg-[#FCEFD2] px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#8A6412] shadow-sm disabled:opacity-50"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><Share2 size={14} /></span> {linkCopiado ? "Link copiado ✓" : "Enviar historial a llenar"}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#B08419]"><Share2 size={14} /></span> {linkCopiado ? "Link copiado ✓" : "Enviar historial a llenar"}
           </button>
           <a
             href={`/api/pacientes/${paciente.id}/reporte`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#BFD8B4] bg-[#E8F0E3] px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2F5226] shadow-sm disabled:opacity-50"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><FileDown size={14} /></span> Reporte PDF
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#3F6B33]"><FileDown size={14} /></span> Reporte PDF
           </a>
           <button
             onClick={compartirPortal}
             disabled={enviandoPortal}
-            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#DDC2E0] bg-[#EFE3F0] px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#5E3A6B] shadow-sm disabled:opacity-50"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><ExternalLink size={14} /></span> {portalCopiado ? "Link copiado ✓" : "Link del portal"}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#7A4D8A]"><ExternalLink size={14} /></span> {portalCopiado ? "Link copiado ✓" : "Link del portal"}
           </button>
           <button
             onClick={regenerarLink}
             disabled={regenerandoLink}
             title="Invalida el link de historial/portal actual y genera uno nuevo"
-            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#CBD3DE] bg-[#EEF1F5] px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#36445A] shadow-sm disabled:opacity-50"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><RefreshCw size={14} /></span> {regenerandoLink ? "Generando…" : "Regenerar link"}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#4A5A70]"><RefreshCw size={14} /></span> {regenerandoLink ? "Generando…" : "Regenerar link"}
           </button>
         </div>
 
