@@ -28,6 +28,7 @@ import type { AccesoBitacora, Consentimiento, Paciente, PacienteNota, Presupuest
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
+import { FotosClinicas } from "@/components/FotosClinicas";
 import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
@@ -816,6 +817,8 @@ export default function PacienteDetallePage() {
           <Save size={14} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar cambios"}
         </button>
       </div>
+
+      <FotosClinicas pacienteId={paciente.id} />
 
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">

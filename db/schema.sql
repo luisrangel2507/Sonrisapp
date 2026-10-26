@@ -756,3 +756,22 @@ CREATE TABLE IF NOT EXISTS limites_publicos (
 -- Cuándo aceptó el paciente el aviso de privacidad (LFPDPPP), desde el
 -- link para agendar o el formulario de historia clínica.
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS aviso_privacidad_aceptado_en TIMESTAMPTZ;
+
+-- Fotos clínicas del paciente (antes / durante / después). La imagen y su
+-- miniatura se guardan como data URL cifrada (NOM-024). No se borran: se
+-- marcan vigente=false con el motivo, igual que las notas clínicas.
+CREATE TABLE IF NOT EXISTS paciente_fotos (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  etapa VARCHAR(20) NOT NULL DEFAULT 'otra',
+  -- 'antes' | 'durante' | 'despues' | 'otra'
+  nota TEXT,
+  imagen TEXT NOT NULL,
+  miniatura TEXT NOT NULL,
+  tomada_en DATE NOT NULL DEFAULT CURRENT_DATE,
+  subida_por_nombre VARCHAR(160),
+  vigente BOOLEAN NOT NULL DEFAULT true,
+  motivo_anulacion TEXT,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS paciente_fotos_paciente_idx ON paciente_fotos (paciente_id);
