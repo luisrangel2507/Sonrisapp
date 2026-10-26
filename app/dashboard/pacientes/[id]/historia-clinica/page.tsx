@@ -199,7 +199,7 @@ export default function HistoriaClinicaPage() {
       <button
         onClick={guardar}
         disabled={guardando}
-        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
       >
         <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar historia clínica"}
       </button>

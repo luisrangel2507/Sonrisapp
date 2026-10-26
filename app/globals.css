@@ -28,3 +28,12 @@ textarea,
 select {
   font-size: 16px !important;
 }
+
+/* Botón principal de la app: vino con degradado y sombra suave. */
+@layer components {
+  .btn-vino {
+    background-image: linear-gradient(to bottom, #86243b, #5e1527);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(122, 30, 51, 0.25);
+  }
+}

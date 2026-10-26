@@ -224,7 +224,7 @@ export default function PortalPacientePage() {
               <button
                 onClick={enviarSolicitud}
                 disabled={!mensajeSolicitud.trim() || enviandoSolicitud}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 <Send size={14} /> {enviandoSolicitud ? "Enviando…" : "Enviar solicitud"}
               </button>

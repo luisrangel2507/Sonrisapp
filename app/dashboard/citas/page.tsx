@@ -918,7 +918,7 @@ function CitaTimelineItem({
               <button
                 onClick={onGuardarEdicion}
                 disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
-                className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2 text-[13px] font-semibold disabled:opacity-50"
+                className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold disabled:opacity-50"
               >
                 {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
               </button>
@@ -958,7 +958,7 @@ function CitaTimelineItem({
               <button
                 onClick={onGuardarPosponer}
                 disabled={!fechaPosponer || guardandoPosponer}
-                className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2 text-[13px] font-semibold disabled:opacity-50"
+                className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold disabled:opacity-50"
               >
                 {guardandoPosponer ? "Guardando…" : "Posponer cita"}
               </button>
@@ -1000,7 +1000,7 @@ function CitaTimelineItem({
               <button
                 onClick={onGuardarPago}
                 disabled={guardandoPago}
-                className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2 text-[13px] font-semibold disabled:opacity-50"
+                className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold disabled:opacity-50"
               >
                 {guardandoPago
                   ? "Guardando…"
@@ -1402,7 +1402,7 @@ export default function CitasPage() {
           <button
             onClick={crearCita}
             disabled={!puedeAgendar}
-            className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2.5 text-[13px] font-semibold disabled:opacity-50"
+            className="flex-1 rounded-full btn-vino py-2.5 text-[13px] font-semibold disabled:opacity-50"
           >
             {guardando ? "Guardando…" : "Agendar"}
           </button>
@@ -1503,7 +1503,7 @@ export default function CitasPage() {
       {!formAbierto ? (
         <button
           onClick={() => setFormAbierto(true)}
-          className="relative flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-3.5 text-[15px] font-semibold"
+          className="relative flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3.5 text-[15px] font-semibold"
         >
           <Plus size={16} /> Agendar cita <ChevronRight size={18} className="absolute right-5 opacity-80" />
         </button>

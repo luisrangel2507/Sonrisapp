@@ -258,7 +258,7 @@ export default function ConsentimientoPublicoPage() {
             <button
               onClick={firmar}
               disabled={!firma || !nombreFirma.trim() || enviando}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
             >
               <PenLine size={15} /> {enviando ? "Guardando…" : "Firmar y aceptar"}
             </button>

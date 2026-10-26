@@ -19,6 +19,9 @@ interface PresupuestoPublico {
   paciente_nombre: string;
   items: PresupuestoItem[];
   dientes: number[];
+  pago_inicial: number | null;
+  mensualidades: number | null;
+  monto_ajuste: number | null;
 }
 
 function formatearFechaHora(fecha: string) {
@@ -170,6 +173,37 @@ export default function PresupuestoPublicoPage() {
           </div>
         </div>
 
+        {((datos.pago_inicial ?? 0) > 0 || (datos.monto_ajuste ?? 0) > 0 || (datos.mensualidades ?? 0) > 0) && (
+          <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Plan de pagos</div>
+            <div className="space-y-2 text-sm">
+              {(datos.pago_inicial ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[#2b2118]">Cuota inicial</span>
+                  <b className="text-[#2b2118]">{formatearDinero(datos.pago_inicial as number)}</b>
+                </div>
+              )}
+              {(datos.monto_ajuste ?? 0) > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-[#2b2118]">
+                    Ajuste / mantenimiento{datos.mensualidades ? ` (${datos.mensualidades} visitas)` : ""}
+                  </span>
+                  <b className="text-[#2b2118]">{formatearDinero(datos.monto_ajuste as number)} c/u</b>
+                </div>
+              ) : (
+                (datos.mensualidades ?? 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-[#2b2118]">{datos.mensualidades} mensualidades</span>
+                    <b className="text-[#2b2118]">
+                      {formatearDinero(Math.max(0, total - (datos.pago_inicial ?? 0)) / (datos.mensualidades as number))} c/u
+                    </b>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        )}
+
         {datos.dientes.length > 0 && (
           <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
             <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
@@ -226,7 +260,7 @@ export default function PresupuestoPublicoPage() {
                   <button
                     onClick={() => responder("aprobado")}
                     disabled={!nombreRespuesta.trim() || !firma || enviando !== null}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
                   >
                     <Check size={15} /> {enviando === "aprobado" ? "Guardando…" : "Confirmar aprobación"}
                   </button>
@@ -247,7 +281,7 @@ export default function PresupuestoPublicoPage() {
                 <button
                   onClick={() => setFirmando(true)}
                   disabled={!nombreRespuesta.trim() || enviando !== null}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
                 >
                   <Check size={15} /> Aprobar
                 </button>

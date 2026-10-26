@@ -185,7 +185,7 @@ export default function TarjetaDentistaPage() {
         <div className="flex gap-2">
           <button
             onClick={guardarContacto}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[13px] font-semibold text-white"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full btn-vino py-3 text-[13px] font-semibold text-white"
           >
             <Download size={15} /> Guardar contacto
           </button>

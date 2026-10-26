@@ -22,10 +22,14 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       respondido_en: string | null;
       creado_en: string;
       dientes: number[];
+      pago_inicial: number | null;
+      mensualidades: number | null;
+      monto_ajuste: number | null;
       paciente_nombre: string;
       expira_en: string | null;
     }>(
       `SELECT pr.id, pr.paciente_id, pr.titulo, pr.notas, pr.estado, pr.nombre_respuesta, pr.respondido_en, pr.creado_en, pr.dientes,
+              pr.pago_inicial::float8 AS pago_inicial, pr.mensualidades, pr.monto_ajuste::float8 AS monto_ajuste,
               pr.expira_en, p.nombre AS paciente_nombre
        FROM presupuestos pr
        JOIN pacientes p ON p.id = pr.paciente_id

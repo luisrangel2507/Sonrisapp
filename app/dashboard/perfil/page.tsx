@@ -477,7 +477,7 @@ export default function PerfilPage() {
             <button
               onClick={guardarNombreBienvenida}
               disabled={guardandoNombre}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#2b2118] px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl btn-vino px-4 text-[13px] font-semibold text-white disabled:opacity-50"
             >
               <Save size={14} /> {guardandoNombre ? "…" : nombreGuardado ? "✓" : "Guardar"}
             </button>
@@ -536,7 +536,7 @@ export default function PerfilPage() {
             <button
               onClick={guardar}
               disabled={cargando || guardando}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
             >
               <Save size={15} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar precios"}
             </button>
@@ -583,7 +583,7 @@ export default function PerfilPage() {
               <button
                 onClick={activarNotificaciones}
                 disabled={notifCargando}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
               >
                 <Bell size={15} /> {notifCargando ? "Activando…" : "Activar notificaciones en este celular"}
               </button>
@@ -637,7 +637,7 @@ export default function PerfilPage() {
               <button
                 onClick={guardarTelefonoTarjeta}
                 disabled={guardandoTelefono}
-                className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#2b2118] px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex shrink-0 items-center gap-1.5 rounded-xl btn-vino px-4 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 <Save size={14} /> {guardandoTelefono ? "…" : telefonoGuardado ? "✓" : "Guardar"}
               </button>
@@ -733,7 +733,7 @@ export default function PerfilPage() {
                 <button
                   onClick={activarFaceId}
                   disabled={activandoFaceId}
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
                 >
                   <ScanFace size={15} /> {activandoFaceId ? "Activando…" : "Activar Face ID en este dispositivo"}
                 </button>
@@ -843,7 +843,7 @@ export default function PerfilPage() {
               <button
                 type="submit"
                 disabled={creandoUsuario}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
               >
                 <UserPlus size={15} /> {creandoUsuario ? "Creando…" : "Crear usuario"}
               </button>

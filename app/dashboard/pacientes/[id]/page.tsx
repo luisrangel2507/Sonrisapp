@@ -732,42 +732,42 @@ export default function PacienteDetallePage() {
           </h2>
           <div className="text-xs text-[#a49c8a]">{paciente.folio}</div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
             href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
-            className="flex items-center gap-1.5 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] px-3 py-1.5 text-[12px] font-medium text-[#803449]"
+            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
           >
-            <ClipboardList size={13} /> Historia clínica
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><ClipboardList size={14} /></span> Historia clínica
           </Link>
           <button
             onClick={compartirLink}
             disabled={enviandoLink}
-            className="flex items-center gap-1.5 rounded-full border border-[#E8D8A0] bg-[#FCEFD2] px-3 py-1.5 text-[12px] font-medium text-[#B08419] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
           >
-            <Share2 size={13} /> {linkCopiado ? "Link copiado ✓" : "Enviar link para llenar historial"}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><Share2 size={14} /></span> {linkCopiado ? "Link copiado ✓" : "Enviar historial a llenar"}
           </button>
           <a
             href={`/api/pacientes/${paciente.id}/reporte`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-full border border-[#BFD8B4] bg-[#E8F0E3] px-3 py-1.5 text-[12px] font-medium text-[#3F6B33]"
+            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
           >
-            <FileDown size={13} /> Descargar reporte
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><FileDown size={14} /></span> Reporte PDF
           </a>
           <button
             onClick={compartirPortal}
             disabled={enviandoPortal}
-            className="flex items-center gap-1.5 rounded-full border border-[#DDC2E0] bg-[#EFE3F0] px-3 py-1.5 text-[12px] font-medium text-[#7A4D8A] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
           >
-            <ExternalLink size={13} /> {portalCopiado ? "Link copiado ✓" : "Copiar link del portal"}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><ExternalLink size={14} /></span> {portalCopiado ? "Link copiado ✓" : "Link del portal"}
           </button>
           <button
             onClick={regenerarLink}
             disabled={regenerandoLink}
             title="Invalida el link de historial/portal actual y genera uno nuevo"
-            className="flex items-center gap-1.5 rounded-full border border-[#EFE9DC] bg-white px-3 py-1.5 text-[12px] font-medium text-[#8a8272] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-2xl border border-[#EFE9DC] bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#2b2118] shadow-sm disabled:opacity-50"
           >
-            <RefreshCw size={13} /> {regenerandoLink ? "Generando…" : "Regenerar link"}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[#7A1E33]"><RefreshCw size={14} /></span> {regenerandoLink ? "Generando…" : "Regenerar link"}
           </button>
         </div>
 
@@ -811,7 +811,7 @@ export default function PacienteDetallePage() {
         <button
           onClick={guardarCambios}
           disabled={guardando}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full btn-vino py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
         >
           <Save size={14} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar cambios"}
         </button>
@@ -982,7 +982,7 @@ export default function PacienteDetallePage() {
               <button
                 onClick={crearConsentimiento}
                 disabled={!tituloConsent.trim() || !contenidoConsent.trim() || creandoConsent}
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 {creandoConsent ? "Creando…" : "Crear y generar link"}
               </button>
@@ -1310,7 +1310,7 @@ export default function PacienteDetallePage() {
                   !itemsPresupuesto.some((it) => it.concepto.trim() && it.precio_unitario !== "") ||
                   creandoPresupuesto
                 }
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 {creandoPresupuesto ? "Creando…" : "Crear y generar link"}
               </button>
@@ -1460,7 +1460,7 @@ export default function PacienteDetallePage() {
           <button
             onClick={agregarNota}
             disabled={!archivoNota || guardandoNota || procesandoArchivo}
-            className="w-full rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+            className="w-full rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50"
           >
             {guardandoNota ? "Guardando…" : "Guardar"}
           </button>
@@ -1595,7 +1595,7 @@ export default function PacienteDetallePage() {
               <button
                 onClick={crearReceta}
                 disabled={!medicamentosReceta.trim() || creandoReceta}
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 {creandoReceta ? "Creando…" : "Crear receta"}
               </button>

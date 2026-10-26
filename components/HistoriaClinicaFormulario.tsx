@@ -314,7 +314,7 @@ export function Opciones<V extends string>({
           type="button"
           onClick={() => onChange(o.valor)}
           className={`rounded-full border px-4 py-1.5 text-[13px] font-semibold ${
-            valor === o.valor ? "border-[#2b2118] bg-[#2b2118] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+            valor === o.valor ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
           }`}
         >
           {o.label}
@@ -567,7 +567,7 @@ export function CamposHistoriaClinica({
                   }
                 }}
                 className={`rounded-full border px-4 py-1.5 text-[13px] font-semibold ${
-                  form.sexo === s ? "border-[#2b2118] bg-[#2b2118] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
+                  form.sexo === s ? "border-[#7A1E33] bg-[#7A1E33] text-white" : "border-[#EFE9DC] bg-white text-[#8a8272]"
                 }`}
               >
                 {s === "F" ? "Femenino" : "Masculino"}

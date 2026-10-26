@@ -450,7 +450,7 @@ export default function PanelPage() {
                       <button
                         onClick={() => confirmarPagoYCompletar(c)}
                         disabled={guardandoCompletar}
-                        className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                        className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50"
                       >
                         {guardandoCompletar ? "Guardando…" : "Confirmar pago y completar"}
                       </button>

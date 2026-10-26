@@ -140,7 +140,7 @@ export default function InventarioPage() {
         {!formAbierto && (
           <button
             onClick={() => setFormAbierto(true)}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white md:mt-0 md:w-auto md:shrink-0 md:px-8"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white md:mt-0 md:w-auto md:shrink-0 md:px-8"
           >
             <Plus size={15} /> Nuevo insumo
           </button>
@@ -190,7 +190,7 @@ export default function InventarioPage() {
             <button
               onClick={crearItem}
               disabled={!nombre.trim() || guardando}
-              className="flex-1 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-full btn-vino py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
             >
               {guardando ? "Guardando…" : "Agregar"}
             </button>
@@ -303,7 +303,7 @@ export default function InventarioPage() {
                       <button
                         onClick={guardarEdicion}
                         disabled={!editNombre.trim() || guardandoEdicion}
-                        className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                        className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50"
                       >
                         {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
                       </button>
