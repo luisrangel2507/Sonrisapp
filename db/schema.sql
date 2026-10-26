@@ -740,3 +740,6 @@ ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS hora VARCHAR(8);
 -- porcentaje de descuento.
 ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS etapa VARCHAR(120);
 ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS descuento NUMERIC(5,2) NOT NULL DEFAULT 0;
+
+-- Firma dibujada por el paciente al aprobar el presupuesto (PNG en data URL).
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS firma_paciente TEXT;

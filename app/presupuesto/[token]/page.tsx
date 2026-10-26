@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Check, CheckCircle2, X, XCircle } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 import { formatearDinero, importeConcepto } from "@/lib/dinero";
+import { FirmaCanvas } from "@/components/FirmaCanvas";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
 import type { PresupuestoItem } from "@/lib/types";
 
@@ -42,6 +43,8 @@ export default function PresupuestoPublicoPage() {
   const [enviando, setEnviando] = useState<"aprobado" | "rechazado" | null>(null);
   const [error, setError] = useState("");
   const [respondidoAhora, setRespondidoAhora] = useState(false);
+  const [firmando, setFirmando] = useState(false);
+  const [firma, setFirma] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -73,7 +76,7 @@ export default function PresupuestoPublicoPage() {
       const res = await fetch(`/api/presupuesto/${token}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado, nombre_respuesta: nombreRespuesta.trim() }),
+        body: JSON.stringify({ estado, nombre_respuesta: nombreRespuesta.trim(), firma: estado === "aprobado" ? firma : undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -213,22 +216,50 @@ export default function PresupuestoPublicoPage() {
 
             {error && <p className="text-center text-sm text-[#B0503A]">{error}</p>}
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => responder("aprobado")}
-                disabled={!nombreRespuesta.trim() || enviando !== null}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
-              >
-                <Check size={15} /> {enviando === "aprobado" ? "Guardando…" : "Aprobar"}
-              </button>
-              <button
-                onClick={() => responder("rechazado")}
-                disabled={!nombreRespuesta.trim() || enviando !== null}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#B0503A] disabled:opacity-50"
-              >
-                <X size={15} /> {enviando === "rechazado" ? "Guardando…" : "Rechazar"}
-              </button>
-            </div>
+            {firmando ? (
+              <div className="space-y-3">
+                <p className="text-[13px] text-[#8a8272]">
+                  Firma con el dedo para aprobar el presupuesto de <b className="text-[#2b2118]">{formatearDinero(total)}</b>.
+                </p>
+                <FirmaCanvas onCambio={setFirma} />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => responder("aprobado")}
+                    disabled={!nombreRespuesta.trim() || !firma || enviando !== null}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                  >
+                    <Check size={15} /> {enviando === "aprobado" ? "Guardando…" : "Confirmar aprobación"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFirmando(false);
+                      setFirma(null);
+                    }}
+                    disabled={enviando !== null}
+                    className="rounded-full border border-[#EFE9DC] bg-white px-5 py-3 text-[14px] font-semibold text-[#8a8272]"
+                  >
+                    Volver
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFirmando(true)}
+                  disabled={!nombreRespuesta.trim() || enviando !== null}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white disabled:opacity-50"
+                >
+                  <Check size={15} /> Aprobar
+                </button>
+                <button
+                  onClick={() => responder("rechazado")}
+                  disabled={!nombreRespuesta.trim() || enviando !== null}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#B0503A] disabled:opacity-50"
+                >
+                  <X size={15} /> {enviando === "rechazado" ? "Guardando…" : "Rechazar"}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -65,13 +65,22 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
   const params = await props.params;
   try {
     const body = await req.json().catch(() => ({}));
-    const { estado, nombre_respuesta } = body ?? {};
+    const { estado, nombre_respuesta, firma } = body ?? {};
 
     if (estado !== "aprobado" && estado !== "rechazado") {
       return NextResponse.json({ error: "estado inválido" }, { status: 400 });
     }
     if (!nombre_respuesta || typeof nombre_respuesta !== "string" || !nombre_respuesta.trim()) {
       return NextResponse.json({ error: "nombre_respuesta es requerido" }, { status: 400 });
+    }
+
+    // Para aprobar se pide la firma dibujada (PNG, máx. ~400 KB).
+    let firmaGuardar: string | null = null;
+    if (estado === "aprobado") {
+      if (typeof firma !== "string" || !firma.startsWith("data:image/png;base64,") || firma.length > 400_000) {
+        return NextResponse.json({ error: "firma requerida" }, { status: 400 });
+      }
+      firmaGuardar = firma;
     }
 
     const { rows: existentes } = await query<{ id: number; estado: string; expira_en: string | null }>(
@@ -90,10 +99,10 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
 
     const { rows } = await query(
       `UPDATE presupuestos
-       SET estado = $2, nombre_respuesta = $3, respondido_en = now()
+       SET estado = $2, nombre_respuesta = $3, respondido_en = now(), firma_paciente = $4
        WHERE token = $1
        RETURNING id, titulo, notas, estado, nombre_respuesta, respondido_en, creado_en`,
-      [params.token, estado, nombre_respuesta.trim()]
+      [params.token, estado, nombre_respuesta.trim(), firmaGuardar]
     );
 
     return NextResponse.json({ presupuesto: rows[0] });

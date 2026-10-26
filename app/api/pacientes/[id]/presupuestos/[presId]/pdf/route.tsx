@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer, Text, View, Image, Svg, Polygon, Circle, G, StyleSheet } from "@react-pdf/renderer";
 import path from "node:path";
+import fs from "node:fs";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf, PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
@@ -15,6 +16,9 @@ import type { PresupuestoItem } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const ODONTOGRAMA_IMAGEN = path.join(process.cwd(), "public", "odontograma-hud.jpg");
+// Firma de la doctora (PNG con fondo transparente); si el archivo existe se
+// imprime sobre su línea de firma.
+const FIRMA_DENTISTA = path.join(process.cwd(), "public", "firma-dentista.png");
 const ODONTOGRAMA_ASPECTO = 1300 / 799;
 
 const ETIQUETA_ESTADO: Record<string, string> = {
@@ -94,7 +98,7 @@ const e = StyleSheet.create({
     borderColor: PDF_COLOR.rose,
   },
   totalFila: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4, paddingHorizontal: 8 },
-  firma: { width: "42%", borderTopWidth: 1, borderTopColor: PDF_COLOR.ink, paddingTop: 4, textAlign: "center", fontSize: 8 },
+  firma: { width: "100%", borderTopWidth: 1, borderTopColor: PDF_COLOR.ink, paddingTop: 4, textAlign: "center", fontSize: 8 },
 });
 
 interface DientePres {
@@ -124,6 +128,7 @@ function PresupuestoPdf({
     pago_inicial: number | null;
     mensualidades: number | null;
     monto_ajuste: number | null;
+    firma_paciente: string | null;
   };
   items: PresupuestoItem[];
   pacienteNombre: string;
@@ -301,9 +306,19 @@ function PresupuestoPdf({
         <Text style={{ ...estilosPdf.parrafo, color: PDF_COLOR.muted, marginTop: 6, fontSize: 8 }}>
           Este presupuesto es informativo y está sujeto a cambios según la evolución clínica del tratamiento. Vigencia: 30 días.
         </Text>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 26 }}>
-          <Text style={e.firma}>{DOCTORA.nombre}</Text>
-          <Text style={e.firma}>Acepto el presupuesto: {pacienteNombre}</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
+          <View style={{ width: "42%", alignItems: "center" }}>
+            <View style={{ height: 50, justifyContent: "flex-end" }}>
+              {fs.existsSync(FIRMA_DENTISTA) && <Image src={FIRMA_DENTISTA} style={{ height: 46, objectFit: "contain" }} />}
+            </View>
+            <Text style={e.firma}>{DOCTORA.nombre}</Text>
+          </View>
+          <View style={{ width: "42%", alignItems: "center" }}>
+            <View style={{ height: 50, justifyContent: "flex-end" }}>
+              {presupuesto.firma_paciente && <Image src={presupuesto.firma_paciente} style={{ height: 46, objectFit: "contain" }} />}
+            </View>
+            <Text style={e.firma}>Acepto el presupuesto: {pacienteNombre}</Text>
+          </View>
         </View>
       </View>
     </PaginaPdf>
@@ -333,9 +348,10 @@ export async function GET(
       pago_inicial: number | null;
       mensualidades: number | null;
       monto_ajuste: number | null;
+      firma_paciente: string | null;
     }>(
       `SELECT titulo, notas, estado, nombre_respuesta, respondido_en, creado_en, dientes,
-              pago_inicial::float8 AS pago_inicial, mensualidades, monto_ajuste::float8 AS monto_ajuste
+              pago_inicial::float8 AS pago_inicial, mensualidades, monto_ajuste::float8 AS monto_ajuste, firma_paciente
        FROM presupuestos WHERE id = $1 AND paciente_id = $2`,
       [presupuestoId, pacienteId]
     );
