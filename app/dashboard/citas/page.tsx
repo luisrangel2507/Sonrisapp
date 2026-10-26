@@ -324,7 +324,7 @@ function SelectorVista({
             vista === v
               ? escritorio
                 ? "bg-[#7A1E33] text-white shadow-sm"
-                : "bg-[#2b2118] text-white"
+                : "bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_3px_8px_rgba(122,30,51,0.25)]"
               : "text-[#6f6458]"
           }`}
         >
@@ -405,7 +405,7 @@ function SelectorSemana({
               <span
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-semibold transition-colors ${
                   seleccionado
-                    ? "bg-[#2b2118] text-white"
+                    ? "bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_3px_8px_rgba(122,30,51,0.3)]"
                     : esHoy
                       ? "border border-[#803449] text-[#2b2118]"
                       : noLaboral
@@ -748,7 +748,7 @@ function CitaTimelineItem({
         }`}
       >
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFE9DC] text-[12px] font-semibold text-[#2b2118]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F6E3E6] text-[12px] font-semibold text-[#7A1E33]">
             {iniciales(cita.paciente_nombre)}
           </div>
           <div className="min-w-0 flex-1">
@@ -918,7 +918,7 @@ function CitaTimelineItem({
               <button
                 onClick={onGuardarEdicion}
                 disabled={!editTratamiento.trim() || !editFechaHora || guardandoEdicion}
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2 text-[13px] font-semibold disabled:opacity-50"
               >
                 {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
               </button>
@@ -958,7 +958,7 @@ function CitaTimelineItem({
               <button
                 onClick={onGuardarPosponer}
                 disabled={!fechaPosponer || guardandoPosponer}
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2 text-[13px] font-semibold disabled:opacity-50"
               >
                 {guardandoPosponer ? "Guardando…" : "Posponer cita"}
               </button>
@@ -1000,7 +1000,7 @@ function CitaTimelineItem({
               <button
                 onClick={onGuardarPago}
                 disabled={guardandoPago}
-                className="flex-1 rounded-full bg-[#2b2118] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2 text-[13px] font-semibold disabled:opacity-50"
               >
                 {guardandoPago
                   ? "Guardando…"
@@ -1402,7 +1402,7 @@ export default function CitasPage() {
           <button
             onClick={crearCita}
             disabled={!puedeAgendar}
-            className="flex-1 rounded-full bg-[#2b2118] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+            className="flex-1 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-2.5 text-[13px] font-semibold disabled:opacity-50"
           >
             {guardando ? "Guardando…" : "Agendar"}
           </button>
@@ -1503,9 +1503,9 @@ export default function CitasPage() {
       {!formAbierto ? (
         <button
           onClick={() => setFormAbierto(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2b2118] py-3 text-[14px] font-semibold text-white"
+          className="relative flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#86243B] to-[#5E1527] text-white shadow-[0_4px_12px_rgba(122,30,51,0.28)] py-3.5 text-[15px] font-semibold"
         >
-          <Plus size={15} /> Agendar cita
+          <Plus size={16} /> Agendar cita <ChevronRight size={18} className="absolute right-5 opacity-80" />
         </button>
       ) : (
         formularioNuevaCita()
@@ -1529,7 +1529,7 @@ export default function CitasPage() {
           )}
 
           {vista === "dia" && (
-            <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
               {citasDelDia.length === 0 ? (
                 <p className="text-sm text-[#8a8272]">Sin citas para este día.</p>
               ) : (
@@ -1541,7 +1541,7 @@ export default function CitasPage() {
           )}
 
           {vista === "semana" && (
-            <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+            <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
               {citasDeLaSemana.length === 0 ? (
                 <p className="text-sm text-[#8a8272]">Sin citas esta semana.</p>
               ) : (
@@ -1661,7 +1661,7 @@ export default function CitasPage() {
             {vista === "mes" && (
               <div className="grid grid-cols-[320px_1fr] gap-5">
                 <SelectorMes ancla={diaSeleccionado} citasPorDia={citasPorDia} onSeleccionarDia={seleccionarDia} />
-                <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+                <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
                   <div className="mb-3 text-[13px] font-bold capitalize text-[#2b2118]">
                     {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
                   </div>
@@ -1677,7 +1677,7 @@ export default function CitasPage() {
             )}
 
             {vista === "dia" && (
-              <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+              <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-[16px] font-bold text-[#2b2118] first-letter:uppercase">
                     {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
