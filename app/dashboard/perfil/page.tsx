@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace, IdCard, ExternalLink, Link2 } from "lucide-react";
+import { Save, LogOut, Camera, ChevronDown, UserCog, UserPlus, Trash2, Bell, BellOff, ScanFace, IdCard, ExternalLink, Link2, DatabaseBackup } from "lucide-react";
 import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario, Passkey } from "@/lib/types";
@@ -851,6 +851,22 @@ export default function PerfilPage() {
             )}
           </>
         )}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+          <DatabaseBackup size={13} /> Respaldo
+        </div>
+        <p className="mb-3 mt-2 text-[12px] text-[#a49c8a]">
+          Cada noche se guarda solo un respaldo cifrado (se conservan 30 días). Aquí puedes descargar una copia completa
+          en este momento — guárdala en un lugar seguro, contiene los datos de tus pacientes.
+        </p>
+        <a
+          href="/api/perfil/respaldo"
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-3 text-[14px] font-semibold text-[#7A1E33]"
+        >
+          <DatabaseBackup size={15} /> Descargar respaldo ahora
+        </a>
       </div>
 
       <button

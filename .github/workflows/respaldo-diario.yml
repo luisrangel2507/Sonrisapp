@@ -1,0 +1,23 @@
+name: Respaldo diario de la base de datos
+
+# Todos los días a las 3am hora de Querétaro (09:00 UTC) descarga un
+# respaldo cifrado con RESPALDO_KEY y lo guarda como artifact 30 días.
+# Para descifrarlo: node scripts/descifrar-respaldo.mjs archivo.snrb
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  respaldar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar respaldo
+        run: |
+          curl -sS -f -X POST "https://sonrisapp-production.up.railway.app/api/cron/respaldo" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" -o "respaldo-$(date -u +%Y-%m-%d).snrb"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-${{ github.run_id }}
+          path: respaldo-*.snrb
+          retention-days: 30
