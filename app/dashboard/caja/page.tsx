@@ -23,24 +23,70 @@ const METODOS = [
   { clave: "transferencia", label: "Transferencia", icon: ArrowLeftRight },
 ] as const;
 
+type Periodo = "dia" | "semana" | "mes" | "rango";
+
+const PERIODOS: { clave: Periodo; label: string }[] = [
+  { clave: "dia", label: "Día" },
+  { clave: "semana", label: "Semana" },
+  { clave: "mes", label: "Mes" },
+  { clave: "rango", label: "Fechas" },
+];
+
+// Desde–hasta del periodo que contiene `ref` (la semana va de lunes a domingo).
+function rangoDe(periodo: Periodo, ref: Date): [Date, Date] {
+  if (periodo === "semana") {
+    const lunes = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - ((ref.getDay() + 6) % 7));
+    return [lunes, new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 6)];
+  }
+  if (periodo === "mes") return [new Date(ref.getFullYear(), ref.getMonth(), 1), new Date(ref.getFullYear(), ref.getMonth() + 1, 0)];
+  return [ref, ref];
+}
+
+const corta = (d: Date) => d.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+
 export default function CajaPage() {
-  const [dia, setDia] = useState(() => new Date());
+  const [periodo, setPeriodo] = useState<Periodo>("dia");
+  const [ref, setRef] = useState(() => new Date());
+  const [desdeRango, setDesdeRango] = useState(() => claveLocal(new Date()));
+  const [hastaRango, setHastaRango] = useState(() => claveLocal(new Date()));
   const [datos, setDatos] = useState<DatosCaja | null>(null);
-  const clave = claveLocal(dia);
+
+  const [ini, fin] = rangoDe(periodo, ref);
+  const desde = periodo === "rango" ? desdeRango : claveLocal(ini);
+  const hasta = periodo === "rango" ? (hastaRango < desdeRango ? desdeRango : hastaRango) : claveLocal(fin);
+  const variosDias = desde !== hasta;
 
   useEffect(() => {
     let activo = true;
-    fetch(`/api/caja?fecha=${clave}`)
+    fetch(`/api/caja?desde=${desde}&hasta=${hasta}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => activo && setDatos(d))
       .catch(() => {});
     return () => {
       activo = false;
     };
-  }, [clave]);
+  }, [desde, hasta]);
 
-  const esHoy = clave === claveLocal(new Date());
-  const mover = (delta: number) => setDia((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta));
+  const hoy = claveLocal(new Date());
+  const enPresente = hasta >= hoy;
+  const mover = (delta: number) =>
+    setRef((d) =>
+      periodo === "mes"
+        ? new Date(d.getFullYear(), d.getMonth() + delta, 1)
+        : new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta * (periodo === "semana" ? 7 : 1))
+    );
+
+  const titulo =
+    periodo === "dia"
+      ? desde === hoy
+        ? "Hoy"
+        : ini.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })
+      : periodo === "semana"
+        ? `${corta(ini)} – ${corta(fin)}`
+        : periodo === "mes"
+          ? ini.toLocaleDateString("es-MX", { month: "long", year: "numeric" })
+          : "Rango de fechas";
+  const etiqueta = periodo === "dia" ? "Corte del día" : periodo === "semana" ? "Corte de la semana" : periodo === "mes" ? "Corte del mes" : "Corte por fechas";
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 md:px-0">
@@ -48,21 +94,68 @@ export default function CajaPage() {
         <Wallet size={22} className="text-[#7A1E33]" /> Caja
       </h1>
 
-      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <button onClick={() => mover(-1)} className="rounded-full p-1.5 text-[#8a8272]" aria-label="Día anterior">
-            <ChevronLeft size={20} />
+      <div className="flex rounded-full border border-[#EFE9DC] bg-white p-1">
+        {PERIODOS.map((p) => (
+          <button
+            key={p.clave}
+            onClick={() => {
+              setPeriodo(p.clave);
+              setRef(new Date());
+            }}
+            className={`flex-1 rounded-full py-1.5 text-[13px] font-semibold ${periodo === p.clave ? "btn-vino" : "text-[#6f6458]"}`}
+          >
+            {p.label}
           </button>
-          <div className="text-center">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Corte del día</div>
-            <div className="font-serif text-lg font-semibold text-[#2b2118]">
-              {esHoy ? "Hoy" : dia.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+        ))}
+      </div>
+
+      <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
+        {periodo === "rango" ? (
+          <div>
+            <div className="text-center text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">{etiqueta}</div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className="text-[11px] font-medium text-[#a49c8a]">
+                Desde
+                <input
+                  type="date"
+                  value={desdeRango}
+                  max={hoy}
+                  onChange={(e) => e.target.value && setDesdeRango(e.target.value)}
+                  className="mt-1 block w-full min-w-0 max-w-full appearance-none rounded-xl border border-[#EFE9DC] bg-white px-2 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+              </label>
+              <label className="text-[11px] font-medium text-[#a49c8a]">
+                Hasta
+                <input
+                  type="date"
+                  value={hastaRango}
+                  min={desdeRango}
+                  max={hoy}
+                  onChange={(e) => e.target.value && setHastaRango(e.target.value)}
+                  className="mt-1 block w-full min-w-0 max-w-full appearance-none rounded-xl border border-[#EFE9DC] bg-white px-2 py-2 text-sm text-[#2b2118] outline-none focus:border-[#803449]"
+                />
+              </label>
             </div>
           </div>
-          <button onClick={() => mover(1)} disabled={esHoy} className="rounded-full p-1.5 text-[#8a8272] disabled:opacity-30" aria-label="Día siguiente">
-            <ChevronRight size={20} />
-          </button>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <button onClick={() => mover(-1)} className="rounded-full p-1.5 text-[#8a8272]" aria-label="Anterior">
+              <ChevronLeft size={20} />
+            </button>
+            <div className="text-center">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">{etiqueta}</div>
+              <div className="font-serif text-lg font-semibold capitalize text-[#2b2118]">{titulo}</div>
+            </div>
+            <button
+              onClick={() => mover(1)}
+              disabled={enPresente}
+              className="rounded-full p-1.5 text-[#8a8272] disabled:opacity-30"
+              aria-label="Siguiente"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 text-center">
           <div className="text-[12px] text-[#a49c8a]">Total cobrado</div>
@@ -81,7 +174,7 @@ export default function CajaPage() {
 
         <div className="mt-4 space-y-1.5">
           {(datos?.pagos ?? []).length === 0 ? (
-            <p className="py-3 text-center text-sm text-[#a49c8a]">Sin pagos este día.</p>
+            <p className="py-3 text-center text-sm text-[#a49c8a]">Sin pagos en este periodo.</p>
           ) : (
             datos!.pagos.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-2 border-b border-[#EFE9DC] py-2 text-sm last:border-0">
@@ -90,6 +183,7 @@ export default function CajaPage() {
                     {p.paciente_nombre}
                   </Link>
                   <div className="text-[11px] text-[#a49c8a]">
+                    {variosDias ? `${corta(new Date(p.fecha))}, ` : ""}
                     {new Date(p.fecha).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" })} · {p.metodo}
                     {p.tratamiento ? ` · ${p.tratamiento}` : ""}
                   </div>

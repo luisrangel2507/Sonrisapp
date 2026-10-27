@@ -11,8 +11,12 @@ const ZONA = "America/Mexico_City";
 // pagado).
 export async function GET(req: NextRequest) {
   try {
-    const fechaParam = req.nextUrl.searchParams.get("fecha");
-    const fecha = fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) ? fechaParam : null;
+    // Rango de fechas (desde–hasta, inclusive). ?fecha= sigue sirviendo
+    // para un solo día; sin nada, es hoy.
+    const valida = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    const sp = req.nextUrl.searchParams;
+    const desde = valida(sp.get("desde")) ?? valida(sp.get("fecha"));
+    const hasta = valida(sp.get("hasta")) ?? desde;
 
     const { rows: pagos } = await query<{
       id: number;
@@ -28,9 +32,11 @@ export async function GET(req: NextRequest) {
        FROM pagos pg
        JOIN pacientes p ON p.id = pg.paciente_id
        LEFT JOIN citas c ON c.id = pg.cita_id
-       WHERE (pg.fecha AT TIME ZONE '${ZONA}')::date = COALESCE($1::date, (now() AT TIME ZONE '${ZONA}')::date)
+       WHERE (pg.fecha AT TIME ZONE '${ZONA}')::date
+             BETWEEN COALESCE($1::date, (now() AT TIME ZONE '${ZONA}')::date)
+                 AND COALESCE($2::date, (now() AT TIME ZONE '${ZONA}')::date)
        ORDER BY pg.fecha`,
-      [fecha]
+      [desde, hasta]
     );
 
     const { rows: saldos } = await query<{
