@@ -25,7 +25,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setNext(params.get("next") || "/dashboard");
+    // Solo rutas internas (empiezan con "/" pero no "//" ni "/\\"), para que
+    // ?next=https://sitio-malo no redirija fuera de la app tras entrar.
+    const destino = params.get("next") || "/dashboard";
+    setNext(/^\/(?![/\\])/.test(destino) ? destino : "/dashboard");
     setFaceIdDisponible(browserSupportsWebAuthn());
   }, []);
 

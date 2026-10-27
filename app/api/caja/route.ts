@@ -13,7 +13,12 @@ export async function GET(req: NextRequest) {
   try {
     // Rango de fechas (desde–hasta, inclusive). ?fecha= sigue sirviendo
     // para un solo día; sin nada, es hoy.
-    const valida = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    const valida = (v: string | null) => {
+      if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+      const d = new Date(`${v}T00:00:00Z`);
+      // Rechaza fechas con formato correcto pero imposibles (2026-13-45).
+      return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v ? v : null;
+    };
     const sp = req.nextUrl.searchParams;
     const desde = valida(sp.get("desde")) ?? valida(sp.get("fecha"));
     const hasta = valida(sp.get("hasta")) ?? desde;
