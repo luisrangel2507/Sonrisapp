@@ -20,10 +20,9 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   }
 }
 
-// Este token no expira solo (da acceso permanente a /formulario y
-// /portal del paciente), así que si se comparte por error o queda en
-// un dispositivo perdido, la única forma de invalidarlo es rotarlo: el
-// link viejo deja de servir en cuanto se genera uno nuevo.
+// El token da acceso a /formulario y /portal del paciente y caduca a los
+// 90 días; si se comparte por error o queda en un dispositivo perdido, se
+// invalida al momento rotándolo: el link viejo deja de servir.
 export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
@@ -33,7 +32,7 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ id: str
     }
 
     const token = generarHistorialToken();
-    const { rowCount } = await query(`UPDATE pacientes SET historial_token = $2 WHERE id = $1`, [id, token]);
+    const { rowCount } = await query(`UPDATE pacientes SET historial_token = $2, historial_token_expira_en = now() + interval '90 days' WHERE id = $1`, [id, token]);
     if (rowCount === 0) {
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: "el mensaje es demasiado largo" }, { status: 400 });
     }
 
-    const { rows } = await query<{ id: number }>(`SELECT id FROM pacientes WHERE historial_token = $1`, [
+    const { rows } = await query<{ id: number }>(`SELECT id FROM pacientes WHERE historial_token = $1 AND historial_token_expira_en > now()`, [
       params.token,
     ]);
     if (rows.length === 0) {

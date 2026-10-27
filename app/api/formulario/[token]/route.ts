@@ -46,7 +46,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       `SELECT id, nombre, fecha_nacimiento, telefono, email,
               alergias, alergias_cual, antecedentes_medicos, antecedentes_medicos_cual,
               puntos, meta_premio, premio_actual, historia_puntos_otorgados
-       FROM pacientes WHERE historial_token = $1`,
+       FROM pacientes WHERE historial_token = $1 AND historial_token_expira_en > now()`,
       [params.token]
     );
 
@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
   const params = await props.params;
   try {
     const { rows: pacienteRows } = await query<{ id: number }>(
-      `SELECT id FROM pacientes WHERE historial_token = $1`,
+      `SELECT id FROM pacientes WHERE historial_token = $1 AND historial_token_expira_en > now()`,
       [params.token]
     );
 

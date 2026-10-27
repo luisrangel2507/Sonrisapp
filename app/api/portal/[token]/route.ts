@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       visitas_totales: number;
     }>(
       `SELECT id, nombre, folio, puntos, meta_premio, premio_actual, fecha_nacimiento, creado_en, visitas_totales
-       FROM pacientes WHERE historial_token = $1`,
+       FROM pacientes WHERE historial_token = $1 AND historial_token_expira_en > now()`,
       [params.token]
     );
 

@@ -775,3 +775,8 @@ CREATE TABLE IF NOT EXISTS paciente_fotos (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS paciente_fotos_paciente_idx ON paciente_fotos (paciente_id);
+
+-- El link del paciente (historia clínica + portal) caduca 90 días después
+-- de la última vez que la clínica lo compartió o lo regeneró.
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historial_token_expira_en TIMESTAMPTZ DEFAULT (now() + interval '90 days');
+UPDATE pacientes SET historial_token_expira_en = now() + interval '90 days' WHERE historial_token_expira_en IS NULL;

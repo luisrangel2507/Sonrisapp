@@ -29,7 +29,7 @@ export async function GET(
       nombre: string;
       folio: string | null;
       fecha_nacimiento: string | null;
-    }>(`SELECT id, nombre, folio, fecha_nacimiento FROM pacientes WHERE historial_token = $1`, [params.token]);
+    }>(`SELECT id, nombre, folio, fecha_nacimiento FROM pacientes WHERE historial_token = $1 AND historial_token_expira_en > now()`, [params.token]);
     if (pacienteRows.length === 0) {
       return NextResponse.json({ error: "link inválido" }, { status: 404 });
     }

@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
-    const { rows } = await query<{ id: number }>(`SELECT id FROM pacientes WHERE historial_token = $1`, [
+    const { rows } = await query<{ id: number }>(`SELECT id FROM pacientes WHERE historial_token = $1 AND historial_token_expira_en > now()`, [
       params.token,
     ]);
     if (rows.length === 0) {

@@ -1,5 +1,24 @@
+const esDev = process.env.NODE_ENV !== "production";
+const CSP = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${esDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  `connect-src 'self'${esDev ? " ws: wss:" : ""}`,
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "frame-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  ...(esDev ? [] : ["upgrade-insecure-requests"]),
+].join("; ");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   // instrumentation.ts se compila también para el runtime edge; sin
   // esto, webpack intenta empaquetar "pg" (que usa fs/path/stream de
   // Node) para ese bundle y el build falla, aunque en tiempo de
@@ -25,6 +44,12 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Solo se cargan scripts, estilos, imágenes y conexiones de la
+          // propia app; nada de terceros. Next necesita 'unsafe-inline'
+          // para sus scripts de arranque (y 'unsafe-eval' solo en dev).
+          { key: "Content-Security-Policy", value: CSP },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=(), usb=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
     ];
