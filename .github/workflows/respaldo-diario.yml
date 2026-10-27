@@ -16,7 +16,7 @@ jobs:
         run: |
           curl -sS -f -X POST "https://sonrisapp-production.up.railway.app/api/cron/respaldo" \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" -o "respaldo-$(date -u +%Y-%m-%d).snrb"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: respaldo-${{ github.run_id }}
           path: respaldo-*.snrb
