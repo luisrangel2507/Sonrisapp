@@ -235,6 +235,12 @@ export default function LoginPage() {
               <LogIn size={15} /> {cargando ? "Entrando…" : "Entrar"}
             </button>
           </form>
+          <p className="mt-4 text-center text-[12px] text-[#a49c8a]">
+            ¿iPad o celular antiguo y no carga?{" "}
+            <a href="/ligera" className="font-semibold text-[#803449] underline">
+              Usa la versión ligera
+            </a>
+          </p>
         </div>
       </div>
     </div>

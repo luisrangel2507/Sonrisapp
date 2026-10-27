@@ -122,6 +122,12 @@ export default function ControlTv() {
         </div>
         {avisoTv && <p className="text-[12px] text-[#8a8272]">{avisoTv}</p>}
         {linkTv && <p className="break-all rounded-xl bg-[#FBF9F5] p-2 text-[11px] text-[#2b2118]">{linkTv}</p>}
+        {linkTv && (
+          <p className="break-all text-[11px] text-[#a49c8a]">
+            Para un iPad o TV viejo (iOS 12, por ejemplo) usa este otro:{" "}
+            <span className="text-[#2b2118]">{linkTv.replace("/tv?clave=", "/ligera/sala?clave=")}</span>
+          </p>
+        )}
         <p className="text-[11px] text-[#a49c8a]">
           La TV vinculada solo puede ver esta pantalla, no el resto del panel. No inicies sesión en la TV.
         </p>

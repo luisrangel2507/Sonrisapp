@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { COOKIE_SESION, COOKIE_TV, verificarSesionToken, verificarTokenTv } from "@/lib/auth";
-import { versionTv } from "@/lib/tv";
+import { estadoTv, versionTv } from "@/lib/tv";
 
 export const dynamic = "force-dynamic";
 
@@ -22,32 +22,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "no autenticado" }, { status: 401 });
       }
     }
-    const { rows } = await query<{ modo: string; nombre: string | null; hora: string | null; vigente: boolean }>(
-      `SELECT modo, nombre, hora, (actualizado_en > now() - interval '10 minutes') AS vigente FROM pantalla_tv WHERE id = 1`
-    );
-    const manual = rows[0];
-    if (manual && manual.modo !== "espera" && manual.vigente && manual.nombre) {
-      return NextResponse.json({ modo: manual.modo, nombres: [manual.nombre], hora: manual.hora, origen: "manual" });
-    }
-
-    const hoy = `(c.fecha_hora AT TIME ZONE 'America/Mexico_City')::date = (now() AT TIME ZONE 'America/Mexico_City')::date`;
-    const { rows: agendadas } = await query<{ nombre: string; hora: string }>(
-      `SELECT p.nombre, to_char(c.fecha_hora AT TIME ZONE 'America/Mexico_City', 'HH24:MI') AS hora FROM citas c JOIN pacientes p ON p.id = c.paciente_id
-       WHERE c.estado = 'agendada' AND c.pendiente_aprobacion IS NOT TRUE AND ${hoy}
-       ORDER BY c.fecha_hora LIMIT 1`
-    );
-    if (agendadas[0]) {
-      return NextResponse.json({ modo: "bienvenida", nombres: [agendadas[0].nombre], hora: agendadas[0].hora, origen: "agenda" });
-    }
-    const { rows: atendidas } = await query<{ nombre: string }>(
-      `SELECT p.nombre FROM citas c JOIN pacientes p ON p.id = c.paciente_id
-       WHERE c.estado = 'completada' AND ${hoy}
-       ORDER BY c.fecha_hora DESC LIMIT 1`
-    );
-    if (atendidas[0]) {
-      return NextResponse.json({ modo: "gracias", nombres: [atendidas[0].nombre], hora: null, origen: "agenda" });
-    }
-    return NextResponse.json({ modo: "espera", nombres: [], hora: null, origen: "agenda" });
+    return NextResponse.json(await estadoTv());
   } catch (err) {
     return errorJson(err);
   }
