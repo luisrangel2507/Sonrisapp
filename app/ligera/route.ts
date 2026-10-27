@@ -29,9 +29,10 @@ export async function GET(req: NextRequest) {
     "Menú",
     `<div class="tarjeta"><h1>Hola, ${esc(identidad.nombre.split(" ").slice(0, 2).join(" "))}</h1>
     <a class="btn ancho" href="/ligera/agenda">Agenda de hoy</a>
+    <a class="btn btn2 ancho" href="/ligera/pacientes">Pacientes: historia clínica y consentimientos</a>
     <a class="btn btn2 ancho" href="/ligera/sala">Pantalla de sala de espera</a>
     <form method="post" action="/ligera/salir"><button class="btn btn2 ancho" type="submit">Salir</button></form>
-    <p class="muted">Para todo lo demás (pacientes, odontograma, presupuestos) usa la app normal en un celular o iPad reciente.</p>
+    <p class="muted">Para todo lo demás (odontograma, presupuestos, reportes) usa la app normal en un celular o iPad reciente.</p>
     </div>`
   );
 }

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { identidadLigera, irA } from "@/lib/ligera";
+import { apiInterna, identidadLigera, irA } from "@/lib/ligera";
 
 // Acciones de la agenda ligera. Se reenvían a la misma API que usa la app
 // normal (con la cookie de quien la pidió), para que valgan exactamente
@@ -14,13 +14,7 @@ export async function POST(req: NextRequest) {
   const volver = (aviso: string) =>
     irA(req, `/ligera/agenda?${/^\d{4}-\d{2}-\d{2}$/.test(fecha) ? `fecha=${fecha}&` : ""}aviso=${encodeURIComponent(aviso)}`);
 
-  const base = `http://127.0.0.1:${process.env.PORT ?? 3000}`;
-  const api = (ruta: string, metodo: string, cuerpo: unknown) =>
-    fetch(base + ruta, {
-      method: metodo,
-      headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
-      body: JSON.stringify(cuerpo),
-    });
+  const api = (ruta: string, metodo: string, cuerpo: unknown) => apiInterna(req, ruta, metodo, cuerpo);
 
   try {
     if (accion === "completar") {

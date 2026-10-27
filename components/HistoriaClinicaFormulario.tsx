@@ -78,33 +78,8 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
   encia_periodonto: null,
 };
 
-// Parentescos del cuadro de antecedentes heredofamiliares, en el orden
-// del formulario en papel.
-export const PARENTESCOS_FAMILIA = [
-  "Madre",
-  "Padre",
-  "Hermanos",
-  "Hijos",
-  "Primos",
-  "Tíos",
-  "Abuelo materno",
-  "Abuela materna",
-  "Abuelo paterno",
-  "Abuela paterna",
-  // Registro anterior (antes eran "Abuelos" en conjunto): ya no se muestra,
-  // pero se conserva en lo guardado.
-  "Abuelos",
-] as const;
-
-export interface FamiliarDetalle {
-  parentesco: string;
-  vive: boolean | null;
-  enfermedades: string | null;
-  // "No aplica" (ej. hijo único): no se pregunta si vive ni enfermedades.
-  no_aplica?: boolean;
-  // Solo para Primos y Tíos: "Sí aplica" (hay algún caso que declarar).
-  si_aplica?: boolean;
-}
+export { PARENTESCOS_FAMILIA, type FamiliarDetalle } from "@/lib/historia-clinica-pasos";
+import { PARENTESCOS_FAMILIA, type FamiliarDetalle } from "@/lib/historia-clinica-pasos";
 
 // Parentescos que pueden marcarse como "No aplica".
 export const PARENTESCOS_NO_APLICA: readonly string[] = ["Hermanos", "Hijos"];

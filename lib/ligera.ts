@@ -37,6 +37,9 @@ h1{font-size:22px;margin:4px 0 10px;font-family:Georgia,serif}
 .verde{background:#3F6B33}
 .ancho{display:block;width:100%;text-align:center;margin:8px 0}
 input,select{font-size:17px;padding:11px;border:1px solid #EFE9DC;border-radius:12px;width:100%;margin:4px 0 10px;background:#fff;-webkit-appearance:none}
+input[type=radio]{-webkit-appearance:radio;appearance:auto}
+input[type=checkbox]{-webkit-appearance:checkbox;appearance:auto}
+input[type=radio],input[type=checkbox]{width:22px;height:22px;padding:0;border:0;margin:0 8px 0 0;vertical-align:middle;display:inline-block}
 label{font-size:13px;color:#a49c8a;font-weight:bold;text-transform:uppercase}
 .err{color:#B0503A;font-weight:bold}
 .ok{color:#3F6B33;font-weight:bold}
@@ -60,4 +63,15 @@ export function pagina(titulo: string, cuerpo: string, extraHead = "") {
 // Después de un POST se redirige con 303 para que recargar no repita la acción.
 export function irA(req: NextRequest, ruta: string) {
   return NextResponse.redirect(new URL(ruta, req.url), 303);
+}
+
+// Llama a la API de la propia app (misma lógica, permisos y bitácora que la
+// app normal) reenviando la cookie de quien hizo la petición.
+export function apiInterna(req: NextRequest, ruta: string, metodo = "GET", cuerpo?: unknown) {
+  return fetch(`http://127.0.0.1:${process.env.PORT ?? 3000}${ruta}`, {
+    method: metodo,
+    headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
+    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+    cache: "no-store",
+  });
 }
