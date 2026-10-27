@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_SESION, COOKIE_TV, verificarSesionToken, verificarTokenTv } from "@/lib/auth";
+import { COOKIE_SESION, COOKIE_TV, leerSesion, verificarTokenTv } from "@/lib/auth";
+import { sesionVigente } from "@/lib/sesion-vigente";
 
 export const config = {
   matcher: [
@@ -23,16 +24,36 @@ export const config = {
     "/api/auth/webauthn/registro/:path*",
     "/api/auth/webauthn/passkeys",
     "/api/auth/sesion",
+    "/api/auth/cerrar-sesiones",
+    "/api/auth/dos-pasos/:path*",
   ],
 };
 
+// Secciones que el rol Asistente no puede abrir.
+const SOLO_ADMIN = [
+  "/dashboard/reportes",
+  "/dashboard/caja",
+  "/api/reportes",
+  "/api/caja",
+  "/api/perfil/respaldo",
+  "/api/auth/cerrar-sesiones",
+];
+
 export async function proxy(req: NextRequest) {
-  const token = req.cookies.get(COOKIE_SESION)?.value;
-  const autenticado = await verificarSesionToken(token);
-  if (autenticado) return NextResponse.next();
+  const { pathname } = req.nextUrl;
+  const sesion = await leerSesion(req.cookies.get(COOKIE_SESION)?.value);
+  if (sesion && (await sesionVigente(sesion.identidad, sesion.iat))) {
+    // El rol Asistente no ve dinero del consultorio ni la administración.
+    if (sesion.identidad.rol === "asistente" && SOLO_ADMIN.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "solo un administrador puede ver esto" }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    return NextResponse.next();
+  }
 
   // La TV vinculada solo puede ver su pantalla y leer lo que muestra.
-  const { pathname } = req.nextUrl;
   // /tv?clave=… es el link para vincular una TV nueva: la página canjea la
   // clave (POST /api/tv/activar) y no muestra nada antes de eso.
   if (pathname === "/tv" && req.nextUrl.searchParams.has("clave")) return NextResponse.next();

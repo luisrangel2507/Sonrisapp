@@ -481,8 +481,8 @@ export default function PanelPage() {
           icon={TrendingUp}
           iconBg="bg-[#E8F0E3] text-[#3F6B33]"
           label="Ingresos del mes"
-          value={resumen ? formatearDinero(resumen.ingresos_mes) : "…"}
-          sub={resumen ? <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado} /> : undefined}
+          value={resumen ? (resumen.ingresos_mes == null ? "—" : formatearDinero(resumen.ingresos_mes)) : "…"}
+          sub={resumen && resumen.ingresos_mes != null ? <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado ?? 0} /> : undefined}
         />
         <StatCard
           icon={Award}
@@ -602,10 +602,10 @@ export default function PanelPage() {
             icon={TrendingUp}
             iconBg="bg-[#E8F0E3] text-[#3F6B33]"
             label="Ingresos del mes"
-            value={resumen ? formatearDinero(resumen.ingresos_mes) : "…"}
+            value={resumen ? (resumen.ingresos_mes == null ? "—" : formatearDinero(resumen.ingresos_mes)) : "…"}
             sub={
-              resumen ? (
-                <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado} />
+              resumen && resumen.ingresos_mes != null ? (
+                <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado ?? 0} />
               ) : undefined
             }
           />

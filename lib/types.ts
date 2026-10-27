@@ -173,8 +173,8 @@ export interface ResumenDashboard {
   citas_semana: number;
   citas_semana_confirmadas: number;
   citas_semana_pasada: number;
-  ingresos_mes: number;
-  ingresos_mes_pasado: number;
+  ingresos_mes: number | null;
+  ingresos_mes_pasado: number | null;
   por_cobrar: number;
   pacientes_activos: number;
   top_servicios_mes: { tratamiento: string; total: number }[];

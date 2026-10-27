@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { identidadDesdeRequest } from "@/lib/auth";
+import { olvidarCacheSesiones } from "@/lib/sesion-vigente";
 
 // Solo un admin puede quitar usuarios.
 export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -22,6 +23,8 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
       return NextResponse.json({ error: "usuario no encontrado" }, { status: 404 });
     }
 
+    // Su sesión deja de valer en cuanto el proxy vuelva a revisarla.
+    olvidarCacheSesiones();
     return NextResponse.json({ ok: true });
   } catch (err) {
     return errorJson(err);

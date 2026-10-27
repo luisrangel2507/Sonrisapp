@@ -31,6 +31,8 @@ const NAV_INFERIOR_IZQ = [
   { href: "/dashboard/pacientes", label: "Pacientes", icon: Users },
 ];
 const NAV_INFERIOR_DER = [{ href: "/dashboard/citas", label: "Agenda", icon: Calendar }];
+const SOLO_ADMIN_NAV = ["/dashboard/reportes", "/dashboard/caja"];
+
 const NAV_MAS = [
   { href: "/dashboard/inventario", label: "Inventario", icon: Package },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
@@ -48,6 +50,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [busqueda, setBusqueda] = useState("");
   const [masAbierto, setMasAbierto] = useState(false);
   const [accionesAbierto, setAccionesAbierto] = useState(false);
+
+  // El rol Asistente no ve Reportes ni Caja (el servidor también lo bloquea).
+  const [esAsistente, setEsAsistente] = useState(false);
+  useEffect(() => {
+    fetch("/api/auth/sesion")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setEsAsistente(d?.rol === "asistente"))
+      .catch(() => {});
+  }, []);
+  const visible = (t: { href: string }) => !esAsistente || !SOLO_ADMIN_NAV.includes(t.href);
 
   useEffect(() => {
     fetch("/api/perfil")
@@ -118,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="mt-8 flex flex-1 flex-col gap-1">
-          {TABS.map((t) => (
+          {TABS.filter(visible).map((t) => (
             <Link
               key={t.href}
               href={t.href}
@@ -226,7 +238,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {masAbierto && (
           <div className="mx-auto max-w-md px-5 pb-3">
             <div className="rounded-2xl border border-[#EFE9DC] bg-white p-2 shadow-lg">
-              {NAV_MAS.map((t) => (
+              {NAV_MAS.filter(visible).map((t) => (
                 <Link
                   key={t.href}
                   href={t.href}

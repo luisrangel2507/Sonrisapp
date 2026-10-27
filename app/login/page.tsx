@@ -13,6 +13,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [pideCodigo, setPideCodigo] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -43,10 +45,11 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario, contrasena }),
+        body: JSON.stringify({ usuario, contrasena, codigo: pideCodigo ? codigo : undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (data.requiereCodigo) setPideCodigo(true);
         setError(data.error || "No se pudo iniciar sesión.");
         setCargando(false);
         return;
@@ -203,11 +206,29 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {pideCodigo && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
+                  Código de verificación
+                </label>
+                <input
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  className="w-full rounded-xl border border-[#EFE9DC] bg-[#FBF9F4] px-3.5 py-2.5 text-center text-lg tracking-[0.4em] text-[#2b2118] outline-none focus:border-[#803449]"
+                  placeholder="000000"
+                />
+                <p className="mt-1 text-[11px] text-[#a49c8a]">Los 6 dígitos que muestra tu app de autenticación.</p>
+              </div>
+            )}
+
             {error && <p className="text-[12px] font-medium text-[#B0503A]">{error}</p>}
 
             <button
               type="submit"
-              disabled={cargando || !usuario || !contrasena}
+              disabled={cargando || !usuario || !contrasena || (pideCodigo && codigo.length !== 6)}
               className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #B2485F 0%, #803449 130%)" }}
             >

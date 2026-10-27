@@ -1,0 +1,13 @@
+# Avisa (con un PR) cuando una dependencia tiene una actualización de
+# seguridad o una versión nueva.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly

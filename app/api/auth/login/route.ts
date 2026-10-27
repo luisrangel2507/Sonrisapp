@@ -5,11 +5,14 @@ import {
   compararSeguro,
   crearSesionToken,
   verificarContrasena,
+  necesitaRehash,
+  hashContrasena,
   type IdentidadSesion,
 } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { DOCTORA } from "@/lib/panel-data";
 import { limitarPublico, ipDe } from "@/lib/limite-publico";
+import { leerTotp, verificarCodigoTotp } from "@/lib/totp";
 import { minutosDeBloqueo, registrarIntentoExitoso, registrarIntentoFallido } from "@/lib/login-intentos";
 
 export async function POST(req: NextRequest) {
@@ -62,12 +65,29 @@ export async function POST(req: NextRequest) {
     );
     if (rows.length > 0 && (await verificarContrasena(contrasena, rows[0].contrasena_hash))) {
       identidad = { usuarioId: rows[0].id, nombre: rows[0].nombre, rol: rows[0].rol };
+      if (necesitaRehash(rows[0].contrasena_hash)) {
+        await query(`UPDATE usuarios SET contrasena_hash = $2 WHERE id = $1`, [rows[0].id, await hashContrasena(contrasena)]);
+      }
     }
   }
 
   if (!identidad) {
     await registrarIntentoFallido(claveBloqueo);
     return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
+  }
+
+  // Verificación en dos pasos: si la cuenta la tiene activa, la contraseña
+  // sola no basta — se pide el código de 6 dígitos.
+  const { secreto } = await leerTotp(identidad.usuarioId);
+  if (secreto) {
+    const codigo = typeof body?.codigo === "string" ? body.codigo : "";
+    if (!codigo) {
+      return NextResponse.json({ requiereCodigo: true, error: "Escribe el código de tu app de autenticación" }, { status: 401 });
+    }
+    if (!verificarCodigoTotp(secreto, codigo)) {
+      await registrarIntentoFallido(claveBloqueo);
+      return NextResponse.json({ requiereCodigo: true, error: "Código incorrecto" }, { status: 401 });
+    }
   }
 
   await registrarIntentoExitoso(claveBloqueo);

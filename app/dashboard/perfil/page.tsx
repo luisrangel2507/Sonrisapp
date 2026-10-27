@@ -7,6 +7,7 @@ import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/brow
 import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario, Passkey } from "@/lib/types";
 import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
+import { SeguridadCuenta } from "@/components/SeguridadCuenta";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -853,6 +854,9 @@ export default function PerfilPage() {
         )}
       </div>
 
+      <SeguridadCuenta esAdmin={miRol === "admin"} />
+
+      {miRol === "admin" && (
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
           <DatabaseBackup size={13} /> Respaldo
@@ -868,6 +872,7 @@ export default function PerfilPage() {
           <DatabaseBackup size={15} /> Descargar respaldo ahora
         </a>
       </div>
+      )}
 
       <button
         onClick={cerrarSesion}

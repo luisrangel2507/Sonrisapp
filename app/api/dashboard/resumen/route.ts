@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { identidadDesdeRequest } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // "Hoy"/"esta semana"/"este mes" se calculan en horario de México, no
     // en el del servidor (Railway/Neon corren en UTC) — si no, una cita
@@ -76,7 +77,13 @@ export async function GET() {
       GROUP BY tratamiento ORDER BY total DESC, tratamiento LIMIT 3
     `);
 
-    return NextResponse.json({ resumen: { ...rows[0], top_servicios_mes: top } });
+    const resumen: Record<string, unknown> = { ...rows[0], top_servicios_mes: top };
+    // El rol Asistente no ve los ingresos del consultorio.
+    if ((await identidadDesdeRequest(req)).rol === "asistente") {
+      resumen.ingresos_mes = null;
+      resumen.ingresos_mes_pasado = null;
+    }
+    return NextResponse.json({ resumen });
   } catch (err) {
     return errorJson(err);
   }

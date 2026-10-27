@@ -784,3 +784,20 @@ UPDATE pacientes SET historial_token_expira_en = now() + interval '90 days' WHER
 -- Versión de las TVs vinculadas: subirla invalida todas las claves de TV.
 ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS tv_version INTEGER NOT NULL DEFAULT 1;
 INSERT INTO pantalla_tv (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+-- Revocación de sesiones: toda sesión emitida antes de estas fechas deja
+-- de valer ("Cerrar todas las sesiones", o al borrar/cambiar un usuario).
+CREATE TABLE IF NOT EXISTS seguridad (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  sesiones_validas_desde TIMESTAMPTZ NOT NULL DEFAULT 'epoch'
+);
+INSERT INTO seguridad (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sesiones_validas_desde TIMESTAMPTZ NOT NULL DEFAULT 'epoch';
+
+-- Verificación en dos pasos (código de 6 dígitos, TOTP). El secreto se
+-- guarda cifrado. La cuenta admin de variables de entorno no tiene fila en
+-- `usuarios`, así que el suyo vive en `seguridad`.
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS totp_secreto TEXT;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS totp_pendiente TEXT;
+ALTER TABLE seguridad ADD COLUMN IF NOT EXISTS admin_totp_secreto TEXT;
+ALTER TABLE seguridad ADD COLUMN IF NOT EXISTS admin_totp_pendiente TEXT;

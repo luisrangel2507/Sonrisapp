@@ -48,8 +48,9 @@ export interface IdentidadSesion {
 }
 
 export async function crearSesionToken(identidad: IdentidadSesion) {
-  const exp = Date.now() + SESION_MAX_AGE_SEGUNDOS * 1000;
-  const payloadBytes = new TextEncoder().encode(JSON.stringify({ exp, identidad }));
+  const iat = Date.now();
+  const exp = iat + SESION_MAX_AGE_SEGUNDOS * 1000;
+  const payloadBytes = new TextEncoder().encode(JSON.stringify({ exp, iat, identidad }));
   const clave = await getClaveSecreta();
   const firma = await crypto.subtle.sign("HMAC", clave, payloadBytes);
   return `${aBase64Url(payloadBytes.buffer as ArrayBuffer)}.${aBase64Url(firma)}`;
@@ -57,7 +58,7 @@ export async function crearSesionToken(identidad: IdentidadSesion) {
 
 async function decodificarSesionToken(
   token: string | undefined | null
-): Promise<{ exp: number; identidad: IdentidadSesion } | null> {
+): Promise<{ exp: number; iat?: number; identidad: IdentidadSesion } | null> {
   if (!token) return null;
   const [payloadB64, firmaB64] = token.split(".");
   if (!payloadB64 || !firmaB64) return null;
@@ -76,6 +77,12 @@ async function decodificarSesionToken(
   } catch {
     return null;
   }
+}
+
+// Contenido de la sesión (cuándo se emitió y de quién es) para que el
+// proxy revise que siga vigente (ver lib/sesion-vigente.ts).
+export async function leerSesion(token: string | undefined | null) {
+  return decodificarSesionToken(token);
 }
 
 export async function verificarSesionToken(token: string | undefined | null) {
@@ -110,9 +117,13 @@ export function compararSeguro(a: string, b: string) {
 
 // Hash de contraseñas de la tabla `usuarios` — PBKDF2 vía Web Crypto
 // (sin dependencias externas, igual que el resto de este archivo).
-const PBKDF2_ITERACIONES = 100_000;
+// Formato actual "v2$salt.hash" (600 000 iteraciones, lo recomendado por
+// OWASP); los hashes viejos "salt.hash" son de 100 000 y se actualizan
+// solos la próxima vez que esa persona entra (ver necesitaRehash).
+const PBKDF2_ITERACIONES = 600_000;
+const PBKDF2_ITERACIONES_V1 = 100_000;
 
-async function derivarPBKDF2(contrasena: string, salt: Uint8Array) {
+async function derivarPBKDF2(contrasena: string, salt: Uint8Array, iteraciones = PBKDF2_ITERACIONES) {
   const claveBase = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(contrasena),
@@ -121,7 +132,7 @@ async function derivarPBKDF2(contrasena: string, salt: Uint8Array) {
     ["deriveBits"]
   );
   return crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt: salt as BufferSource, iterations: PBKDF2_ITERACIONES, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: iteraciones, hash: "SHA-256" },
     claveBase,
     256
   );
@@ -130,14 +141,19 @@ async function derivarPBKDF2(contrasena: string, salt: Uint8Array) {
 export async function hashContrasena(contrasena: string) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const bits = await derivarPBKDF2(contrasena, salt);
-  return `${aBase64Url(salt.buffer as ArrayBuffer)}.${aBase64Url(bits)}`;
+  return `v2$${aBase64Url(salt.buffer as ArrayBuffer)}.${aBase64Url(bits)}`;
+}
+
+export function necesitaRehash(hashGuardado: string) {
+  return !hashGuardado.startsWith("v2$");
 }
 
 export async function verificarContrasena(contrasena: string, hashGuardado: string) {
-  const [saltB64, hashB64] = hashGuardado.split(".");
+  const v2 = hashGuardado.startsWith("v2$");
+  const [saltB64, hashB64] = (v2 ? hashGuardado.slice(3) : hashGuardado).split(".");
   if (!saltB64 || !hashB64) return false;
   const salt = deBase64Url(saltB64);
-  const bits = await derivarPBKDF2(contrasena, salt);
+  const bits = await derivarPBKDF2(contrasena, salt, v2 ? PBKDF2_ITERACIONES : PBKDF2_ITERACIONES_V1);
   return compararSeguro(aBase64Url(bits), hashB64);
 }
 
