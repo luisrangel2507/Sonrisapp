@@ -763,7 +763,7 @@ function CitaTimelineItem({
                 </span>
               ) : cita.estado === "completada" && !confirmada ? (
                 <span className="shrink-0 whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
-                  Confirmación pendiente
+                  Pago pendiente
                 </span>
               ) : (
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${ESTADO_ESTILO[cita.estado]}`}>

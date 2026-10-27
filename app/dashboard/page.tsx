@@ -406,7 +406,7 @@ export default function PanelPage() {
                         </span>
                       ) : (
                         <span className="whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
-                          Confirmación pendiente
+                          Pago pendiente
                         </span>
                       )
                     ) : (
@@ -666,7 +666,7 @@ export default function PanelPage() {
                         </span>
                       ) : (
                         <span className="whitespace-nowrap rounded-full bg-[#F7ECD9] px-2.5 py-1 text-[11px] font-semibold text-[#B0834A]">
-                          Confirmación pendiente
+                          Pago pendiente
                         </span>
                       )
                     ) : c.pendiente_aprobacion ? (
