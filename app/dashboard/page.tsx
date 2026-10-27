@@ -12,7 +12,6 @@ import {
   MoreVertical,
   Plus,
   TrendingUp,
-  TrendingDown,
   UserPlus,
   Users,
   Award,
@@ -65,24 +64,6 @@ function iniciales(nombreCompleto: string) {
 
 // Delta % vs. el periodo anterior — null si no hay con qué comparar
 // (periodo anterior en cero), para no inventar un porcentaje sin sentido.
-function deltaPorcentaje(actual: number, anterior: number): number | null {
-  if (!anterior) return null;
-  return Math.round(((actual - anterior) / anterior) * 100);
-}
-
-function Tendencia({ actual, anterior }: { actual: number; anterior: number }) {
-  const delta = deltaPorcentaje(actual, anterior);
-  if (delta === null) return null;
-  const subio = delta >= 0;
-  return (
-    <span className={`inline-flex items-center gap-0.5 ${subio ? "text-[#3F6B33]" : "text-[#B0503A]"}`}>
-      {subio ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-      {subio ? "+" : ""}
-      {delta}%
-    </span>
-  );
-}
-
 const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
 
 function MiniCalendario({ citasHoy, compacto = false }: { citasHoy: Cita[] | null; compacto?: boolean }) {
@@ -481,7 +462,6 @@ export default function PanelPage() {
           iconBg="bg-[#E8F0E3] text-[#3F6B33]"
           label="Ingresos del mes"
           value={resumen ? (resumen.ingresos_mes == null ? "—" : formatearDinero(resumen.ingresos_mes)) : "…"}
-          sub={resumen && resumen.ingresos_mes != null ? <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado ?? 0} /> : undefined}
         />
         <StatCard
           icon={Award}
@@ -597,11 +577,6 @@ export default function PanelPage() {
             iconBg="bg-[#E8F0E3] text-[#3F6B33]"
             label="Ingresos del mes"
             value={resumen ? (resumen.ingresos_mes == null ? "—" : formatearDinero(resumen.ingresos_mes)) : "…"}
-            sub={
-              resumen && resumen.ingresos_mes != null ? (
-                <Tendencia actual={resumen.ingresos_mes} anterior={resumen.ingresos_mes_pasado ?? 0} />
-              ) : undefined
-            }
           />
           <StatCard
             compact
