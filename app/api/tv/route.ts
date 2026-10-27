@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { COOKIE_SESION, COOKIE_TV, verificarSesionToken, verificarTokenTv } from "@/lib/auth";
+import { versionTv } from "@/lib/tv";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +12,16 @@ const MODOS = ["espera", "bienvenida", "gracias"];
 // minutos); si no hay nada, se arma solo con la agenda de hoy — bienvenida
 // al paciente que sigue con cita agendada y, si ya no queda ninguno,
 // agradecimiento al último que se atendió.
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Sin sesión del panel, la TV debe traer una clave vigente (no
+    // desvinculada).
+    if (!(await verificarSesionToken(req.cookies.get(COOKIE_SESION)?.value))) {
+      const tv = await verificarTokenTv(req.cookies.get(COOKIE_TV)?.value);
+      if (!tv || tv.v !== (await versionTv())) {
+        return NextResponse.json({ error: "no autenticado" }, { status: 401 });
+      }
+    }
     const { rows } = await query<{ modo: string; nombre: string | null; hora: string | null; vigente: boolean }>(
       `SELECT modo, nombre, hora, (actualizado_en > now() - interval '10 minutes') AS vigente FROM pantalla_tv WHERE id = 1`
     );

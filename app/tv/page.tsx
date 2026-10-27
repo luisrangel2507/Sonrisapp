@@ -20,7 +20,20 @@ export default function PaginaTv() {
 
   useEffect(() => {
     let activo = true;
+    // Link de vinculación (/tv?clave=…): se canjea una vez por la cookie
+    // de TV y se quita la clave de la barra de direcciones.
+    const clave = new URLSearchParams(window.location.search).get("clave");
+    const listo = clave
+      ? fetch("/api/tv/activar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clave }),
+        })
+          .catch(() => null)
+          .finally(() => window.history.replaceState(null, "", "/tv"))
+      : Promise.resolve();
     async function leer() {
+      await listo;
       try {
         const res = await fetch("/api/tv", { cache: "no-store" });
         if (!activo) return;
@@ -119,13 +132,9 @@ export default function PaginaTv() {
         </div>
 
         {sinSesion && (
-          <a
-            href="/login?next=/tv"
-            className="absolute inset-x-0 text-center text-[2.5cqw] text-[#7A1E33] underline"
-            style={{ top: "80%" }}
-          >
-            Inicia sesión para activar la pantalla
-          </a>
+          <p className="absolute inset-x-0 text-center text-[2.2cqw] text-[#7A1E33]" style={{ top: "80%" }}>
+            Pantalla sin vincular — ábrela con el link de Panel → Pantalla TV → Vincular TV
+          </p>
         )}
       </div>
       <style>{`@keyframes fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>

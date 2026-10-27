@@ -70,7 +70,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
 }
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ token: string }> }) {
-  const limitado = await limitarPublico(req, "formulario", 30, 60);
+  const limitado = await limitarPublico(req, "formulario", 30, 60, 300_000);
   if (limitado) return limitado;
   const params = await props.params;
   try {

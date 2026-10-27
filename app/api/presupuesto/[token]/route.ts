@@ -67,7 +67,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
 }
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ token: string }> }) {
-  const limitado = await limitarPublico(req, "presupuesto", 10, 60);
+  const limitado = await limitarPublico(req, "presupuesto", 10, 60, 600_000);
   if (limitado) return limitado;
   const params = await props.params;
   try {

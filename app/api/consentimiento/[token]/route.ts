@@ -62,13 +62,16 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
 }
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ token: string }> }) {
-  const limitado = await limitarPublico(req, "consentimiento", 10, 60);
+  const limitado = await limitarPublico(req, "consentimiento", 10, 60, 800_000);
   if (limitado) return limitado;
   const params = await props.params;
   try {
     const body = await req.json().catch(() => ({}));
     const { nombre_firma, firma } = body ?? {};
 
+    if (typeof firma !== "string" || !firma.startsWith("data:image/") || firma.length > 700_000) {
+      return NextResponse.json({ error: "firma inválida" }, { status: 400 });
+    }
     if (!nombre_firma || typeof nombre_firma !== "string") {
       return NextResponse.json({ error: "nombre_firma es requerido" }, { status: 400 });
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { correrCrmDiario } from "@/lib/cron/crm-diario";
 import { enviarResumenDiario } from "@/lib/cron/recordatorios";
 import { autorizadoParaCron } from "@/lib/cron-auth";
+import { query } from "@/lib/db";
 
 // Disparado por el scheduler de Railway (o un cron externo) una vez al
 // día, idealmente a las 8am hora de México — felicitaciones de
@@ -13,5 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [cumpleanos, resumenHoy] = await Promise.all([correrCrmDiario(), enviarResumenDiario()]);
+  // Limpieza: contadores de límite de intentos de días anteriores.
+  await query(`DELETE FROM limites_publicos WHERE ventana_inicio < now() - interval '1 day'`);
   return NextResponse.json({ ok: true, cumpleanos, resumenHoy });
 }

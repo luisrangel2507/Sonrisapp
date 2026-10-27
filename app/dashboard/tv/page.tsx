@@ -17,6 +17,29 @@ export default function ControlTv() {
   const [enviando, setEnviando] = useState(false);
   const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
   const [otroAbierto, setOtroAbierto] = useState(false);
+  const [linkTv, setLinkTv] = useState<string | null>(null);
+  const [avisoTv, setAvisoTv] = useState("");
+
+  async function vincularTv() {
+    const res = await fetch("/api/tv/vincular", { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) return setAvisoTv(d.error ?? "No se pudo generar el link.");
+    const url = `${window.location.origin}/tv?clave=${d.clave}`;
+    setLinkTv(url);
+    try {
+      await navigator.clipboard.writeText(url);
+      setAvisoTv("Link copiado. Ábrelo una vez en el navegador de la TV.");
+    } catch {
+      setAvisoTv("Abre este link una vez en el navegador de la TV.");
+    }
+  }
+
+  async function desvincularTvs() {
+    if (!window.confirm("¿Desvincular todas las TVs? Tendrás que volver a abrir el link en cada una.")) return;
+    const res = await fetch("/api/tv/desvincular", { method: "POST" });
+    setLinkTv(null);
+    setAvisoTv(res.ok ? "Listo: todas las TVs quedaron desvinculadas." : "No se pudo desvincular.");
+  }
 
   useEffect(() => {
     fetch("/api/pacientes")
@@ -80,10 +103,29 @@ export default function ControlTv() {
         </Link>
       </div>
       <p className="text-sm text-[#8a8272]">
-        Abre <b>/tv</b> en el navegador de la TV (una sola vez, con la sesión iniciada). La TV saluda sola al paciente
+        Toca <b>Vincular TV</b> y abre ese link una vez en el navegador de la TV. La TV saluda sola al paciente
         que sigue con cita agendada hoy y, cuando ya no queda ninguno, agradece al último que se atendió. Los botones
         sirven para forzarlo a mano por 10 minutos. Solo se muestra el nombre de pila.
       </p>
+
+      <div className="space-y-2 rounded-2xl border border-[#EFE9DC] bg-white/70 p-3 text-sm">
+        <div className="flex gap-2">
+          <button onClick={vincularTv} className="btn-vino flex-1 rounded-full py-2 text-[13px] font-semibold">
+            Vincular TV
+          </button>
+          <button
+            onClick={desvincularTvs}
+            className="flex-1 rounded-full border border-[#EFE9DC] bg-white py-2 text-[13px] font-semibold text-[#B0503A]"
+          >
+            Desvincular TVs
+          </button>
+        </div>
+        {avisoTv && <p className="text-[12px] text-[#8a8272]">{avisoTv}</p>}
+        {linkTv && <p className="break-all rounded-xl bg-[#FBF9F5] p-2 text-[11px] text-[#2b2118]">{linkTv}</p>}
+        <p className="text-[11px] text-[#a49c8a]">
+          La TV vinculada solo puede ver esta pantalla, no el resto del panel. No inicies sesión en la TV.
+        </p>
+      </div>
 
       <div className="rounded-2xl border border-[#EFE9DC] bg-white/70 p-3 text-sm">
         En pantalla ahora:{" "}

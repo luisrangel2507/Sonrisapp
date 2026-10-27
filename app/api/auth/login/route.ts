@@ -9,9 +9,12 @@ import {
 } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { DOCTORA } from "@/lib/panel-data";
+import { limitarPublico, ipDe } from "@/lib/limite-publico";
 import { minutosDeBloqueo, registrarIntentoExitoso, registrarIntentoFallido } from "@/lib/login-intentos";
 
 export async function POST(req: NextRequest) {
+  const limitado = await limitarPublico(req, "login", 30, 15, 10_000);
+  if (limitado) return limitado;
   const body = await req.json().catch(() => null);
   const usuario = body?.usuario;
   const contrasena = body?.contrasena;
@@ -23,11 +26,15 @@ export async function POST(req: NextRequest) {
   // El usuario no es sensible a mayúsculas/espacios (evita fallos por
   // autocapitalización del teclado en celular); la contraseña sí.
   const usuarioNorm = usuario.trim().toLowerCase();
+  // El bloqueo por intentos fallidos es por usuario + IP: así alguien de
+  // fuera no puede dejar bloqueada a la doctora equivocándose a propósito
+  // con su usuario (la doctora entra desde otra IP sin problema).
+  const claveBloqueo = `${usuarioNorm}|${ipDe(req)}`.slice(0, 160);
 
   // Bloqueo por fuerza bruta: si ya se agotaron los intentos, ni
   // siquiera se verifica la contraseña (evita gastar cómputo y, sobre
   // todo, evita que reintentar alargue el bloqueo).
-  const bloqueoRestante = await minutosDeBloqueo(usuarioNorm);
+  const bloqueoRestante = await minutosDeBloqueo(claveBloqueo);
   if (bloqueoRestante != null) {
     return NextResponse.json(
       { error: `Demasiados intentos fallidos. Espera ${bloqueoRestante} minuto${bloqueoRestante === 1 ? "" : "s"} e inténtalo de nuevo.` },
@@ -59,11 +66,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (!identidad) {
-    await registrarIntentoFallido(usuarioNorm);
+    await registrarIntentoFallido(claveBloqueo);
     return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
   }
 
-  await registrarIntentoExitoso(usuarioNorm);
+  await registrarIntentoExitoso(claveBloqueo);
 
   const token = await crearSesionToken(identidad);
   const res = NextResponse.json({ ok: true });

@@ -69,6 +69,9 @@ async function decodificarSesionToken(
     if (!valido) return null;
     const payload = JSON.parse(new TextDecoder().decode(payloadBytes));
     if (!Number.isFinite(payload?.exp) || payload.exp <= Date.now()) return null;
+    // Un token de TV (ver crearTokenTv) no tiene identidad: nunca vale
+    // como sesión del panel.
+    if (!payload?.identidad) return null;
     return payload;
   } catch {
     return null;
@@ -136,4 +139,35 @@ export async function verificarContrasena(contrasena: string, hashGuardado: stri
   const salt = deBase64Url(saltB64);
   const bits = await derivarPBKDF2(contrasena, salt);
   return compararSeguro(aBase64Url(bits), hashB64);
+}
+
+// Token de la pantalla de TV: solo deja ver /tv y leer /api/tv (nombre de
+// pila y hora de la cita). Así la TV de la sala no queda con una sesión
+// completa del panel. `v` permite desvincular todas las TVs de golpe.
+export const COOKIE_TV = "sonrisapp_tv";
+export const TV_MAX_AGE_SEGUNDOS = 365 * 24 * 60 * 60;
+
+export async function crearTokenTv(v: number) {
+  const exp = Date.now() + TV_MAX_AGE_SEGUNDOS * 1000;
+  const payloadBytes = new TextEncoder().encode(JSON.stringify({ exp, tipo: "tv", v }));
+  const clave = await getClaveSecreta();
+  const firma = await crypto.subtle.sign("HMAC", clave, payloadBytes);
+  return `${aBase64Url(payloadBytes.buffer as ArrayBuffer)}.${aBase64Url(firma)}`;
+}
+
+export async function verificarTokenTv(token: string | undefined | null): Promise<{ v: number } | null> {
+  if (!token) return null;
+  const [payloadB64, firmaB64] = token.split(".");
+  if (!payloadB64 || !firmaB64) return null;
+  try {
+    const clave = await getClaveSecreta();
+    const payloadBytes = deBase64Url(payloadB64);
+    const valido = await crypto.subtle.verify("HMAC", clave, deBase64Url(firmaB64), payloadBytes);
+    if (!valido) return null;
+    const payload = JSON.parse(new TextDecoder().decode(payloadBytes));
+    if (payload?.tipo !== "tv" || !Number.isFinite(payload?.exp) || payload.exp <= Date.now()) return null;
+    return { v: Number(payload.v) || 0 };
+  } catch {
+    return null;
+  }
 }

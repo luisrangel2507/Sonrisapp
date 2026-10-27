@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 // como "pendiente de aprobación" — la doctora la revisa y confirma
 // desde el dashboard antes de que sea una cita oficial.
 export async function POST(req: NextRequest) {
-  const limitado = await limitarPublico(req, "agendar", 5, 60);
+  const limitado = await limitarPublico(req, "agendar", 5, 60, 20_000);
   if (limitado) return limitado;
   try {
     const body = await req.json();

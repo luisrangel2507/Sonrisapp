@@ -780,3 +780,7 @@ CREATE INDEX IF NOT EXISTS paciente_fotos_paciente_idx ON paciente_fotos (pacien
 -- de la última vez que la clínica lo compartió o lo regeneró.
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS historial_token_expira_en TIMESTAMPTZ DEFAULT (now() + interval '90 days');
 UPDATE pacientes SET historial_token_expira_en = now() + interval '90 days' WHERE historial_token_expira_en IS NULL;
+
+-- Versión de las TVs vinculadas: subirla invalida todas las claves de TV.
+ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS tv_version INTEGER NOT NULL DEFAULT 1;
+INSERT INTO pantalla_tv (id) VALUES (1) ON CONFLICT (id) DO NOTHING;

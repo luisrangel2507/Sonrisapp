@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { compararSeguro } from "@/lib/auth";
 
 // Compara recortando espacios en ambos lados — un espacio o salto de
 // línea de más al pegar el secreto en Railway o en GitHub (muy fácil
@@ -6,5 +7,5 @@ import type { NextRequest } from "next/server";
 export function autorizadoParaCron(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret")?.trim();
   const esperado = process.env.CRON_SECRET?.trim();
-  return Boolean(esperado) && secret === esperado;
+  return Boolean(esperado) && Boolean(secret) && compararSeguro(secret as string, esperado as string);
 }

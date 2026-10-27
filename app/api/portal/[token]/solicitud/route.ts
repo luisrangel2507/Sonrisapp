@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 const MENSAJE_MAX = 2000;
 
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
-  const limitado = await limitarPublico(req, "portal-solicitud", 10, 60);
+  const limitado = await limitarPublico(req, "portal-solicitud", 10, 60, 50_000);
   if (limitado) return limitado;
   const params = await props.params;
   try {
