@@ -475,7 +475,6 @@ export default function PanelPage() {
           iconBg="bg-[#F7E5E0] text-[#B0503A]"
           label="Citas esta semana"
           value={resumen ? resumen.citas_semana : "…"}
-          sub={resumen ? <Tendencia actual={resumen.citas_semana} anterior={resumen.citas_semana_pasada} /> : undefined}
         />
         <StatCard
           icon={TrendingUp}
@@ -591,11 +590,6 @@ export default function PanelPage() {
             iconBg="bg-[#F7E5E0] text-[#B0503A]"
             label="Citas esta semana"
             value={resumen ? resumen.citas_semana : "…"}
-            sub={
-              resumen ? (
-                <Tendencia actual={resumen.citas_semana} anterior={resumen.citas_semana_pasada} />
-              ) : undefined
-            }
           />
           <StatCard
             compact
