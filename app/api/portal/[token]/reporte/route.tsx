@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { obtenerMarca } from "@/lib/marca";
 import { limitarPublico } from "@/lib/limite-publico";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { query } from "@/lib/db";
@@ -33,9 +34,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
     void registrarAcceso(rows[0].id, "portal", null);
 
+    const marca = await obtenerMarca();
+
     const documento = (
       <DocumentoPdf>
-        <ReporteClinicoPdf datos={datos} />
+        <ReporteClinicoPdf datos={datos} marca={marca} />
       </DocumentoPdf>
     );
 

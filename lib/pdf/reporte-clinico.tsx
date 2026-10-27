@@ -2,6 +2,7 @@ import { Text, View, Image, Svg, Polygon, Circle, G } from "@react-pdf/renderer"
 import path from "node:path";
 import { query } from "@/lib/db";
 import { PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
+import { MARCA_DEFAULT, type Marca } from "@/lib/marca";
 import { formatearDinero } from "@/lib/dinero";
 import { ARCO_SUPERIOR, ARCO_INFERIOR, ESTADO_DIENTE, POLIGONOS_DIENTE, construirMapaEstados, type EstadoDiente } from "@/lib/dental";
 import { HISTORIA_CLINICA_COLUMNAS, HISTORIA_CLINICA_CAMPOS_CIFRABLES } from "@/lib/historia-clinica-campos";
@@ -204,13 +205,13 @@ export type DatosReporte = NonNullable<Awaited<ReturnType<typeof obtenerDatosRep
 // propios saltos internos si no cabe), pensada para usarse sola
 // (GET /api/pacientes/[id]/reporte) o como páginas siguientes de otro
 // documento (p. ej. el PDF de un presupuesto).
-export function ReporteClinicoPdf({ datos }: { datos: DatosReporte }) {
+export function ReporteClinicoPdf({ datos, marca = MARCA_DEFAULT }: { datos: DatosReporte; marca?: Marca }) {
   const { paciente, historia, dientes, mapaEstados, dienteHistorialDescifrado, notasDescifradas, citas, totalPagadoHistorico } =
     datos;
 
   return (
-    <PaginaPdf>
-      <EncabezadoPdf titulo="Reporte clínico" />
+    <PaginaPdf marca={marca}>
+      <EncabezadoPdf titulo="Reporte clínico" marca={marca} />
 
       <View style={estilosPdf.seccion}>
         <Text style={estilosPdf.seccionTitulo}>Datos del paciente</Text>

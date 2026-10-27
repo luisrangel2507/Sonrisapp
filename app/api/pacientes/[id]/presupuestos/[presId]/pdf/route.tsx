@@ -9,7 +9,7 @@ import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { obtenerDatosReporte, formatearFecha } from "@/lib/pdf/reporte-clinico";
 import { NUMEROS_FDI, POLIGONOS_DIENTE, construirMapaEstados } from "@/lib/dental";
 import { estadosPersonalizados } from "@/lib/estados-diente";
-import { DOCTORA } from "@/lib/panel-data";
+import { obtenerMarca } from "@/lib/marca";
 import { descifrar } from "@/lib/crypto";
 import type { PresupuestoItem } from "@/lib/types";
 
@@ -116,6 +116,7 @@ function PresupuestoPdf({
   fechaCita,
   dientesInfo,
   presId,
+  marca,
 }: {
   presupuesto: {
     titulo: string;
@@ -135,6 +136,7 @@ function PresupuestoPdf({
   fechaCita: string | null;
   dientesInfo: DientePres[];
   presId: number;
+  marca: Awaited<ReturnType<typeof obtenerMarca>>;
 }) {
   const total = items.reduce((suma, it) => suma + importeConcepto(it), 0);
   const subtotal = items.reduce((suma, it) => suma + it.cantidad * it.precio_unitario, 0);
@@ -156,8 +158,8 @@ function PresupuestoPdf({
   const mensualidad = !porAjuste && (presupuesto.mensualidades ?? 0) > 0 ? Math.max(0, total - inicial) / (presupuesto.mensualidades as number) : 0;
 
   return (
-    <PaginaPdf>
-      <EncabezadoPdf titulo="Presupuesto / Cotización" />
+    <PaginaPdf marca={marca}>
+      <EncabezadoPdf titulo="Presupuesto / Cotización" marca={marca} />
 
       <View style={e.banda}>
         <Text style={e.bandaTexto}>PLAN DE TRATAMIENTO</Text>
@@ -311,7 +313,7 @@ function PresupuestoPdf({
             <View style={{ height: 50, justifyContent: "flex-end" }}>
               {fs.existsSync(FIRMA_DENTISTA) && <Image src={FIRMA_DENTISTA} style={{ height: 46, objectFit: "contain" }} />}
             </View>
-            <Text style={e.firma}>{DOCTORA.nombre}</Text>
+            <Text style={e.firma}>{marca.doctorNombre}</Text>
           </View>
           <View style={{ width: "42%", alignItems: "center" }}>
             <View style={{ height: 50, justifyContent: "flex-end" }}>
@@ -399,6 +401,7 @@ export async function GET(
           fechaCita={citaRows[0]?.fecha_hora ?? null}
           dientesInfo={dientesInfo}
           presId={presupuestoId}
+          marca={await obtenerMarca()}
         />
       </DocumentoPdf>
     );

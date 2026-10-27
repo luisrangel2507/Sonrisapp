@@ -8,6 +8,7 @@ import { TRATAMIENTOS, DOCTORA } from "@/lib/panel-data";
 import type { Usuario, Passkey } from "@/lib/types";
 import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
 import { SeguridadCuenta } from "@/components/SeguridadCuenta";
+import { MarcaClinica } from "@/components/MarcaClinica";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -853,6 +854,8 @@ export default function PerfilPage() {
           </>
         )}
       </div>
+
+      {miRol === "admin" && <MarcaClinica />}
 
       <SeguridadCuenta esAdmin={miRol === "admin"} />
 

@@ -46,10 +46,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [foto, setFoto] = useState<string | null>(null);
+  const [logo, setLogo] = useState<string>("/logo-vina-sonrisas.webp");
+  const [clinica, setClinica] = useState<string>("Viña Sonrisas");
   const [nombre, setNombre] = useState<string>(NOMBRE_CORTO_DOCTORA);
   const [busqueda, setBusqueda] = useState("");
   const [masAbierto, setMasAbierto] = useState(false);
   const [accionesAbierto, setAccionesAbierto] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/marca")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => {
+        if (m?.logo) setLogo(m.logo);
+        if (m?.clinicaNombre) setClinica(m.clinicaNombre);
+      })
+      .catch(() => {});
+  }, []);
 
   // El rol Asistente no ve Reportes ni Caja (el servidor también lo bloquea).
   const [esAsistente, setEsAsistente] = useState(false);
@@ -123,8 +135,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-vina-sonrisas.webp"
-            alt="Viña Sonrisas"
+            src={logo}
+            alt={clinica}
             className="h-auto w-44 brightness-0 invert"
           />
         </div>
@@ -198,7 +210,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mx-auto max-w-md md:hidden">
           <div className="flex items-center justify-between px-5 pb-4 pt-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-vina-sonrisas.webp" alt="Viña Sonrisas" className="h-auto w-48" />
+            <img src={logo} alt={clinica} className="h-auto max-h-16 w-auto max-w-[12rem] object-contain" />
             <Link
               href="/dashboard/perfil"
               aria-label="Perfil"

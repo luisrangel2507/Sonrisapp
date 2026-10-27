@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { obtenerMarca } from "@/lib/marca";
 import { renderToBuffer, Text, View } from "@react-pdf/renderer";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -70,10 +71,12 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const total = pagos.reduce((s, p) => s + p.monto, 0);
 
+    const marca = await obtenerMarca();
+
     const documento = (
       <DocumentoPdf>
-        <PaginaPdf>
-          <EncabezadoPdf titulo="Recibo de pago" />
+        <PaginaPdf marca={marca}>
+          <EncabezadoPdf titulo="Recibo de pago" marca={marca} />
 
           <View style={estilosPdf.seccion}>
             <View style={estilosPdf.filaDatos}>

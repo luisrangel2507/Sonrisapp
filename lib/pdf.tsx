@@ -1,5 +1,5 @@
-import { Document, Page, View, Text, StyleSheet, Font } from "@react-pdf/renderer";
-import { DOCTORA, CLINICA } from "@/lib/panel-data";
+import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
+import { MARCA_DEFAULT, type Marca } from "@/lib/marca";
 
 // Evita que @react-pdf/renderer intente aplicar hyphenation raro a
 // palabras en español (parte "Endo-doncia" a la mitad, etc.).
@@ -146,16 +146,19 @@ function formatearFechaGeneracion() {
   });
 }
 
-export function EncabezadoPdf({ titulo }: { titulo: string }) {
+export function EncabezadoPdf({ titulo, marca = MARCA_DEFAULT }: { titulo: string; marca?: Marca }) {
   return (
     <View style={estilosPdf.encabezado} fixed>
-      <View>
-        <Text style={estilosPdf.clinicaNombre}>Viña Sonrisas</Text>
-        <Text style={estilosPdf.clinicaSub}>Odontología Estética</Text>
-        <Text style={estilosPdf.clinicaSub}>
-          {DOCTORA.nombre} · Céd. Prof. {DOCTORA.cedula}
-        </Text>
-        <Text style={estilosPdf.clinicaSub}>{CLINICA.direccion}</Text>
+      <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+        {marca.logo ? <Image src={marca.logo} style={{ height: 34, maxWidth: 120, objectFit: "contain", marginRight: 8 }} /> : null}
+        <View>
+          <Text style={estilosPdf.clinicaNombre}>{marca.clinicaNombre}</Text>
+          <Text style={estilosPdf.clinicaSub}>{marca.clinicaLema}</Text>
+          <Text style={estilosPdf.clinicaSub}>
+            {marca.doctorNombre} · Céd. Prof. {marca.cedula}
+          </Text>
+          <Text style={estilosPdf.clinicaSub}>{marca.direccion}</Text>
+        </View>
       </View>
       <View>
         <Text style={estilosPdf.docTitulo}>{titulo}</Text>
@@ -165,12 +168,12 @@ export function EncabezadoPdf({ titulo }: { titulo: string }) {
   );
 }
 
-export function PiePaginaPdf() {
+export function PiePaginaPdf({ marca = MARCA_DEFAULT }: { marca?: Marca }) {
   return (
     <Text
       style={estilosPdf.piePagina}
       fixed
-      render={({ pageNumber, totalPages }) => `Viña Sonrisas · página ${pageNumber} de ${totalPages}`}
+      render={({ pageNumber, totalPages }) => `${marca.clinicaNombre} · página ${pageNumber} de ${totalPages}`}
     />
   );
 }
@@ -179,11 +182,11 @@ export function DocumentoPdf({ children }: { children: React.ReactNode }) {
   return <Document>{children}</Document>;
 }
 
-export function PaginaPdf({ children }: { children: React.ReactNode }) {
+export function PaginaPdf({ children, marca = MARCA_DEFAULT }: { children: React.ReactNode; marca?: Marca }) {
   return (
     <Page size="LETTER" style={estilosPdf.pagina}>
       {children}
-      <PiePaginaPdf />
+      <PiePaginaPdf marca={marca} />
     </Page>
   );
 }

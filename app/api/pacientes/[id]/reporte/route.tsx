@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { obtenerMarca } from "@/lib/marca";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { errorJson } from "@/lib/api-error";
 import { DocumentoPdf } from "@/lib/pdf";
@@ -19,9 +20,11 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
     }
 
+    const marca = await obtenerMarca();
+
     const documento = (
       <DocumentoPdf>
-        <ReporteClinicoPdf datos={datos} />
+        <ReporteClinicoPdf datos={datos} marca={marca} />
       </DocumentoPdf>
     );
 

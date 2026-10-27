@@ -9,16 +9,27 @@ export const dynamic = "force-dynamic";
 const FOTO_MAX_BYTES = 2_000_000;
 const NOMBRE_BIENVENIDA_MAX = 60;
 const TELEFONO_MAX = 30;
+const LOGO_MAX_BYTES = 2_000_000;
+// Campos de texto de la marca: columna -> largo máximo.
+const CAMPOS_MARCA: Record<string, number> = {
+  clinica_nombre: 80, clinica_lema: 120, color_marca: 9, doctor_nombre: 120,
+  doctor_titulo: 80, cedula: 30, direccion: 200, horario: 120,
+};
 
 export async function GET() {
   try {
-    const { rows } = await query<{ foto: string | null; nombre_bienvenida: string | null; telefono: string | null }>(
-      `SELECT foto, nombre_bienvenida, telefono FROM perfil_dentista WHERE id = 1`
+    const { rows } = await query<Record<string, string | null>>(
+      `SELECT foto, nombre_bienvenida, telefono, logo, clinica_nombre, clinica_lema, color_marca,
+              doctor_nombre, doctor_titulo, cedula, direccion, horario
+       FROM perfil_dentista WHERE id = 1`
     );
+    const marca: Record<string, string | null> = { logo: rows[0]?.logo ?? null };
+    for (const c of Object.keys(CAMPOS_MARCA)) marca[c] = rows[0]?.[c] ?? null;
     return NextResponse.json({
       foto: rows[0]?.foto ?? null,
       nombre_bienvenida: rows[0]?.nombre_bienvenida ?? null,
       telefono: rows[0]?.telefono ?? null,
+      ...marca,
     });
   } catch (err) {
     return errorJson(err);
@@ -58,19 +69,41 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const { rows } = await query<{ foto: string | null; nombre_bienvenida: string | null; telefono: string | null }>(
-      `INSERT INTO perfil_dentista (id, foto, nombre_bienvenida, telefono, actualizado_en)
-       VALUES (1, $1, $2, $3, now())
-       ON CONFLICT (id) DO UPDATE SET
-         foto = CASE WHEN $4 THEN $1 ELSE perfil_dentista.foto END,
-         nombre_bienvenida = CASE WHEN $5 THEN $2 ELSE perfil_dentista.nombre_bienvenida END,
-         telefono = CASE WHEN $6 THEN $3 ELSE perfil_dentista.telefono END,
-         actualizado_en = now()
-       RETURNING foto, nombre_bienvenida, telefono`,
-      [foto, nombreBienvenida, telefono, fotoProvista, nombreProvisto, telefonoProvisto]
+    // Logo (imagen) y campos de texto de la marca.
+    const logoProvisto = Object.prototype.hasOwnProperty.call(body, "logo");
+    const logo = body?.logo ?? null;
+    if (logoProvisto && logo !== null) {
+      if (typeof logo !== "string" || !logo.startsWith("data:image/") || logo.length > LOGO_MAX_BYTES) {
+        return NextResponse.json({ error: "logo inválido" }, { status: 400 });
+      }
+    }
+    const marcaCampos: string[] = [];
+    const marcaValores: (string | null)[] = [];
+    for (const [col, max] of Object.entries(CAMPOS_MARCA)) {
+      if (!Object.prototype.hasOwnProperty.call(body, col)) continue;
+      let v = body[col];
+      v = typeof v === "string" && v.trim() ? v.trim() : null;
+      if (v !== null && (v.length > max || (col === "color_marca" && !/^#[0-9a-fA-F]{6}$/.test(v)))) {
+        return NextResponse.json({ error: `valor inválido en ${col}` }, { status: 400 });
+      }
+      marcaCampos.push(col);
+      marcaValores.push(v);
+    }
+
+    // INSERT/UPDATE base (foto, nombre, teléfono, logo) + cualquier campo de marca.
+    const cols = ["foto", "nombre_bienvenida", "telefono", "logo", ...marcaCampos];
+    const provistos = [fotoProvista, nombreProvisto, telefonoProvisto, logoProvisto, ...marcaCampos.map(() => true)];
+    const valores = [foto, nombreBienvenida, telefono, logo, ...marcaValores];
+    const ins = cols.map((_, i) => `$${i + 1}`).join(", ");
+    const upd = cols.map((c, i) => `${c} = CASE WHEN $${cols.length + i + 1} THEN $${i + 1} ELSE perfil_dentista.${c} END`).join(", ");
+    await query(
+      `INSERT INTO perfil_dentista (id, ${cols.join(", ")}, actualizado_en)
+       VALUES (1, ${ins}, now())
+       ON CONFLICT (id) DO UPDATE SET ${upd}, actualizado_en = now()`,
+      [...valores, ...provistos]
     );
 
-    return NextResponse.json(rows[0]);
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return errorJson(err);
   }

@@ -801,3 +801,18 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS totp_secreto TEXT;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS totp_pendiente TEXT;
 ALTER TABLE seguridad ADD COLUMN IF NOT EXISTS admin_totp_secreto TEXT;
 ALTER TABLE seguridad ADD COLUMN IF NOT EXISTS admin_totp_pendiente TEXT;
+
+-- Marca blanca: datos de identidad de la clínica, configurables desde
+-- Perfil para vender la app a otros consultorios. Todo es NULL por
+-- defecto; cuando un campo está vacío, el sistema usa los valores de
+-- Viña Sonrisas (lib/panel-data.ts), así una instalación existente no
+-- cambia en nada.
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS clinica_nombre VARCHAR(80);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS clinica_lema VARCHAR(120);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS logo TEXT;
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS color_marca VARCHAR(9);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS doctor_nombre VARCHAR(120);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS doctor_titulo VARCHAR(80);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS cedula VARCHAR(30);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS direccion VARCHAR(200);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS horario VARCHAR(120);
