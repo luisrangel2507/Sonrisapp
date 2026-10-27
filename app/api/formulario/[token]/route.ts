@@ -39,7 +39,9 @@ interface PacientePublico {
   historia_puntos_otorgados: boolean;
 }
 
-export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const limitado = await limitarPublico(req, "lectura-publica", 300, 60);
+  if (limitado) return limitado;
   const params = await props.params;
   try {
     const { rows: pacienteRows } = await query<PacientePublico>(

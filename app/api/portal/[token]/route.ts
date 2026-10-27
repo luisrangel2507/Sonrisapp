@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitarPublico } from "@/lib/limite-publico";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { descifrar } from "@/lib/crypto";
@@ -9,7 +10,9 @@ import { registrarAcceso } from "@/lib/bitacora";
 // el formulario de historia clínica, sin necesitar cuenta.
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const limitado = await limitarPublico(req, "lectura-publica", 300, 60);
+  if (limitado) return limitado;
   const params = await props.params;
   try {
     const { rows: pacienteRows } = await query<{
