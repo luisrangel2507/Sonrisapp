@@ -55,13 +55,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ese horario no está dentro del horario de atención" }, { status: 400 });
     }
 
-    const { rows: ocupadas } = await query(
-      `SELECT 1 FROM citas WHERE estado != 'cancelada' AND fecha_hora = $1`,
-      [fecha.toISOString()]
-    );
-    if (ocupadas.length > 0) {
-      return NextResponse.json({ error: "ese horario ya no está disponible, elige otro" }, { status: 409 });
-    }
 
     const folio = await generarFolio();
     const historialToken = generarHistorialToken();
@@ -81,12 +74,22 @@ export async function POST(req: NextRequest) {
       [paciente.id, NUMEROS_FDI]
     );
 
+    // Apartado atómico del horario: inserta la cita solo si ese horario
+    // sigue libre, en una sola operación. Así dos solicitudes simultáneas
+    // no pueden quedarse ambas con el mismo hueco (condición de carrera).
     const { rows: citaRows } = await query(
       `INSERT INTO citas (paciente_id, tratamiento, fecha_hora, estado, pendiente_aprobacion)
-       VALUES ($1, $2, $3, 'agendada', true)
+       SELECT $1, $2, $3, 'agendada', true
+       WHERE NOT EXISTS (SELECT 1 FROM citas WHERE estado != 'cancelada' AND fecha_hora = $3)
        RETURNING id, fecha_hora`,
       [paciente.id, tratamiento, fecha.toISOString()]
     );
+    if (citaRows.length === 0) {
+      // Otro paciente tomó el horario entre la validación y el insert:
+      // se deshace el alta recién creada y se pide elegir otro.
+      await query(`DELETE FROM pacientes WHERE id = $1`, [paciente.id]);
+      return NextResponse.json({ error: "ese horario ya no está disponible, elige otro" }, { status: 409 });
+    }
 
     try {
       const fechaTexto = fecha.toLocaleDateString("es-MX", {

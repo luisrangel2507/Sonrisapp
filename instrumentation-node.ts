@@ -37,6 +37,10 @@ async function migrarColumna(tabla: string, idColumna: string, columna: string) 
 }
 
 async function cifrarDatosExistentes() {
+  const sesion = process.env.SESSION_SECRET ?? "";
+  if (sesion.length < 32) {
+    console.warn("[seguridad] SESSION_SECRET es corto o falta — usa al menos 32 caracteres aleatorios; con un secreto débil se pueden falsificar sesiones.");
+  }
   if (!cifradoDisponible()) {
     console.log("[cifrado] ENCRYPTION_KEY no configurada — el contenido clínico queda sin cifrar por ahora.");
     return;
