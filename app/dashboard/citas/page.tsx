@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Esqueleto } from "@/components/Esqueleto";
 import Link from "next/link";
 import {
   Plus,
@@ -27,6 +28,7 @@ import { citaVencidaSinCompletar } from "@/lib/fechas";
 import { pagoConfirmado } from "@/lib/citas";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { StatCard } from "@/components/StatCard";
+import { leerCache, guardarCache } from "@/lib/cache-cliente";
 
 const NUEVO_PACIENTE = "__nuevo__";
 
@@ -1023,9 +1025,9 @@ function CitaTimelineItem({
 }
 
 export default function CitasPage() {
-  const [citas, setCitas] = useState<Cita[] | null>(null);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [precios, setPrecios] = useState<Record<string, number | null>>({});
+  const [citas, setCitas] = useState<Cita[] | null>(() => leerCache<Cita[]>("agenda:citas"));
+  const [pacientes, setPacientes] = useState<Paciente[]>(() => leerCache<Paciente[]>("agenda:pacientes") ?? []);
+  const [precios, setPrecios] = useState<Record<string, number | null>>(() => leerCache<Record<string, number | null>>("agenda:precios") ?? {});
   const [error, setError] = useState<string | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
   const [pagoAbiertoId, setPagoAbiertoId] = useState<number | null>(null);
@@ -1074,11 +1076,14 @@ export default function CitasPage() {
       const dataPrecios = await resPrecios.json();
       if (!resCitas.ok) throw new Error(dataCitas.error || `error ${resCitas.status}`);
       if (!resPacientes.ok) throw new Error(dataPacientes.error || `error ${resPacientes.status}`);
+      guardarCache("agenda:citas", dataCitas.citas ?? []);
+      guardarCache("agenda:pacientes", dataPacientes.pacientes ?? []);
       setCitas(dataCitas.citas ?? []);
       setPacientes(dataPacientes.pacientes ?? []);
       if (resPrecios.ok) {
         const mapa: Record<string, number | null> = {};
         for (const p of dataPrecios.precios ?? []) mapa[p.servicio] = p.precio;
+        guardarCache("agenda:precios", mapa);
         setPrecios(mapa);
       }
       setError(null);
@@ -1512,7 +1517,7 @@ export default function CitasPage() {
       )}
 
       {citas === null ? (
-        <p className="text-sm text-[#8a8272]">Cargando…</p>
+        <Esqueleto />
       ) : (
         <>
           <SelectorVista vista={vista} onCambiar={setVista} />
@@ -1612,7 +1617,7 @@ export default function CitasPage() {
         )}
 
         {citas === null ? (
-          <p className="text-sm text-[#8a8272]">Cargando…</p>
+          <Esqueleto />
         ) : (
           <>
             <div className="mb-5 grid grid-cols-4 gap-4">

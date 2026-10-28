@@ -64,7 +64,12 @@ export function SeguridadCuenta({ esAdmin }: { esAdmin: boolean }) {
   async function cerrarTodas() {
     if (!window.confirm("Se cerrará la sesión en TODOS los dispositivos, incluido este. ¿Continuar?")) return;
     const res = await fetch("/api/auth/cerrar-sesiones", { method: "POST" });
-    if (res.ok) window.location.href = "/login";
+    if (res.ok) {
+      try {
+        window.sessionStorage.clear();
+      } catch {}
+      window.location.href = "/login";
+    }
     else setError("No se pudieron cerrar las sesiones.");
   }
 

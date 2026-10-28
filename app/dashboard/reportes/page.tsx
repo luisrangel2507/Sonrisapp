@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Esqueleto } from "@/components/Esqueleto";
 import { FileDown, TrendingUp, Users, XCircle, Wallet } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { formatearDinero } from "@/lib/dinero";
@@ -119,7 +120,7 @@ export default function ReportesPage() {
       )}
 
       {!datos && !error ? (
-        <p className="text-sm text-[#8a8272]">Cargando…</p>
+        <Esqueleto />
       ) : datos ? (
         <>
           <div className="grid grid-cols-2 gap-3">

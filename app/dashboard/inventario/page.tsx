@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Esqueleto } from "@/components/Esqueleto";
 import { Plus, Minus, Pencil, Trash2, AlertTriangle, Search } from "lucide-react";
 import type { InventarioItem } from "@/lib/types";
 
@@ -205,7 +206,7 @@ export default function InventarioPage() {
       )}
 
       {items === null ? (
-        <p className="text-sm text-[#8a8272]">Cargando…</p>
+        <Esqueleto />
       ) : filtrados.length === 0 ? (
         <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
           {busqueda ? "Sin resultados." : "Aún no hay insumos registrados."}

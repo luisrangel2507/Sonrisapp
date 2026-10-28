@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Esqueleto } from "@/components/Esqueleto";
 import Link from "next/link";
 import { Smile, CalendarClock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { formatearDinero } from "@/lib/dinero";
@@ -48,7 +49,7 @@ export default function OrtodonciaPage() {
       </p>
 
       {pacientes === null ? (
-        <p className="text-sm text-[#a49c8a]">Cargando…</p>
+        <Esqueleto />
       ) : pacientes.length === 0 ? (
         <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#a49c8a] shadow-sm">
           Aún no hay pacientes con un presupuesto de ortodoncia aprobado.

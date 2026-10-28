@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Esqueleto } from "@/components/Esqueleto";
+import { leerCache, guardarCache } from "@/lib/cache-cliente";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChevronRight } from "lucide-react";
@@ -31,7 +33,7 @@ const PALETA_AVATAR = [
 
 export default function PacientesPage() {
   const router = useRouter();
-  const [pacientes, setPacientes] = useState<Paciente[] | null>(null);
+  const [pacientes, setPacientes] = useState<Paciente[] | null>(() => leerCache<Paciente[]>("pacientes:lista"));
   const [busqueda, setBusqueda] = useState("");
   const [formAbierto, setFormAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -40,6 +42,7 @@ export default function PacientesPage() {
   async function cargar(q: string) {
     const res = await fetch(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
     const data = await res.json();
+    if (!q) guardarCache("pacientes:lista", data.pacientes ?? []);
     setPacientes(data.pacientes ?? []);
   }
 
@@ -229,7 +232,7 @@ export default function PacientesPage() {
 
       <div className="mx-4 mt-4">
         {pacientes === null ? (
-          <p className="text-sm text-[#8a8272]">Cargando…</p>
+          <Esqueleto />
         ) : pacientes.length === 0 ? (
           <p className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 text-sm text-[#8a8272]">
             {busqueda ? "Sin resultados." : "Aún no hay pacientes registrados."}

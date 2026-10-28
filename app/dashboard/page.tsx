@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Esqueleto } from "@/components/Esqueleto";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { leerCache, guardarCache } from "@/lib/cache-cliente";
 import {
   AlertTriangle,
   Calendar,
@@ -150,16 +152,16 @@ const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
 
 export default function PanelPage() {
   const router = useRouter();
-  const [resumen, setResumen] = useState<ResumenDashboard | null>(null);
-  const [citasHoy, setCitasHoy] = useState<Cita[] | null>(null);
-  const [citasVencidas, setCitasVencidas] = useState<Cita[]>([]);
-  const [citasPendientesAprobacion, setCitasPendientesAprobacion] = useState<Cita[]>([]);
+  const [resumen, setResumen] = useState<ResumenDashboard | null>(() => leerCache<ResumenDashboard>("resumen"));
+  const [citasHoy, setCitasHoy] = useState<Cita[] | null>(() => leerCache<Cita[]>("inicio:citasHoy"));
+  const [citasVencidas, setCitasVencidas] = useState<Cita[]>(() => leerCache<Cita[]>("inicio:vencidas") ?? []);
+  const [citasPendientesAprobacion, setCitasPendientesAprobacion] = useState<Cita[]>(() => leerCache<Cita[]>("inicio:pendientes") ?? []);
   const [errorResumen, setErrorResumen] = useState<string | null>(null);
   const [errorCitas, setErrorCitas] = useState<string | null>(null);
   // Empieza en null (sin nombre) en vez de adivinar uno — mostrar un
   // nombre "de relleno" y luego cambiarlo al real cuando llega la
   // respuesta de /api/perfil es justo el parpadeo que se reportó.
-  const [nombreBienvenida, setNombreBienvenida] = useState<string | null>(null);
+  const [nombreBienvenida, setNombreBienvenida] = useState<string | null>(() => leerCache<string>("inicio:nombre"));
 
   const [completandoId, setCompletandoId] = useState<number | null>(null);
   const [montoPago, setMontoPago] = useState("");
@@ -169,7 +171,7 @@ export default function PanelPage() {
   // Solo para la vista de escritorio (tarjeta "Pacientes recientes") —
   // la cita más reciente de cada paciente, para mostrar qué tratamiento
   // se hizo en vez de solo la fecha en que se dio de alta.
-  const [actividadReciente, setActividadReciente] = useState<Cita[] | null>(null);
+  const [actividadReciente, setActividadReciente] = useState<Cita[] | null>(() => leerCache<Cita[]>("inicio:reciente"));
 
   function cargarCitas() {
     fetch("/api/citas")
@@ -180,17 +182,17 @@ export default function PanelPage() {
       .then((data) => {
         const hoy = new Date().toDateString();
         const citas: Cita[] = data.citas ?? [];
-        setCitasHoy(
-          citas
-            .filter((c) => c.estado !== "cancelada" && new Date(c.fecha_hora).toDateString() === hoy)
-            .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
-        );
-        setCitasVencidas(
-          citas.filter(citaVencidaSinCompletar).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
-        );
-        setCitasPendientesAprobacion(
-          citas.filter((c) => c.pendiente_aprobacion).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
-        );
+        const hoyLista = citas
+          .filter((c) => c.estado !== "cancelada" && new Date(c.fecha_hora).toDateString() === hoy)
+          .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+        const vencidas = citas.filter(citaVencidaSinCompletar).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+        const pendientes = citas.filter((c) => c.pendiente_aprobacion).sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+        guardarCache("inicio:citasHoy", hoyLista);
+        guardarCache("inicio:vencidas", vencidas);
+        guardarCache("inicio:pendientes", pendientes);
+        setCitasHoy(hoyLista);
+        setCitasVencidas(vencidas);
+        setCitasPendientesAprobacion(pendientes);
 
         // citas ya viene ordenado por fecha_hora DESC (API) — basta con
         // quedarse con la primera cita (no cancelada) que aparezca de
@@ -203,6 +205,7 @@ export default function PanelPage() {
           recientes.push(c);
           if (recientes.length >= 4) break;
         }
+        guardarCache("inicio:reciente", recientes);
         setActividadReciente(recientes);
       })
       .catch((err) => setErrorCitas(`No se pudieron cargar las citas: ${err.message}`));
@@ -212,7 +215,9 @@ export default function PanelPage() {
     fetch("/api/perfil")
       .then((res) => res.json())
       .then((data) => {
-        setNombreBienvenida(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
+        const n = data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA;
+        guardarCache("inicio:nombre", n);
+        setNombreBienvenida(n);
       })
       .catch(() => setNombreBienvenida(NOMBRE_CORTO_DOCTORA));
 
@@ -221,7 +226,10 @@ export default function PanelPage() {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `error ${res.status}`);
         return res.json();
       })
-      .then((data) => setResumen(data.resumen ?? null))
+      .then((data) => {
+        guardarCache("resumen", data.resumen ?? null);
+        setResumen(data.resumen ?? null);
+      })
       .catch((err) => setErrorResumen(`No se pudo cargar el resumen: ${err.message}`));
 
     cargarCitas();
@@ -353,7 +361,7 @@ export default function PanelPage() {
           </Link>
         </div>
         {citasHoy === null ? (
-          <p className="mt-3 text-sm text-[#8a8272]">Cargando…</p>
+          <Esqueleto />
         ) : citasHoy.length === 0 ? (
           <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl bg-[#FBF9F5] py-6 text-center">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F7E5E0] text-[#B0503A]">
@@ -616,7 +624,7 @@ export default function PanelPage() {
             </div>
 
             {citasHoy === null ? (
-              <p className="mt-4 text-sm text-[#8a8272]">Cargando…</p>
+              <Esqueleto />
             ) : citasHoy.length === 0 ? (
               <p className="mt-4 text-sm text-[#8a8272]">Sin citas registradas por ahora.</p>
             ) : (
@@ -684,7 +692,7 @@ export default function PanelPage() {
               </Link>
             </div>
             {actividadReciente === null ? (
-              <p className="mt-3 text-[13px] text-[#8a8272]">Cargando…</p>
+              <Esqueleto />
             ) : actividadReciente.length === 0 ? (
               <p className="mt-3 text-[13px] text-[#8a8272]">Sin pacientes registrados.</p>
             ) : (

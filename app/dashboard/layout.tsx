@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { leerSesion, guardarSesion, borrarCache } from "@/lib/cache-cliente";
 import { UserCog, Activity, Users, Calendar, Package, BarChart3, Tv, Wallet, Smile, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X, Settings, ChevronDown } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 
@@ -53,35 +54,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [masAbierto, setMasAbierto] = useState(false);
   const [accionesAbierto, setAccionesAbierto] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/marca")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((m) => {
-        if (m?.logo) setLogo(m.logo);
-        if (m?.clinicaNombre) setClinica(m.clinicaNombre);
-      })
-      .catch(() => {});
-  }, []);
-
   // El rol Asistente no ve Reportes ni Caja (el servidor también lo bloquea).
   const [esAsistente, setEsAsistente] = useState(false);
-  useEffect(() => {
-    fetch("/api/auth/sesion")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setEsAsistente(d?.rol === "asistente"))
-      .catch(() => {});
-  }, []);
   const visible = (t: { href: string }) => !esAsistente || !SOLO_ADMIN_NAV.includes(t.href);
 
+  // Cabecera (logo, foto, nombre, rol): primero lo último que se vio, antes
+  // de que el navegador pinte (así no "salta" al recargar), y luego se
+  // actualiza en segundo plano — una sola vez, no en cada cambio de página.
+  useLayoutEffect(() => {
+    const c = leerSesion<{ logo?: string; clinica?: string; foto?: string | null; nombre?: string; asistente?: boolean }>("cabecera");
+    if (!c) return;
+    if (c.logo) setLogo(c.logo);
+    if (c.clinica) setClinica(c.clinica);
+    if (c.foto !== undefined) setFoto(c.foto);
+    if (c.nombre) setNombre(c.nombre);
+    if (c.asistente) setEsAsistente(true);
+  }, []);
+
   useEffect(() => {
-    fetch("/api/perfil")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        setFoto(data?.foto ?? null);
-        setNombre(data?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA);
-      })
-      .catch(() => {});
-  }, [pathname]);
+    let vivo = true;
+    async function cargarCabecera() {
+      const [m, p, s] = await Promise.all([
+        fetch("/api/marca").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/perfil").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/auth/sesion").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ]);
+      if (!vivo) return;
+      const logoNuevo = m?.logo || "/logo-vina-sonrisas.webp";
+      const clinicaNueva = m?.clinicaNombre || "Viña Sonrisas";
+      const fotoNueva: string | null = p?.foto ?? null;
+      const nombreNuevo: string = p?.nombre_bienvenida || NOMBRE_CORTO_DOCTORA;
+      const asistente = s?.rol === "asistente";
+      setLogo(logoNuevo);
+      setClinica(clinicaNueva);
+      setFoto(fotoNueva);
+      setNombre(nombreNuevo);
+      setEsAsistente(asistente);
+      guardarSesion("cabecera", { logo: logoNuevo, clinica: clinicaNueva, foto: fotoNueva, nombre: nombreNuevo, asistente });
+    }
+    cargarCabecera();
+    // Perfil avisa cuando cambian la foto, el nombre o la marca.
+    const alCambiar = () => cargarCabecera();
+    window.addEventListener("perfil-actualizado", alCambiar);
+    return () => {
+      vivo = false;
+      window.removeEventListener("perfil-actualizado", alCambiar);
+    };
+  }, []);
 
   // Cierra los popovers de la barra inferior (celular) al navegar —
   // el layout no se desmonta entre páginas, así que si no, se quedarían
@@ -102,6 +121,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     async function cerrarPorInactividad() {
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      borrarCache();
+      try { window.sessionStorage.clear(); } catch {}
       router.push("/login");
       router.refresh();
     }

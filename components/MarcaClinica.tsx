@@ -84,7 +84,8 @@ export function MarcaClinica() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(c),
       });
-      setAviso(res.ok ? "Guardado. Vuelve a abrir la app para ver los cambios." : "No se pudo guardar.");
+      if (res.ok) window.dispatchEvent(new Event("perfil-actualizado"));
+      setAviso(res.ok ? "Guardado." : "No se pudo guardar.");
     } finally {
       setGuardando(false);
     }

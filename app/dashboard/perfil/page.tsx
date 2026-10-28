@@ -9,6 +9,7 @@ import type { Usuario, Passkey } from "@/lib/types";
 import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
 import { SeguridadCuenta } from "@/components/SeguridadCuenta";
 import { MarcaClinica } from "@/components/MarcaClinica";
+import { borrarCache } from "@/lib/cache-cliente";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -159,6 +160,10 @@ export default function PerfilPage() {
     if (cerrandoSesion) return;
     setCerrandoSesion(true);
     await fetch("/api/auth/logout", { method: "POST" });
+    borrarCache();
+    try {
+      window.sessionStorage.clear();
+    } catch {}
     router.push("/login");
     router.refresh();
   }
@@ -363,6 +368,7 @@ export default function PerfilPage() {
         body: JSON.stringify({ foto: dataUrl }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "error al guardar");
+      window.dispatchEvent(new Event("perfil-actualizado"));
     } catch (err) {
       setFoto(anterior);
       setErrorFoto(err instanceof Error ? err.message : "No se pudo subir la foto.");
@@ -381,6 +387,7 @@ export default function PerfilPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre_bienvenida: nombreBienvenida.trim() || null }),
       });
+      window.dispatchEvent(new Event("perfil-actualizado"));
       setNombreGuardado(true);
       setTimeout(() => setNombreGuardado(false), 2000);
     } finally {
