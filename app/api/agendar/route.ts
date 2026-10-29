@@ -8,6 +8,7 @@ import { errorJson } from "@/lib/api-error";
 import { horaYDiaEnMexico, horariosDelDia } from "@/lib/horarios-publicos";
 import { enviarWhatsApp, mensajeSolicitudCita } from "@/lib/whatsapp";
 import { NUMEROS_FDI } from "@/lib/dental";
+import { buscarParecidos, esMismaPersona } from "@/lib/duplicados";
 
 export const dynamic = "force-dynamic";
 
@@ -56,23 +57,35 @@ export async function POST(req: NextRequest) {
     }
 
 
-    const folio = await generarFolio();
-    const historialToken = generarHistorialToken();
+    // Si ya existe ese paciente (mismo teléfono y mismo nombre o parecido),
+    // la cita se agenda a su ficha en vez de crear un paciente duplicado.
+    // No se le dice al visitante que ya existía (privacidad).
+    const parecidos = await buscarParecidos(nombre, telefono);
+    const existente = parecidos.find((p) => p.motivo === "mismo_telefono" && esMismaPersona(nombre, p));
+    let paciente: { id: number };
+    let esNuevoPaciente = false;
+    if (existente) {
+      paciente = { id: existente.id };
+    } else {
+      const folio = await generarFolio();
+      const historialToken = generarHistorialToken();
 
-    const { rows: pacienteRows } = await query(
-      `INSERT INTO pacientes (nombre, telefono, folio, historial_token, aviso_privacidad_aceptado_en)
-       VALUES ($1, $2, $3, $4, now())
-       RETURNING ${PACIENTE_COLUMNAS}`,
-      [nombre.trim(), telefono.trim(), folio, historialToken]
-    );
-    const paciente = pacienteRows[0];
+      const { rows: pacienteRows } = await query(
+        `INSERT INTO pacientes (nombre, telefono, folio, historial_token, aviso_privacidad_aceptado_en)
+         VALUES ($1, $2, $3, $4, now())
+         RETURNING ${PACIENTE_COLUMNAS}`,
+        [nombre.trim(), telefono.trim(), folio, historialToken]
+      );
+      paciente = { id: pacienteRows[0].id as number };
 
-    await query(
-      `INSERT INTO paciente_dientes (paciente_id, numero_fdi, estado)
-       SELECT $1, unnest($2::int[]), 'sano'
-       ON CONFLICT (paciente_id, numero_fdi) DO NOTHING`,
-      [paciente.id, NUMEROS_FDI]
-    );
+      await query(
+        `INSERT INTO paciente_dientes (paciente_id, numero_fdi, estado)
+         SELECT $1, unnest($2::int[]), 'sano'
+         ON CONFLICT (paciente_id, numero_fdi) DO NOTHING`,
+        [paciente.id, NUMEROS_FDI]
+      );
+      esNuevoPaciente = true;
+    }
 
     // Apartado atómico del horario: inserta la cita solo si ese horario
     // sigue libre, en una sola operación. Así dos solicitudes simultáneas
@@ -87,7 +100,7 @@ export async function POST(req: NextRequest) {
     if (citaRows.length === 0) {
       // Otro paciente tomó el horario entre la validación y el insert:
       // se deshace el alta recién creada y se pide elegir otro.
-      await query(`DELETE FROM pacientes WHERE id = $1`, [paciente.id]);
+      if (esNuevoPaciente) await query(`DELETE FROM pacientes WHERE id = $1`, [paciente.id]);
       return NextResponse.json({ error: "ese horario ya no está disponible, elige otro" }, { status: 409 });
     }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Esqueleto } from "@/components/Esqueleto";
+import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
 import { leerCache, guardarCache } from "@/lib/cache-cliente";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,8 @@ export default function PacientesPage() {
   const [formAbierto, setFormAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [nombre, setNombre] = useState("");
+  const [confirmaOtro, setConfirmaOtro] = useState(false);
+  const parecidos = useParecidos(formAbierto ? nombre : "");
 
   async function cargar(q: string) {
     const res = await fetch(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -81,10 +84,13 @@ export default function PacientesPage() {
     const res = await fetch("/api/pacientes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({ nombre, forzar: confirmaOtro }),
     });
     const data = await res.json();
     setGuardando(false);
+    // Alguien lo registró justo ahora o el aviso aún no cargaba: se muestra
+    // la advertencia y se pide decidir.
+    if (res.status === 409) return;
     if (data.paciente?.id) router.push(`/dashboard/pacientes/${data.paciente.id}`);
   }
 
@@ -160,17 +166,21 @@ export default function PacientesPage() {
           <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4 md:max-w-md">
             <input
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => {
+                setNombre(e.target.value);
+                setConfirmaOtro(false);
+              }}
               placeholder="Nombre completo *"
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
+            <ParecidosPaciente parecidos={parecidos} confirmado={confirmaOtro} onConfirmar={() => setConfirmaOtro(true)} />
             <p className="text-[11px] text-[#a49c8a]">
               Teléfono, email y el resto los llena el paciente al contestar su historia clínica.
             </p>
             <div className="flex gap-2 pt-1">
               <button
                 onClick={crearPaciente}
-                disabled={!nombre.trim() || guardando}
+                disabled={!nombre.trim() || guardando || (parecidos.length > 0 && !confirmaOtro)}
                 className="flex-1 rounded-full btn-vino py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
               >
                 {guardando ? "Guardando…" : "Dar de alta"}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Esqueleto } from "@/components/Esqueleto";
+import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
 import Link from "next/link";
 import {
   Plus,
@@ -1039,6 +1040,8 @@ export default function CitasPage() {
   const [pacienteId, setPacienteId] = useState("");
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [telefonoNuevo, setTelefonoNuevo] = useState("");
+  const [confirmaOtroNuevo, setConfirmaOtroNuevo] = useState(false);
+  const parecidosNuevo = useParecidos(pacienteId === NUEVO_PACIENTE ? nombreNuevo : "", telefonoNuevo);
   const [tratamiento, setTratamiento] = useState("");
   const [fechaHora, setFechaHora] = useState("");
   const [monto, setMonto] = useState("");
@@ -1122,6 +1125,7 @@ export default function CitasPage() {
     setFechaHora("");
     setMonto("");
     setMontoTocado(false);
+    setConfirmaOtroNuevo(false);
     setFormAbierto(false);
   }
 
@@ -1137,9 +1141,15 @@ export default function CitasPage() {
       const resPaciente = await fetch("/api/pacientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nombreNuevo, telefono: telefonoNuevo || null }),
+        body: JSON.stringify({ nombre: nombreNuevo, telefono: telefonoNuevo || null, forzar: confirmaOtroNuevo }),
       });
       const dataPaciente = await resPaciente.json();
+      if (resPaciente.status === 409) {
+        // Ya existe alguien parecido: el aviso de arriba pide decidir.
+        setError(null);
+        setGuardando(false);
+        return;
+      }
       if (!resPaciente.ok || !dataPaciente.paciente?.id) {
         setError(`No se pudo dar de alta al paciente: ${dataPaciente.error || "error desconocido"}`);
         setGuardando(false);
@@ -1347,7 +1357,11 @@ export default function CitasPage() {
   const canceladasHoy = citasHoyTotal.filter((c) => c.estado === "cancelada").length;
 
   const esNuevo = pacienteId === NUEVO_PACIENTE;
-  const puedeAgendar = (esNuevo ? nombreNuevo.trim() : pacienteId) && tratamiento.trim() && fechaHora && !guardando;
+  const puedeAgendar =
+    (esNuevo ? nombreNuevo.trim() && (parecidosNuevo.length === 0 || confirmaOtroNuevo) : pacienteId) &&
+    tratamiento.trim() &&
+    fechaHora &&
+    !guardando;
 
   // Mismo formulario de alta de cita para la vista de celular y la de
   // escritorio (solo cambia el botón/contenedor que lo abre).
@@ -1363,15 +1377,33 @@ export default function CitasPage() {
             </div>
             <input
               value={nombreNuevo}
-              onChange={(e) => setNombreNuevo(e.target.value)}
+              onChange={(e) => {
+                setNombreNuevo(e.target.value);
+                setConfirmaOtroNuevo(false);
+              }}
               placeholder="Nombre completo *"
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
             <input
               value={telefonoNuevo}
-              onChange={(e) => setTelefonoNuevo(e.target.value)}
+              onChange={(e) => {
+                setTelefonoNuevo(e.target.value);
+                setConfirmaOtroNuevo(false);
+              }}
               placeholder="Teléfono (con WhatsApp)"
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+            />
+            <ParecidosPaciente
+              parecidos={parecidosNuevo}
+              confirmado={confirmaOtroNuevo}
+              onConfirmar={() => setConfirmaOtroNuevo(true)}
+              onUsar={(p) => {
+                // Se agenda a quien ya existe, sin crear otro paciente.
+                setPacienteId(String(p.id));
+                setNombreNuevo("");
+                setTelefonoNuevo("");
+                setConfirmaOtroNuevo(false);
+              }}
             />
             <p className="text-[11px] text-[#a49c8a]">
               Se le da de alta y se le crea su ficha automáticamente al agendar.

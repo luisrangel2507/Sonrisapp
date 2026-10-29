@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buscarParecidos } from "@/lib/duplicados";
 import { query } from "@/lib/db";
 import { generarFolio } from "@/lib/folio";
 import { generarHistorialToken } from "@/lib/historial-token";
@@ -71,13 +72,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { nombre, telefono, email, fecha_nacimiento } = body ?? {};
+    const { nombre, telefono, email, fecha_nacimiento, forzar } = body ?? {};
 
     if (!nombre || typeof nombre !== "string") {
       return NextResponse.json({ error: "nombre es requerido" }, { status: 400 });
     }
     if (fecha_nacimiento && esFechaFutura(fecha_nacimiento)) {
       return NextResponse.json({ error: "la fecha de nacimiento no puede ser futura" }, { status: 400 });
+    }
+
+    // Evita duplicar a un paciente que ya está registrado: si hay uno igual
+    // o muy parecido, se avisa (409) y quien registra decide si es otra
+    // persona (reenviando con forzar: true).
+    if (forzar !== true) {
+      const parecidos = await buscarParecidos(nombre, telefono);
+      if (parecidos.length > 0) {
+        return NextResponse.json({ error: "posible paciente duplicado", parecidos }, { status: 409 });
+      }
     }
 
     const folio = await generarFolio();
