@@ -80,7 +80,7 @@ export async function enviarResumenDiario() {
       const ordenadas = [...citas].sort((a, b) => +new Date(a.fecha_hora) - +new Date(b.fecha_hora));
       const primeras = ordenadas
         .slice(0, 4)
-        .map((c) => `${formatearHoraMx(c.fecha_hora)} — ${c.nombre} (${c.tratamiento})`)
+        .map((c) => `${formatearHoraMx(c.fecha_hora)} — ${c.nombre.trim()} (${c.tratamiento})`)
         .join("\n");
       const resto = citas.length > 4 ? `\n+${citas.length - 4} más` : "";
       await enviarPush(
@@ -125,7 +125,7 @@ export async function enviarRecordatoriosHoraAntes() {
     }
     await enviarPush(
       "Cita en 1 hora",
-      `${c.tratamiento} con ${c.nombre} a las ${hora}`,
+      `${c.tratamiento} con ${c.nombre.trim()} a las ${hora}`,
       "/dashboard/citas"
     );
   }
@@ -152,7 +152,7 @@ export async function enviarAvisos2hAntes() {
   for (const c of citas) {
     await enviarPush(
       "Cita en 2 horas",
-      `${c.tratamiento} con ${c.nombre} a las ${formatearHoraMx(c.fecha_hora)}`,
+      `${c.tratamiento} con ${c.nombre.trim()} a las ${formatearHoraMx(c.fecha_hora)}`,
       "/dashboard/citas"
     );
   }

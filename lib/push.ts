@@ -1,4 +1,5 @@
 import webpush from "web-push";
+import { obtenerMarca } from "@/lib/marca";
 import { query } from "@/lib/db";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -20,7 +21,10 @@ interface Suscripcion {
 // (Perfil → Notificaciones). Si una suscripción ya caducó (404/410 —
 // el usuario desinstaló la app o la borró desde su navegador), se
 // limpia sola de la tabla.
-export async function enviarPush(titulo: string, cuerpo: string, url?: string) {
+//
+// Formato: arriba (título) siempre va el nombre de la clínica; el asunto
+// ("Cita en 1 hora") y el detalle van en las líneas siguientes.
+export async function enviarPush(asunto: string, detalle: string, url?: string) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     console.warn("[push] VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY no configurados, notificación no enviada");
     return { enviados: 0 };
@@ -30,7 +34,12 @@ export async function enviarPush(titulo: string, cuerpo: string, url?: string) {
     `SELECT id, endpoint, p256dh, auth FROM push_subscripciones`
   );
 
-  const payload = JSON.stringify({ title: titulo, body: cuerpo, url: url ?? "/dashboard" });
+  const marca = await obtenerMarca();
+  const payload = JSON.stringify({
+    title: marca.clinicaNombre,
+    body: [asunto, detalle].filter(Boolean).join("\n"),
+    url: url ?? "/dashboard",
+  });
 
   let enviados = 0;
   for (const sub of rows) {
