@@ -864,3 +864,10 @@ ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion_enviada BOOLEAN NOT NULL
 
 -- Pantalla de TV: mostrar consejos de higiene bucal cuando no hay paciente.
 ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejos BOOLEAN NOT NULL DEFAULT true;
+
+-- Control remoto de la TV desde el celular: el consejo que se muestra se
+-- calcula en el servidor (base + tiempo transcurrido), así todas las TVs y
+-- el celular ven lo mismo; "fijo" pausa la rotación.
+ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejo_base INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejo_ts TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejo_fijo BOOLEAN NOT NULL DEFAULT false;

@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
 import { COOKIE_SESION, COOKIE_TV, verificarSesionToken, verificarTokenTv } from "@/lib/auth";
 import { estadoTv, versionTv } from "@/lib/tv";
+import { CONSEJOS_HIGIENE } from "@/lib/consejos-higiene";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,26 @@ export async function POST(req: NextRequest) {
     // Solo prender/apagar los consejos de higiene.
     if (typeof body?.consejos === "boolean" && !("modo" in (body ?? {}))) {
       await query(`UPDATE pantalla_tv SET consejos = $1 WHERE id = 1`, [body.consejos]);
+      return NextResponse.json({ ok: true });
+    }
+    // Control remoto de los consejos: ir a uno concreto, siguiente/anterior,
+    // pausar o reanudar la rotación.
+    if (body?.accion === "consejo") {
+      const n = CONSEJOS_HIGIENE.length;
+      const actual = (await estadoTv()).consejoIdx;
+      const fijo = typeof body.fijo === "boolean" ? body.fijo : null;
+      let indice: number | null = null;
+      if (Number.isInteger(body.indice)) indice = ((body.indice % n) + n) % n;
+      else if (body.paso === 1 || body.paso === -1) indice = (actual + body.paso + n) % n;
+      await query(
+        `UPDATE pantalla_tv SET
+           consejo_base = COALESCE($1::int, $3::int),
+           consejo_ts = CASE WHEN $1::int IS NOT NULL OR $2::boolean IS NOT NULL THEN now() ELSE consejo_ts END,
+           consejo_fijo = COALESCE($2, consejo_fijo),
+           consejos = true
+         WHERE id = 1`,
+        [indice, fijo, actual]
+      );
       return NextResponse.json({ ok: true });
     }
     const modo = typeof body?.modo === "string" ? body.modo : "";

@@ -1,4 +1,7 @@
 import { query } from "@/lib/db";
+import { CONSEJOS_HIGIENE } from "@/lib/consejos-higiene";
+
+export const SEGUNDOS_POR_CONSEJO = 14;
 
 export async function versionTv(): Promise<number> {
   const { rows } = await query<{ tv_version: number }>(`SELECT tv_version FROM pantalla_tv WHERE id = 1`);
@@ -11,6 +14,8 @@ export interface EstadoTv {
   hora: string | null;
   origen: "manual" | "agenda";
   consejos: boolean;
+  consejoIdx: number;
+  consejoFijo: boolean;
 }
 
 // Lo que se muestra en la TV: primero lo que se eligió a mano (vale 10
@@ -18,13 +23,17 @@ export interface EstadoTv {
 // al paciente que sigue con cita agendada y, si ya no queda ninguno,
 // agradecimiento al último que se atendió.
 export async function estadoTv(): Promise<EstadoTv> {
-  const { rows } = await query<{ modo: string; nombre: string | null; hora: string | null; vigente: boolean; consejos: boolean }>(
-    `SELECT modo, nombre, hora, consejos, (actualizado_en > now() - interval '10 minutes') AS vigente FROM pantalla_tv WHERE id = 1`
+  const { rows } = await query<{ modo: string; nombre: string | null; hora: string | null; vigente: boolean; consejos: boolean; consejo_fijo: boolean; consejo_idx: number }>(
+    `SELECT modo, nombre, hora, consejos, consejo_fijo,
+            ((consejo_base + CASE WHEN consejo_fijo THEN 0 ELSE floor(extract(epoch FROM now() - consejo_ts) / ${SEGUNDOS_POR_CONSEJO})::int END) % ${CONSEJOS_HIGIENE.length}) AS consejo_idx,
+            (actualizado_en > now() - interval '10 minutes') AS vigente FROM pantalla_tv WHERE id = 1`
   );
   const manual = rows[0];
   const consejos = manual?.consejos ?? true;
+  const consejoIdx = manual?.consejo_idx ?? 0;
+  const consejoFijo = manual?.consejo_fijo ?? false;
   if (manual && manual.modo !== "espera" && manual.vigente && manual.nombre) {
-    return { modo: manual.modo as EstadoTv["modo"], nombres: [manual.nombre], hora: manual.hora, origen: "manual", consejos };
+    return { modo: manual.modo as EstadoTv["modo"], nombres: [manual.nombre], hora: manual.hora, origen: "manual", consejos, consejoIdx, consejoFijo };
   }
 
   const hoy = `(c.fecha_hora AT TIME ZONE 'America/Mexico_City')::date = (now() AT TIME ZONE 'America/Mexico_City')::date`;
@@ -34,7 +43,7 @@ export async function estadoTv(): Promise<EstadoTv> {
      ORDER BY c.fecha_hora LIMIT 1`
   );
   if (agendadas[0]) {
-    return { modo: "bienvenida", nombres: [agendadas[0].nombre], hora: agendadas[0].hora, origen: "agenda", consejos };
+    return { modo: "bienvenida", nombres: [agendadas[0].nombre], hora: agendadas[0].hora, origen: "agenda", consejos, consejoIdx, consejoFijo };
   }
   const { rows: atendidas } = await query<{ nombre: string }>(
     `SELECT p.nombre FROM citas c JOIN pacientes p ON p.id = c.paciente_id
@@ -42,7 +51,7 @@ export async function estadoTv(): Promise<EstadoTv> {
      ORDER BY c.fecha_hora DESC LIMIT 1`
   );
   if (atendidas[0]) {
-    return { modo: "gracias", nombres: [atendidas[0].nombre], hora: null, origen: "agenda", consejos };
+    return { modo: "gracias", nombres: [atendidas[0].nombre], hora: null, origen: "agenda", consejos, consejoIdx, consejoFijo };
   }
-  return { modo: "espera", nombres: [], hora: null, origen: "agenda", consejos };
+  return { modo: "espera", nombres: [], hora: null, origen: "agenda", consejos, consejoIdx, consejoFijo };
 }

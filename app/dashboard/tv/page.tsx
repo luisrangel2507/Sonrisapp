@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Tv, Smile, Heart, EyeOff, ExternalLink } from "lucide-react";
+import { Tv, Smile, Heart, EyeOff, ExternalLink, ChevronLeft, ChevronRight, Pause, Play, Lightbulb } from "lucide-react";
+import { CONSEJOS_HIGIENE } from "@/lib/consejos-higiene";
 import type { Cita, Paciente } from "@/lib/types";
 
 function horaDe(fechaHora: string) {
@@ -13,7 +14,8 @@ export default function ControlTv() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [elegido, setElegido] = useState<Paciente | null>(null);
-  const [actual, setActual] = useState<{ modo: string; nombres: string[]; origen?: string; consejos?: boolean } | null>(null);
+  const [actual, setActual] = useState<{ modo: string; nombres: string[]; origen?: string; consejos?: boolean; consejoIdx?: number; consejoFijo?: boolean } | null>(null);
+  const [listaConsejos, setListaConsejos] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
   const [otroAbierto, setOtroAbierto] = useState(false);
@@ -41,6 +43,16 @@ export default function ControlTv() {
     setAvisoTv(res.ok ? "Listo: todas las TVs quedaron desvinculadas." : "No se pudo desvincular.");
   }
 
+  async function control(cuerpo: Record<string, unknown>) {
+    await fetch("/api/tv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "consejo", ...cuerpo }),
+    });
+    const r = await fetch("/api/tv").catch(() => null);
+    if (r?.ok) setActual(await r.json());
+  }
+
   async function alternarConsejos() {
     const nuevo = !(actual?.consejos ?? true);
     const res = await fetch("/api/tv", {
@@ -66,10 +78,14 @@ export default function ControlTv() {
         setCitasHoy(lista);
       })
       .catch(() => {});
-    fetch("/api/tv")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setActual)
-      .catch(() => {});
+    const leerTv = () =>
+      fetch("/api/tv")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d && setActual(d))
+        .catch(() => {});
+    leerTv();
+    const t = setInterval(leerTv, 4000);
+    return () => clearInterval(t);
   }, []);
 
   const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -153,6 +169,74 @@ export default function ControlTv() {
               : actual?.consejos === false ? "Logo de la clínica" : "Consejos de higiene bucal"}{" "}
           <span className="font-normal text-[#a49c8a]">({actual?.origen === "manual" ? "elegido a mano" : "según la agenda"})</span>
         </b>
+      </div>
+
+      <div className="space-y-3 rounded-2xl border border-[#E3C3C9] bg-[#F5E7E9]/60 p-3">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#7A1E33]">
+          <Lightbulb size={13} /> Control remoto · consejos
+        </div>
+        {actual?.consejos === false ? (
+          <p className="text-[13px] text-[#8a8272]">Los consejos están apagados. Enciéndelos abajo para controlarlos desde aquí.</p>
+        ) : (
+          <>
+            <div>
+              <div className="text-[11px] text-[#8a8272]">
+                Consejo {(actual?.consejoIdx ?? 0) + 1} de {CONSEJOS_HIGIENE.length}
+                {actual?.consejoFijo ? " · en pausa" : " · rotando solo"}
+                {actual && actual.modo !== "espera" ? " · (ahora la TV muestra a un paciente)" : ""}
+              </div>
+              <div className="text-sm font-semibold text-[#2b2118]">
+                {CONSEJOS_HIGIENE[(actual?.consejoIdx ?? 0) % CONSEJOS_HIGIENE.length].titulo}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => control({ paso: -1 })}
+                className="flex items-center justify-center gap-1 rounded-xl border border-[#EFE9DC] bg-white py-3 text-sm font-semibold text-[#2b2118]"
+              >
+                <ChevronLeft size={18} /> Anterior
+              </button>
+              <button
+                onClick={() => control({ fijo: !actual?.consejoFijo })}
+                className="flex items-center justify-center gap-1 rounded-xl bg-[#7A1E33] py-3 text-sm font-semibold text-white"
+              >
+                {actual?.consejoFijo ? (
+                  <>
+                    <Play size={16} /> Seguir
+                  </>
+                ) : (
+                  <>
+                    <Pause size={16} /> Pausar
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => control({ paso: 1 })}
+                className="flex items-center justify-center gap-1 rounded-xl border border-[#EFE9DC] bg-white py-3 text-sm font-semibold text-[#2b2118]"
+              >
+                Siguiente <ChevronRight size={18} />
+              </button>
+            </div>
+            <button onClick={() => setListaConsejos((v) => !v)} className="text-[12px] font-medium text-[#7A1E33] underline underline-offset-2">
+              {listaConsejos ? "Ocultar lista" : "Elegir un consejo de la lista"}
+            </button>
+            {listaConsejos && (
+              <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                {CONSEJOS_HIGIENE.map((c, i) => (
+                  <button
+                    key={c.titulo}
+                    onClick={() => control({ indice: i, fijo: true })}
+                    className={`block w-full rounded-lg px-3 py-2 text-left text-[13px] ${
+                      i === actual?.consejoIdx ? "bg-[#F5E7E9] font-semibold text-[#7A1E33]" : "text-[#2b2118]"
+                    }`}
+                  >
+                    {i + 1}. {c.titulo}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <label className="flex items-start gap-3 rounded-2xl border border-[#EFE9DC] bg-white/70 p-3 text-sm">

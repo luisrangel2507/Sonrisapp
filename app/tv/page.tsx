@@ -8,6 +8,7 @@ interface EstadoTv {
   nombres: string[];
   hora?: string | null;
   consejos?: boolean;
+  consejoIdx?: number;
 }
 
 // Pantalla para la TV de la sala de espera: se abre una vez en la TV (con
@@ -19,7 +20,6 @@ export default function PaginaTv() {
   const [estado, setEstado] = useState<EstadoTv>({ modo: "espera", nombres: [] });
   const [sinSesion, setSinSesion] = useState(false);
   const [ahora, setAhora] = useState("");
-  const [indiceConsejo, setIndiceConsejo] = useState(0);
 
   useEffect(() => {
     let activo = true;
@@ -53,7 +53,7 @@ export default function PaginaTv() {
       }
     }
     leer();
-    const t = setInterval(leer, 3000);
+    const t = setInterval(leer, 2000);
     return () => {
       activo = false;
       clearInterval(t);
@@ -68,21 +68,13 @@ export default function PaginaTv() {
     return () => clearInterval(t);
   }, []);
 
-  // Consejos de higiene: rotan solos cada 14 s mientras no haya un paciente
-  // al que saludar o agradecer.
-  useEffect(() => {
-    setIndiceConsejo(Math.floor(Math.random() * CONSEJOS_HIGIENE.length));
-    const t = setInterval(() => setIndiceConsejo((i) => (i + 1) % CONSEJOS_HIGIENE.length), 14000);
-    return () => clearInterval(t);
-  }, []);
-
   const pilas = [...new Set((estado.nombres ?? []).map((n) => n.trim().split(/\s+/)[0]).filter(Boolean))];
   const nombre = pilas.length <= 1 ? (pilas[0] ?? "") : `${pilas.slice(0, -1).join(", ")} y ${pilas[pilas.length - 1]}`;
 
   const bienvenida = estado.modo === "bienvenida" && nombre;
   const gracias = estado.modo === "gracias" && nombre;
   const hora = bienvenida ? (estado.hora ?? ahora) : ahora;
-  const consejo = !bienvenida && !gracias && estado.consejos !== false ? CONSEJOS_HIGIENE[indiceConsejo] : null;
+  const consejo = !bienvenida && !gracias && estado.consejos !== false ? CONSEJOS_HIGIENE[(estado.consejoIdx ?? 0) % CONSEJOS_HIGIENE.length] : null;
 
   const titulo = consejo ? consejo.titulo : bienvenida ? nombre : gracias ? nombre : "Bienvenido(a)";
   const subtitulo = consejo
@@ -131,7 +123,7 @@ export default function PaginaTv() {
         >
           {consejo ? (
             <span
-              key={`c-${indiceConsejo}`}
+              key={`c-${estado.consejoIdx}`}
               className="text-center"
               style={{ fontSize: "2.7cqw", lineHeight: 1.3, animation: "fadein .8s ease" }}
             >

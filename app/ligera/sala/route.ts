@@ -47,8 +47,7 @@ export async function GET(req: NextRequest) {
       <div class="sub">Gracias por tu visita.</div>
       <div class="reloj chico">¡Cuida tu sonrisa, te esperamos pronto!</div>`;
   } else if (estado.consejos) {
-    // Cada recarga (15 s) toca el siguiente consejo.
-    const c = CONSEJOS_HIGIENE[Math.floor(Date.now() / 15000) % CONSEJOS_HIGIENE.length];
+    const c = CONSEJOS_HIGIENE[estado.consejoIdx % CONSEJOS_HIGIENE.length];
     contenido = `<div class="grande consejo">${esc(c.titulo)}</div>
       <div class="sub">Consejo de higiene bucal</div>
       <div class="reloj chico">${esc(c.texto)}</div>`;
@@ -58,7 +57,7 @@ export async function GET(req: NextRequest) {
       <div class="reloj">${esc(ahora)}</div>`;
   }
 
-  const estilos = `<meta http-equiv="refresh" content="15"><style>
+  const estilos = `<meta http-equiv="refresh" content="8"><style>
     body{background:#F7F1EA}
     .cab img{width:360px;max-width:60%}
     .sala{text-align:center;padding-top:3vh}
