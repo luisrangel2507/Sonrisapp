@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CONSEJOS_HIGIENE } from "@/lib/consejos-higiene";
 
 interface EstadoTv {
   modo: "espera" | "bienvenida" | "gracias";
   nombres: string[];
   hora?: string | null;
+  consejos?: boolean;
 }
 
 // Pantalla para la TV de la sala de espera: se abre una vez en la TV (con
@@ -17,6 +19,7 @@ export default function PaginaTv() {
   const [estado, setEstado] = useState<EstadoTv>({ modo: "espera", nombres: [] });
   const [sinSesion, setSinSesion] = useState(false);
   const [ahora, setAhora] = useState("");
+  const [indiceConsejo, setIndiceConsejo] = useState(0);
 
   useEffect(() => {
     let activo = true;
@@ -65,15 +68,26 @@ export default function PaginaTv() {
     return () => clearInterval(t);
   }, []);
 
+  // Consejos de higiene: rotan solos cada 14 s mientras no haya un paciente
+  // al que saludar o agradecer.
+  useEffect(() => {
+    setIndiceConsejo(Math.floor(Math.random() * CONSEJOS_HIGIENE.length));
+    const t = setInterval(() => setIndiceConsejo((i) => (i + 1) % CONSEJOS_HIGIENE.length), 14000);
+    return () => clearInterval(t);
+  }, []);
+
   const pilas = [...new Set((estado.nombres ?? []).map((n) => n.trim().split(/\s+/)[0]).filter(Boolean))];
   const nombre = pilas.length <= 1 ? (pilas[0] ?? "") : `${pilas.slice(0, -1).join(", ")} y ${pilas[pilas.length - 1]}`;
 
   const bienvenida = estado.modo === "bienvenida" && nombre;
   const gracias = estado.modo === "gracias" && nombre;
   const hora = bienvenida ? (estado.hora ?? ahora) : ahora;
+  const consejo = !bienvenida && !gracias && estado.consejos !== false ? CONSEJOS_HIGIENE[indiceConsejo] : null;
 
-  const titulo = bienvenida ? nombre : gracias ? nombre : "Bienvenido(a)";
-  const subtitulo = bienvenida
+  const titulo = consejo ? consejo.titulo : bienvenida ? nombre : gracias ? nombre : "Bienvenido(a)";
+  const subtitulo = consejo
+    ? "Consejo de higiene bucal"
+    : bienvenida
     ? "Es un gusto poder atenderte."
     : gracias
       ? "Gracias por tu visita."
@@ -81,7 +95,7 @@ export default function PaginaTv() {
   const etiqueta = bienvenida ? "Tu cita es a las:" : gracias ? "¡Cuida tu sonrisa, te esperamos pronto!" : "Hora:";
 
   // Letra del nombre: más chica si es largo.
-  const tamNombre = Math.min(5.2, 60 / Math.max(titulo.length, 10));
+  const tamNombre = Math.min(consejo ? 4.4 : 5.2, 60 / Math.max(titulo.length, 10));
 
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-[#F0E6DC]">
@@ -105,7 +119,7 @@ export default function PaginaTv() {
           {subtitulo}
         </div>
 
-        {!gracias && (
+        {!gracias && !consejo && (
           <div className="absolute inset-x-0 text-center text-[#7a6f62]" style={{ top: "44.5%", fontSize: "1.8cqw" }}>
             {etiqueta}
           </div>
@@ -115,7 +129,15 @@ export default function PaginaTv() {
           className="absolute flex items-center justify-center font-serif text-[#7A1E33]"
           style={{ left: "29%", width: "46%", top: "50.5%", height: "23%" }}
         >
-          {gracias ? (
+          {consejo ? (
+            <span
+              key={`c-${indiceConsejo}`}
+              className="text-center"
+              style={{ fontSize: "2.7cqw", lineHeight: 1.3, animation: "fadein .8s ease" }}
+            >
+              {consejo.texto}
+            </span>
+          ) : gracias ? (
             <span className="text-center" style={{ fontSize: "3.2cqw", lineHeight: 1.2 }}>
               {etiqueta}
             </span>

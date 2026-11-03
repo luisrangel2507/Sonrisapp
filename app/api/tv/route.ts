@@ -31,6 +31,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
+    // Solo prender/apagar los consejos de higiene.
+    if (typeof body?.consejos === "boolean" && !("modo" in (body ?? {}))) {
+      await query(`UPDATE pantalla_tv SET consejos = $1 WHERE id = 1`, [body.consejos]);
+      return NextResponse.json({ ok: true });
+    }
     const modo = typeof body?.modo === "string" ? body.modo : "";
     if (!MODOS.includes(modo)) {
       return NextResponse.json({ error: "modo inválido" }, { status: 400 });

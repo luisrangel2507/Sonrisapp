@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { COOKIE_TV, TV_MAX_AGE_SEGUNDOS, verificarTokenTv } from "@/lib/auth";
 import { estadoTv, versionTv } from "@/lib/tv";
+import { CONSEJOS_HIGIENE } from "@/lib/consejos-higiene";
 import { esc, identidadLigera, irA, pagina } from "@/lib/ligera";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,12 @@ export async function GET(req: NextRequest) {
     contenido = `<div class="grande">${esc(nombre)}</div>
       <div class="sub">Gracias por tu visita.</div>
       <div class="reloj chico">¡Cuida tu sonrisa, te esperamos pronto!</div>`;
+  } else if (estado.consejos) {
+    // Cada recarga (15 s) toca el siguiente consejo.
+    const c = CONSEJOS_HIGIENE[Math.floor(Date.now() / 15000) % CONSEJOS_HIGIENE.length];
+    contenido = `<div class="grande consejo">${esc(c.titulo)}</div>
+      <div class="sub">Consejo de higiene bucal</div>
+      <div class="reloj chico">${esc(c.texto)}</div>`;
   } else {
     contenido = `<div class="grande">Bienvenido(a)</div>
       <div class="sub">Es un gusto poder atenderte.</div>
@@ -60,7 +67,8 @@ export async function GET(req: NextRequest) {
     .sub2{color:#7a6f62;font-size:3vw;margin-top:3vh}
     .reloj{display:inline-block;margin-top:1.5vh;padding:1.5vh 6vw;border:1px solid #E6D6C4;border-radius:24px;background:#FBF8F4;
       font-family:Georgia,serif;color:#7A1E33;font-size:11vw}
-    .reloj.chico{font-size:4vw;padding:3vh 5vw}
+    .reloj.chico{font-size:4vw;padding:3vh 5vw;max-width:80vw}
+    .grande.consejo{font-size:8vw}
   </style>`;
   return pagina("Sala de espera", `<div class="sala">${contenido}</div>`, estilos);
 }

@@ -13,7 +13,7 @@ export default function ControlTv() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [elegido, setElegido] = useState<Paciente | null>(null);
-  const [actual, setActual] = useState<{ modo: string; nombres: string[]; origen?: string } | null>(null);
+  const [actual, setActual] = useState<{ modo: string; nombres: string[]; origen?: string; consejos?: boolean } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [citasHoy, setCitasHoy] = useState<Cita[]>([]);
   const [otroAbierto, setOtroAbierto] = useState(false);
@@ -39,6 +39,16 @@ export default function ControlTv() {
     const res = await fetch("/api/tv/desvincular", { method: "POST" });
     setLinkTv(null);
     setAvisoTv(res.ok ? "Listo: todas las TVs quedaron desvinculadas." : "No se pudo desvincular.");
+  }
+
+  async function alternarConsejos() {
+    const nuevo = !(actual?.consejos ?? true);
+    const res = await fetch("/api/tv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ consejos: nuevo }),
+    });
+    if (res.ok) setActual((a) => (a ? { ...a, consejos: nuevo } : a));
   }
 
   useEffect(() => {
@@ -140,10 +150,25 @@ export default function ControlTv() {
             ? `Bienvenida a ${actual.nombres.map((n) => n.split(" ")[0]).join(", ")}`
             : actual?.modo === "gracias"
               ? `Agradecimiento a ${actual.nombres.map((n) => n.split(" ")[0]).join(", ")}`
-              : "Logo de la clínica"}{" "}
+              : actual?.consejos === false ? "Logo de la clínica" : "Consejos de higiene bucal"}{" "}
           <span className="font-normal text-[#a49c8a]">({actual?.origen === "manual" ? "elegido a mano" : "según la agenda"})</span>
         </b>
       </div>
+
+      <label className="flex items-start gap-3 rounded-2xl border border-[#EFE9DC] bg-white/70 p-3 text-sm">
+        <input
+          type="checkbox"
+          checked={actual?.consejos ?? true}
+          onChange={alternarConsejos}
+          className="mt-0.5 h-4 w-4 accent-[#7A1E33]"
+        />
+        <span>
+          <b className="text-[#2b2118]">Mostrar consejos de higiene bucal</b>
+          <span className="block text-[12px] text-[#8a8272]">
+            Cuando no hay un paciente al que saludar, la TV va rotando consejos de cuidado dental (cepillado, hilo dental, revisiones…).
+          </span>
+        </span>
+      </label>
 
       <div className="space-y-2">
         <h2 className="text-sm font-semibold text-[#2b2118]">Citas de hoy</h2>

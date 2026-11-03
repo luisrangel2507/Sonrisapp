@@ -861,3 +861,6 @@ ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS google_resenas_url TEXT;
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion VARCHAR(20);
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion_en TIMESTAMPTZ;
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion_enviada BOOLEAN NOT NULL DEFAULT false;
+
+-- Pantalla de TV: mostrar consejos de higiene bucal cuando no hay paciente.
+ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejos BOOLEAN NOT NULL DEFAULT true;
