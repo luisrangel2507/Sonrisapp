@@ -8,12 +8,12 @@ import { formatearDinero } from "@/lib/dinero";
 export type TabFicha = "resumen" | "clinico" | "trat" | "docs" | "citas" | "datos";
 
 export const TABS: { id: TabFicha; etiqueta: string }[] = [
-  { id: "resumen", etiqueta: "Resumen" },
-  { id: "clinico", etiqueta: "Clínico" },
-  { id: "trat", etiqueta: "Tratamiento" },
-  { id: "docs", etiqueta: "Documentos" },
-  { id: "citas", etiqueta: "Citas y pagos" },
   { id: "datos", etiqueta: "Datos" },
+  { id: "docs", etiqueta: "Documentos" },
+  { id: "clinico", etiqueta: "Estado clínico" },
+  { id: "trat", etiqueta: "Tratamiento" },
+  { id: "citas", etiqueta: "Citas y pagos" },
+  { id: "resumen", etiqueta: "Resumen" },
 ];
 
 const tarjeta = "rounded-3xl border border-[#EFE9DC] bg-white/70 p-5";

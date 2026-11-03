@@ -176,7 +176,7 @@ export default function PacienteDetallePage() {
   // Vista nueva (pestañas) o anterior (todo en una sola página); se recuerda por dispositivo.
   const [vistaNueva, setVistaNuevaEstado] = useState(true);
   const [refrescoOdonto, setRefrescoOdonto] = useState(0);
-  const [tab, setTab] = useState<TabFicha>("resumen");
+  const [tab, setTab] = useState<TabFicha>("datos");
   useEffect(() => {
     try { if (localStorage.getItem("ficha_vista") === "anterior") setVistaNuevaEstado(false); } catch {}
   }, []);
