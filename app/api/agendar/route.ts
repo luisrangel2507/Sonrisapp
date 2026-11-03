@@ -5,6 +5,7 @@ import { generarFolio } from "@/lib/folio";
 import { generarHistorialToken } from "@/lib/historial-token";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
+import { enviarPush } from "@/lib/push";
 import { horaYDiaEnMexico, horariosDelDia } from "@/lib/horarios-publicos";
 import { enviarWhatsApp, mensajeSolicitudCita } from "@/lib/whatsapp";
 import { NUMEROS_FDI } from "@/lib/dental";
@@ -115,6 +116,12 @@ export async function POST(req: NextRequest) {
         hour: "numeric",
         minute: "2-digit",
       });
+      await enviarPush(
+        "Nueva solicitud de cita",
+        `${nombre.trim()} · ${tratamiento} · ${fecha.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", weekday: "short", day: "numeric", month: "short" })} ${horaTexto}`,
+        "/dashboard/citas",
+        `solicitud-${citaRows[0].id}`
+      ).catch((err) => console.error("[agendar] no se pudo mandar push:", err));
       await enviarWhatsApp(telefono.trim(), mensajeSolicitudCita(nombre.trim(), fechaTexto, horaTexto));
     } catch (err) {
       console.error("[agendar] no se pudo avisar por WhatsApp:", err);

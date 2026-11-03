@@ -90,14 +90,14 @@ async function procesar(mensaje: Record<string, unknown>) {
 
   if (r.accion === "confirmada") {
     await responderWhatsApp(de, "¡Gracias! ✅ Tu cita quedó confirmada. Te esperamos.").catch(() => {});
-    await enviarPush(`Cita confirmada · ${cuando}`, `${p.nombre.trim()} · ${p.tratamiento}`, `/dashboard/pacientes/${p.paciente_id}`).catch(() => {});
+    await enviarPush(`Cita confirmada · ${cuando}`, `${p.nombre.trim()} · ${p.tratamiento}`, `/dashboard/pacientes/${p.paciente_id}`, `cita-${p.id}`).catch(() => {});
   } else {
     await query(
       `INSERT INTO solicitudes_paciente (paciente_id, mensaje) VALUES ($1, $2)`,
       [p.paciente_id, `Pidió reagendar por WhatsApp su cita de ${p.tratamiento} (${cuando}).`]
     );
     await responderWhatsApp(de, "Listo, avisamos a la clínica. En breve te escribimos para buscar otro horario. 🗓️").catch(() => {});
-    await enviarPush(`Pide reagendar · ${cuando}`, `${p.nombre.trim()} · ${p.tratamiento}`, `/dashboard/pacientes/${p.paciente_id}`).catch(() => {});
+    await enviarPush(`Pide reagendar · ${cuando}`, `${p.nombre.trim()} · ${p.tratamiento}`, `/dashboard/pacientes/${p.paciente_id}`, `cita-${p.id}`).catch(() => {});
   }
 }
 

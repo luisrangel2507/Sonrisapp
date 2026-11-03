@@ -20,7 +20,8 @@ export async function avisarStockBajo() {
     await enviarPush(
       `Inventario: ${rows.length} insumo${rows.length === 1 ? "" : "s"} por surtir`,
       `${nombres}${resto}`,
-      "/dashboard/inventario"
+      "/dashboard/inventario",
+      "stock-bajo"
     );
   }
   return { stockBajo: rows.length };

@@ -1,5 +1,4 @@
 import webpush from "web-push";
-import { obtenerMarca } from "@/lib/marca";
 import { query } from "@/lib/db";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -22,9 +21,12 @@ interface Suscripcion {
 // el usuario desinstaló la app o la borró desde su navegador), se
 // limpia sola de la tabla.
 //
-// Formato: arriba (título) siempre va el nombre de la clínica; el asunto
-// ("Cita en 1 hora") y el detalle van en las líneas siguientes.
-export async function enviarPush(asunto: string, detalle: string, url?: string) {
+// Formato (igual en iPhone y Android): el título dice qué pasa y cuándo
+// ("Cita en 1 hora · 10:00 a.m."); el cuerpo, quién y qué. El nombre de
+// la clínica NO va en el título porque el sistema ya lo pone solo
+// (iPhone: "from Viña Sonrisas"; Android: nombre de la app arriba).
+// `tag` agrupa avisos del mismo tema para que no se apilen repetidos.
+export async function enviarPush(titulo: string, cuerpo: string, url?: string, tag?: string) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     console.warn("[push] VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY no configurados, notificación no enviada");
     return { enviados: 0 };
@@ -34,12 +36,7 @@ export async function enviarPush(asunto: string, detalle: string, url?: string) 
     `SELECT id, endpoint, p256dh, auth FROM push_subscripciones`
   );
 
-  const marca = await obtenerMarca();
-  const payload = JSON.stringify({
-    title: marca.clinicaNombre,
-    body: [asunto, detalle].filter(Boolean).join("\n"),
-    url: url ?? "/dashboard",
-  });
+  const payload = JSON.stringify({ title: titulo, body: cuerpo, url: url ?? "/dashboard", tag });
 
   let enviados = 0;
   for (const sub of rows) {

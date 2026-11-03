@@ -75,18 +75,19 @@ export async function enviarResumenDiario() {
   );
   if (pushInsertado! > 0) {
     if (citas.length === 0) {
-      await enviarPush("Hoy no hay citas agendadas", "Agenda libre por hoy.", "/dashboard/citas");
+      await enviarPush("Hoy no hay citas", "Agenda libre por hoy.", "/dashboard/citas", "resumen-dia");
     } else {
       const ordenadas = [...citas].sort((a, b) => +new Date(a.fecha_hora) - +new Date(b.fecha_hora));
       const primeras = ordenadas
         .slice(0, 4)
-        .map((c) => `${formatearHoraMx(c.fecha_hora)} — ${c.nombre.trim()} (${c.tratamiento})`)
+        .map((c) => `${formatearHoraMx(c.fecha_hora)} · ${c.nombre.trim()} · ${c.tratamiento}`)
         .join("\n");
       const resto = citas.length > 4 ? `\n+${citas.length - 4} más` : "";
       await enviarPush(
-        `Tu día: ${citas.length} cita${citas.length === 1 ? "" : "s"} · de ${formatearHoraMx(ordenadas[0].fecha_hora)} a ${formatearHoraMx(ordenadas[ordenadas.length - 1].fecha_hora)}`,
-        `${primeras}${resto}`,
-        "/dashboard/citas"
+        `Hoy: ${citas.length} cita${citas.length === 1 ? "" : "s"}`,
+        `Primera ${formatearHoraMx(ordenadas[0].fecha_hora)} · Última ${formatearHoraMx(ordenadas[ordenadas.length - 1].fecha_hora)}\n${primeras}${resto}`,
+        "/dashboard/citas",
+        "resumen-dia"
       );
     }
   }
@@ -101,12 +102,13 @@ export async function enviarResumenDiario() {
 export async function enviarRecordatoriosHoraAntes() {
   const { rows: citas } = await query<{
     id: number;
+    paciente_id: number;
     nombre: string;
     telefono: string | null;
     fecha_hora: string;
     tratamiento: string;
   }>(
-    `SELECT c.id, p.nombre, p.telefono, c.fecha_hora, c.tratamiento
+    `SELECT c.id, c.paciente_id, p.nombre, p.telefono, c.fecha_hora, c.tratamiento
      FROM citas c
      JOIN pacientes p ON p.id = c.paciente_id
      WHERE c.estado = 'agendada'
@@ -124,9 +126,10 @@ export async function enviarRecordatoriosHoraAntes() {
       enviados++;
     }
     await enviarPush(
-      "Cita en 1 hora",
-      `${c.tratamiento} con ${c.nombre.trim()} a las ${hora}`,
-      "/dashboard/citas"
+      `Cita en 1 hora · ${hora}`,
+      `${c.nombre.trim()} · ${c.tratamiento}`,
+      `/dashboard/pacientes/${c.paciente_id}`,
+      `cita-${c.id}`
     );
   }
 
@@ -139,7 +142,7 @@ export async function enviarRecordatoriosHoraAntes() {
 // doble. La ventana (hasta 2h10m) cubre disparos retrasados; las citas
 // agendadas con menos de 2h de anticipación también se avisan una vez.
 export async function enviarAvisos2hAntes() {
-  const { rows: citas } = await query<{ nombre: string; fecha_hora: string; tratamiento: string }>(
+  const { rows: citas } = await query<{ id: number; paciente_id: number; nombre: string; fecha_hora: string; tratamiento: string }>(
     `UPDATE citas c SET aviso_2h_enviado = true
      FROM pacientes p
      WHERE p.id = c.paciente_id
@@ -147,13 +150,14 @@ export async function enviarAvisos2hAntes() {
        AND c.aviso_2h_enviado = false
        AND c.fecha_hora > now()
        AND c.fecha_hora - now() <= interval '2 hours 10 minutes'
-     RETURNING p.nombre, c.fecha_hora, c.tratamiento`
+     RETURNING c.id, c.paciente_id, p.nombre, c.fecha_hora, c.tratamiento`
   );
   for (const c of citas) {
     await enviarPush(
-      "Cita en 2 horas",
-      `${c.tratamiento} con ${c.nombre.trim()} a las ${formatearHoraMx(c.fecha_hora)}`,
-      "/dashboard/citas"
+      `Cita en 2 horas · ${formatearHoraMx(c.fecha_hora)}`,
+      `${c.nombre.trim()} · ${c.tratamiento}`,
+      `/dashboard/pacientes/${c.paciente_id}`,
+      `cita-${c.id}`
     );
   }
   return { avisos2h: citas.length };

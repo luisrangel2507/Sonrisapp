@@ -12,7 +12,12 @@ self.addEventListener("push", (event) => {
     icon: "/icon.png",
     badge: "/icon.png",
     data: { url: data.url || "/dashboard" },
+    timestamp: Date.now(),
   };
+  if (data.tag) {
+    options.tag = data.tag;
+    options.renotify = true;
+  }
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
