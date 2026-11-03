@@ -10,7 +10,16 @@ export async function GET(req: NextRequest) {
   try {
     const nombre = (req.nextUrl.searchParams.get("nombre") ?? "").slice(0, 160);
     const telefono = (req.nextUrl.searchParams.get("telefono") ?? "").slice(0, 30);
-    return NextResponse.json({ parecidos: await buscarParecidos(nombre, telefono) });
+    const email = (req.nextUrl.searchParams.get("email") ?? "").slice(0, 160);
+    const fechaNacimiento = (req.nextUrl.searchParams.get("fecha") ?? "").slice(0, 10);
+    const excluir = Number(req.nextUrl.searchParams.get("excluir") ?? 0);
+    return NextResponse.json({
+      parecidos: await buscarParecidos(nombre, telefono, {
+        email,
+        fechaNacimiento,
+        excluirId: Number.isInteger(excluir) ? excluir : 0,
+      }),
+    });
   } catch (err) {
     return errorJson(err);
   }

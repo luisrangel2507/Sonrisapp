@@ -33,6 +33,7 @@ import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
+import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
 import { PlanFases } from "@/components/ficha/PlanFases";
 import { DictadoDientes } from "@/components/ficha/DictadoDientes";
 import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
@@ -118,6 +119,24 @@ export default function PacienteDetallePage() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [confirmaEdicion, setConfirmaEdicion] = useState(false);
+  const datosCambiados =
+    !!paciente &&
+    (nombre.trim() !== paciente.nombre.trim() ||
+      telefono !== (paciente.telefono ?? "") ||
+      email !== (paciente.email ?? "") ||
+      fechaNacimiento !== (paciente.fecha_nacimiento ? paciente.fecha_nacimiento.slice(0, 10) : ""));
+  // Solo se busca con lo que se está cambiando, y excluyendo a este mismo paciente.
+  const parecidosEdicion = useParecidos(
+    datosCambiados && nombre.trim() !== paciente?.nombre.trim() ? nombre : "",
+    datosCambiados && telefono !== (paciente?.telefono ?? "") ? telefono : "",
+    {
+      email: datosCambiados && email !== (paciente?.email ?? "") ? email : "",
+      fecha: datosCambiados ? fechaNacimiento : "",
+      excluir: pacienteId,
+    }
+  );
+  const bloqueaGuardar = datosCambiados && parecidosEdicion.length > 0 && !confirmaEdicion;
 
   const [guardandoNota, setGuardandoNota] = useState(false);
   const [archivoNota, setArchivoNota] = useState<string | null>(null);
@@ -175,7 +194,23 @@ export default function PacienteDetallePage() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const vistaNueva = true;
-  const [anuladosAbiertos, setAnuladosAbiertos] = useState<Set<number>>(new Set());
+  const [anuladosAbiertos, setAnuladosAbiertos] = useState<Set<string>>(new Set());
+  function alternarAnulado(clave: string) {
+    setAnuladosAbiertos((prev) => {
+      const n = new Set(prev);
+      if (n.has(clave)) n.delete(clave);
+      else n.add(clave);
+      return n;
+    });
+  }
+  const botonDetalle = (clave: string) => (
+    <button
+      onClick={() => alternarAnulado(clave)}
+      className="mt-1 text-[11px] font-medium text-[#803449] underline underline-offset-2"
+    >
+      {anuladosAbiertos.has(clave) ? "Ocultar detalle" : "Ver detalle"}
+    </button>
+  );
   const [refrescoOdonto, setRefrescoOdonto] = useState(0);
   const [tab, setTab] = useState<TabFicha>("datos");
   const vis = (t: TabFicha) => (vistaNueva && tab !== t ? "hidden" : "space-y-4");
@@ -250,6 +285,7 @@ export default function PacienteDetallePage() {
   }, []);
 
   async function guardarCambios() {
+    if (bloqueaGuardar) return;
     setGuardando(true);
     setGuardado(false);
     await fetch(`/api/pacientes/${pacienteId}`, {
@@ -264,6 +300,10 @@ export default function PacienteDetallePage() {
     });
     setGuardando(false);
     setGuardado(true);
+    setConfirmaEdicion(false);
+    setPaciente((p) =>
+      p ? { ...p, nombre, telefono: telefono || null, email: email || null, fecha_nacimiento: fechaNacimiento || null } : p
+    );
     setTimeout(() => setGuardado(false), 2000);
   }
 
@@ -802,7 +842,7 @@ export default function PacienteDetallePage() {
             <label className="block text-[11px] font-medium text-[#a49c8a]">Nombre completo</label>
             <input
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => { setNombre(e.target.value); setConfirmaEdicion(false); }}
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
@@ -810,7 +850,7 @@ export default function PacienteDetallePage() {
             <label className="block text-[11px] font-medium text-[#a49c8a]">Teléfono</label>
             <input
               value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
+              onChange={(e) => { setTelefono(e.target.value); setConfirmaEdicion(false); }}
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
@@ -820,7 +860,7 @@ export default function PacienteDetallePage() {
               type="date"
               value={fechaNacimiento}
               max={hoyISO()}
-              onChange={(e) => setFechaNacimiento(e.target.value)}
+              onChange={(e) => { setFechaNacimiento(e.target.value); setConfirmaEdicion(false); }}
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
@@ -828,15 +868,24 @@ export default function PacienteDetallePage() {
             <label className="block text-[11px] font-medium text-[#a49c8a]">Email</label>
             <input
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setConfirmaEdicion(false); }}
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
         </div>
 
+        {datosCambiados && parecidosEdicion.length > 0 && (
+          <div className="mt-3">
+            <ParecidosPaciente
+              parecidos={parecidosEdicion}
+              confirmado={confirmaEdicion}
+              onConfirmar={() => setConfirmaEdicion(true)}
+            />
+          </div>
+        )}
         <button
           onClick={guardarCambios}
-          disabled={guardando}
+          disabled={guardando || bloqueaGuardar}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-full btn-vino py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
         >
           <Save size={14} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar cambios"}
@@ -885,7 +934,11 @@ export default function PacienteDetallePage() {
                     >
                       {c.titulo}
                     </div>
-                    {c.estado === "firmado" ? (
+                    {!c.vigente ? (
+                      <span className="mt-1 inline-block rounded-full bg-[#EEE9DC] px-2 py-0.5 text-[10px] font-semibold text-[#8a8272]">
+                        Anulado
+                      </span>
+                    ) : c.estado === "firmado" ? (
                       <span className="mt-1 inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
                         Firmado
                       </span>
@@ -913,6 +966,9 @@ export default function PacienteDetallePage() {
                   </p>
                 )}
 
+                {!c.vigente && botonDetalle(`c${c.id}`)}
+                {(c.vigente || anuladosAbiertos.has(`c${c.id}`)) && (
+                  <>
                 {c.estado === "firmado" ? (
                   <div className="mt-2 flex items-center gap-3">
                     {c.firma && (
@@ -953,6 +1009,8 @@ export default function PacienteDetallePage() {
                     <Share2 size={12} />
                     {linkConsentCopiadoId === c.id ? "Link copiado ✓" : "Compartir link para firmar"}
                   </button>
+                )}
+                  </>
                 )}
               </div>
             ))
@@ -1128,23 +1186,9 @@ export default function PacienteDetallePage() {
                   </p>
                 )}
 
-                {!p.vigente && (
-                  <button
-                    onClick={() =>
-                      setAnuladosAbiertos((prev) => {
-                        const n = new Set(prev);
-                        if (n.has(p.id)) n.delete(p.id);
-                        else n.add(p.id);
-                        return n;
-                      })
-                    }
-                    className="mt-1 text-[11px] font-medium text-[#803449] underline underline-offset-2"
-                  >
-                    {anuladosAbiertos.has(p.id) ? "Ocultar detalle" : "Ver detalle"}
-                  </button>
-                )}
+                {!p.vigente && botonDetalle(`p${p.id}`)}
 
-                {(p.vigente || anuladosAbiertos.has(p.id)) && (
+                {(p.vigente || anuladosAbiertos.has(`p${p.id}`)) && (
                   <>
                 <PlanFases key={`${p.id}-${p.estado}`} pacienteId={paciente.id} presupuesto={p} />
 
@@ -1549,6 +1593,16 @@ export default function PacienteDetallePage() {
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
+                  {!r.vigente && !anuladosAbiertos.has(`r${r.id}`) ? (
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-[#8a8272] line-through">
+                        {r.diagnostico || r.medicamentos.split("\n")[0]}
+                      </div>
+                      <span className="mt-1 inline-block rounded-full bg-[#EEE9DC] px-2 py-0.5 text-[10px] font-semibold text-[#8a8272]">
+                        Anulada
+                      </span>
+                    </div>
+                  ) : (
                   <div className="min-w-0">
                     {r.diagnostico && (
                       <div className={`text-sm font-medium ${r.vigente ? "text-[#2b2118]" : "text-[#8a8272] line-through"}`}>
@@ -1564,6 +1618,7 @@ export default function PacienteDetallePage() {
                       </div>
                     )}
                   </div>
+                  )}
                   <div className="flex shrink-0 items-center gap-2">
                     <a
                       href={`/api/pacientes/${pacienteId}/recetas/${r.id}/pdf`}
@@ -1613,6 +1668,7 @@ export default function PacienteDetallePage() {
                     <span className="text-[#B0503A]"> · Anulada por {r.anulado_por_nombre}: {r.motivo_anulacion}</span>
                   )}
                 </div>
+                {!r.vigente && botonDetalle(`r${r.id}`)}
               </div>
             ))
           )}

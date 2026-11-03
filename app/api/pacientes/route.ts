@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     // o muy parecido, se avisa (409) y quien registra decide si es otra
     // persona (reenviando con forzar: true).
     if (forzar !== true) {
-      const parecidos = await buscarParecidos(nombre, telefono);
+      const parecidos = await buscarParecidos(nombre, telefono, { email, fechaNacimiento: fecha_nacimiento });
       if (parecidos.length > 0) {
         return NextResponse.json({ error: "posible paciente duplicado", parecidos }, { status: 409 });
       }
