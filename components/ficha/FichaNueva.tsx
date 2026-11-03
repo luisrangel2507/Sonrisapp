@@ -1,11 +1,12 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Eye, EyeOff } from "lucide-react";
 import type { Cita, Consentimiento, Paciente, PacienteNota, Pago, Presupuesto, Receta } from "@/lib/types";
 import { calcularEdad } from "@/lib/fechas";
 import { formatearDinero } from "@/lib/dinero";
 
-export type TabFicha = "resumen" | "clinico" | "trat" | "docs" | "citas" | "datos";
+export type TabFicha = "resumen" | "clinico" | "trat" | "docs" | "citas" | "datos" | "lealtad";
 
 export const TABS: { id: TabFicha; etiqueta: string }[] = [
   { id: "datos", etiqueta: "Datos" },
@@ -14,6 +15,7 @@ export const TABS: { id: TabFicha; etiqueta: string }[] = [
   { id: "trat", etiqueta: "Tratamiento" },
   { id: "citas", etiqueta: "Citas y pagos" },
   { id: "resumen", etiqueta: "Resumen" },
+  { id: "lealtad", etiqueta: "Tarjeta de lealtad" },
 ];
 
 const tarjeta = "rounded-3xl border border-[#EFE9DC] bg-white/70 p-5";
@@ -36,12 +38,29 @@ export function calcularSaldo(citas: Cita[]) {
   };
 }
 
+function ocultarTel(t: string) {
+  const d = t.replace(/\D/g, "");
+  return d.length > 4 ? `${"•".repeat(d.length - 4)}${d.slice(-4)}` : "••••";
+}
+function ocultarCorreo(c: string) {
+  const [u, dom] = c.split("@");
+  return dom ? `${u.slice(0, 1)}•••@${dom}` : "••••••";
+}
+
 export function Encabezado({ paciente, citas }: { paciente: Paciente; citas: Cita[] }) {
   const ahora = new Date().getTime();
   const proxima = citas
     .filter((c) => c.estado === "agendada" && new Date(c.fecha_hora).getTime() >= ahora)
     .sort((a, b) => +new Date(a.fecha_hora) - +new Date(b.fecha_hora))[0];
-  const { saldo, citasPendientes } = calcularSaldo(citas);
+  const [oculto, setOculto] = useState(() => {
+    try { return typeof window !== "undefined" && localStorage.getItem("ficha_contacto_oculto") === "1"; } catch { return false; }
+  });
+  function alternar() {
+    setOculto((v) => {
+      try { localStorage.setItem("ficha_contacto_oculto", v ? "0" : "1"); } catch {}
+      return !v;
+    });
+  }
   const edad = paciente.fecha_nacimiento ? calcularEdad(paciente.fecha_nacimiento) : null;
   const alergia = paciente.alergias ? (paciente.alergias_cual?.trim() ? `Alergia: ${paciente.alergias_cual}` : "Con alergias registradas") : null;
   return (
@@ -51,7 +70,7 @@ export function Encabezado({ paciente, citas }: { paciente: Paciente; citas: Cit
           {paciente.nombre}
         </h2>
         <div className="mt-0.5 text-[13px] text-[#8a8272]">
-          {[paciente.folio, edad !== null ? `${edad} años` : null, paciente.telefono].filter(Boolean).join(" · ")}
+          {[paciente.folio, edad !== null ? `${edad} años` : null].filter(Boolean).join(" · ")}
         </div>
       </div>
       {alergia && (
@@ -71,15 +90,18 @@ export function Encabezado({ paciente, citas }: { paciente: Paciente; citas: Cit
             <div className="mt-0.5 text-[14px] text-[#a49c8a]">Sin cita agendada</div>
           )}
         </div>
-        <div className={`rounded-2xl px-3 py-2.5 ${saldo > 0 ? "bg-[#FBEAE8]" : "bg-[#EEF4EA]"}`}>
-          <div className={`text-[10px] font-semibold uppercase tracking-wide ${saldo > 0 ? "text-[#8f3b28]" : "text-[#2f5226]"}`}>
-            Saldo pendiente
+        <div className="min-w-0 rounded-2xl bg-[#FBF9F5] px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#8a8272]">Contacto</div>
+            <button onClick={alternar} aria-label={oculto ? "Mostrar contacto" : "Ocultar contacto"} className="text-[#8a8272]">
+              {oculto ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
           </div>
-          <div className={`mt-0.5 text-base font-bold ${saldo > 0 ? "text-[#8f3b28]" : "text-[#2f5226]"}`}>
-            {formatearDinero(saldo)}
+          <div className="mt-0.5 truncate text-[13px] font-semibold text-[#2b2118]">
+            {paciente.telefono ? (oculto ? ocultarTel(paciente.telefono) : paciente.telefono) : <span className="font-normal text-[#a49c8a]">Sin celular</span>}
           </div>
-          <div className={`text-xs ${saldo > 0 ? "text-[#8f3b28]" : "text-[#2f5226]"}`}>
-            {saldo > 0 ? `${citasPendientes.length} cita${citasPendientes.length === 1 ? "" : "s"} sin liquidar` : "Al corriente"}
+          <div className="truncate text-xs text-[#8a8272]">
+            {paciente.email ? (oculto ? ocultarCorreo(paciente.email) : paciente.email) : "Sin correo"}
           </div>
         </div>
       </div>

@@ -1721,7 +1721,7 @@ export default function PacienteDetallePage() {
       )}
       </div>
 
-      <div className={vis("datos")}>
+      <div className={vis("lealtad")}>
       <LoyaltyCard paciente={paciente} onRegistrarReferido={registrarReferido} />
       </div>
 
