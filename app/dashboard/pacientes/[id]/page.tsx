@@ -175,6 +175,7 @@ export default function PacienteDetallePage() {
   const [pagos, setPagos] = useState<Pago[]>([]);
   // Vista nueva (pestañas) o anterior (todo en una sola página); se recuerda por dispositivo.
   const [vistaNueva, setVistaNuevaEstado] = useState(true);
+  const [anuladosAbiertos, setAnuladosAbiertos] = useState<Set<number>>(new Set());
   const [refrescoOdonto, setRefrescoOdonto] = useState(0);
   const [tab, setTab] = useState<TabFicha>("datos");
   useEffect(() => {
@@ -1090,7 +1091,11 @@ export default function PacienteDetallePage() {
                     >
                       {p.titulo}
                     </div>
-                    {p.estado === "aprobado" ? (
+                    {!p.vigente ? (
+                      <span className="mt-1 inline-block rounded-full bg-[#EEE9DC] px-2 py-0.5 text-[10px] font-semibold text-[#8a8272]">
+                        Anulado
+                      </span>
+                    ) : p.estado === "aprobado" ? (
                       <span className="mt-1 inline-block rounded-full bg-[#E3F0DE] px-2 py-0.5 text-[10px] font-semibold text-[#3F6B33]">
                         Aprobado
                       </span>
@@ -1136,6 +1141,24 @@ export default function PacienteDetallePage() {
                   </p>
                 )}
 
+                {!p.vigente && (
+                  <button
+                    onClick={() =>
+                      setAnuladosAbiertos((prev) => {
+                        const n = new Set(prev);
+                        if (n.has(p.id)) n.delete(p.id);
+                        else n.add(p.id);
+                        return n;
+                      })
+                    }
+                    className="mt-1 text-[11px] font-medium text-[#803449] underline underline-offset-2"
+                  >
+                    {anuladosAbiertos.has(p.id) ? "Ocultar detalle" : "Ver detalle"}
+                  </button>
+                )}
+
+                {(p.vigente || anuladosAbiertos.has(p.id)) && (
+                  <>
                 <div className="mt-2 space-y-1">
                   {p.items.map((it) => (
                     <div key={it.id} className="flex items-center justify-between text-[12px] text-[#8a8272]">
@@ -1183,6 +1206,8 @@ export default function PacienteDetallePage() {
                       Ver
                     </a>
                   </div>
+                )}
+                  </>
                 )}
               </div>
             ))
