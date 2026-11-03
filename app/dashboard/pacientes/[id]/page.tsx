@@ -173,18 +173,10 @@ export default function PacienteDetallePage() {
 
   const [citas, setCitas] = useState<Cita[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
-  // Vista nueva (pestañas) o anterior (todo en una sola página); se recuerda por dispositivo.
-  const [vistaNueva, setVistaNuevaEstado] = useState(true);
+  const vistaNueva = true;
   const [anuladosAbiertos, setAnuladosAbiertos] = useState<Set<number>>(new Set());
   const [refrescoOdonto, setRefrescoOdonto] = useState(0);
   const [tab, setTab] = useState<TabFicha>("datos");
-  useEffect(() => {
-    try { if (localStorage.getItem("ficha_vista") === "anterior") setVistaNuevaEstado(false); } catch {}
-  }, []);
-  function setVistaNueva(v: boolean) {
-    setVistaNuevaEstado(v);
-    try { localStorage.setItem("ficha_vista", v ? "nueva" : "anterior"); } catch {}
-  }
   const vis = (t: TabFicha) => (vistaNueva && tab !== t ? "hidden" : "space-y-4");
 
   const [accesos, setAccesos] = useState<AccesoBitacora[]>([]);
@@ -745,12 +737,6 @@ export default function PacienteDetallePage() {
       <Link href="/dashboard/pacientes" className="inline-flex items-center gap-1 text-sm text-[#8a8272]">
         <ChevronLeft size={15} /> Pacientes
       </Link>
-      <button
-        onClick={() => setVistaNueva(!vistaNueva)}
-        className="float-right rounded-full border border-[#EFE9DC] bg-white px-3 py-1 text-[11px] font-semibold text-[#7A1E33]"
-      >
-        {vistaNueva ? "Ver vista anterior" : "Ver vista nueva"}
-      </button>
       {vistaNueva && (
         <>
           <Encabezado paciente={paciente} citas={citas} />
