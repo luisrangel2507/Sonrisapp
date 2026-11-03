@@ -24,7 +24,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { AccesoBitacora, Consentimiento, Paciente, PacienteNota, Presupuesto, Receta, SolicitudPaciente } from "@/lib/types";
+import type { AccesoBitacora, Cita, Pago, Consentimiento, Paciente, PacienteNota, Presupuesto, Receta, SolicitudPaciente } from "@/lib/types";
 import { LoyaltyCard } from "@/components/LoyaltyCard";
 import { Odontograma } from "@/components/Odontograma";
 import { OdontogramaFoto } from "@/components/OdontogramaFoto";
@@ -33,6 +33,7 @@ import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
+import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
 
 function totalPresupuesto(items: { cantidad: number; precio_unitario: number; descuento?: number | null }[]) {
   return items.reduce((suma, it) => suma + importeConcepto(it), 0);
@@ -169,6 +170,20 @@ export default function PacienteDetallePage() {
   const [solicitudes, setSolicitudes] = useState<SolicitudPaciente[]>([]);
   const [resolviendoSolicitudId, setResolviendoSolicitudId] = useState<number | null>(null);
 
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [pagos, setPagos] = useState<Pago[]>([]);
+  // Vista nueva (pestañas) o anterior (todo en una sola página); se recuerda por dispositivo.
+  const [vistaNueva, setVistaNuevaEstado] = useState(true);
+  const [tab, setTab] = useState<TabFicha>("resumen");
+  useEffect(() => {
+    try { if (localStorage.getItem("ficha_vista") === "anterior") setVistaNuevaEstado(false); } catch {}
+  }, []);
+  function setVistaNueva(v: boolean) {
+    setVistaNuevaEstado(v);
+    try { localStorage.setItem("ficha_vista", v ? "nueva" : "anterior"); } catch {}
+  }
+  const vis = (t: TabFicha) => (vistaNueva && tab !== t ? "hidden" : "space-y-4");
+
   const [accesos, setAccesos] = useState<AccesoBitacora[]>([]);
   const [bitacoraAbierta, setBitacoraAbierta] = useState(false);
 
@@ -183,6 +198,8 @@ export default function PacienteDetallePage() {
     void json(`${base}/presupuestos`).then((d) => setPresupuestos(d.presupuestos ?? []));
     void json(`${base}/recetas`).then((d) => setRecetas(d.recetas ?? []));
     void json(`${base}/solicitudes`).then((d) => setSolicitudes(d.solicitudes ?? []));
+    void json(`/api/citas?paciente_id=${pacienteId}`).then((d) => setCitas(d.citas ?? []));
+    void json(`/api/pagos?paciente_id=${pacienteId}`).then((d) => setPagos(d.pagos ?? []));
     void json(`${base}/bitacora`).then((d) => setAccesos(d.accesos ?? []));
 
     const dataPaciente = await json(base);
@@ -725,7 +742,25 @@ export default function PacienteDetallePage() {
       <Link href="/dashboard/pacientes" className="inline-flex items-center gap-1 text-sm text-[#8a8272]">
         <ChevronLeft size={15} /> Pacientes
       </Link>
+      <button
+        onClick={() => setVistaNueva(!vistaNueva)}
+        className="float-right rounded-full border border-[#EFE9DC] bg-white px-3 py-1 text-[11px] font-semibold text-[#7A1E33]"
+      >
+        {vistaNueva ? "Ver vista anterior" : "Ver vista nueva"}
+      </button>
+      {vistaNueva && (
+        <>
+          <Encabezado paciente={paciente} citas={citas} />
+          <BarraPestanas tab={tab} setTab={setTab} />
+          <div className={tab === "resumen" ? "" : "hidden"}>
+            <Resumen paciente={paciente} citas={citas} pagos={pagos} recetas={recetas} presupuestos={presupuestos}
+              consentimientos={consentimientos} notas={notas} irA={setTab} historialPendiente={citas.some((c) => c.historial_pendiente)} />
+          </div>
+          <div className={tab === "citas" ? "" : "hidden"}><CitasPagos citas={citas} pagos={pagos} /></div>
+        </>
+      )}
 
+      <div className={vis("datos")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div>
           <h2 className="text-lg font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
@@ -817,9 +852,13 @@ export default function PacienteDetallePage() {
           <Save size={14} /> {guardando ? "Guardando…" : guardado ? "Guardado ✓" : "Guardar cambios"}
         </button>
       </div>
+      </div>
 
+      <div className={vis("clinico")}>
       <FotosClinicas pacienteId={paciente.id} />
+      </div>
 
+      <div className={vis("docs")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
@@ -1006,9 +1045,13 @@ export default function PacienteDetallePage() {
           </button>
         )}
       </div>
+      </div>
 
+      <div className={vis("clinico")}>
       <Odontograma paciente={paciente} />
+      </div>
 
+      <div className={vis("trat")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
@@ -1334,7 +1377,9 @@ export default function PacienteDetallePage() {
           </button>
         )}
       </div>
+      </div>
 
+      <div className={vis("clinico")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
@@ -1469,7 +1514,9 @@ export default function PacienteDetallePage() {
           </button>
         </div>
       </div>
+      </div>
 
+      <div className={vis("docs")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
@@ -1619,7 +1666,9 @@ export default function PacienteDetallePage() {
           </button>
         )}
       </div>
+      </div>
 
+      <div className={vis("resumen")}>
       {solicitudes.length > 0 && (
         <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
           <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
@@ -1667,9 +1716,13 @@ export default function PacienteDetallePage() {
           </div>
         </div>
       )}
+      </div>
 
+      <div className={vis("datos")}>
       <LoyaltyCard paciente={paciente} onRegistrarReferido={registrarReferido} />
+      </div>
 
+      <div className={vis("datos")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
         <button
           onClick={() => setBitacoraAbierta((v) => !v)}
@@ -1702,7 +1755,9 @@ export default function PacienteDetallePage() {
           </div>
         )}
       </div>
+      </div>
 
+      <div className={vis("datos")}>
       {miRol === "admin" && (
         <button
           onClick={eliminarPaciente}
@@ -1712,6 +1767,7 @@ export default function PacienteDetallePage() {
           <Trash2 size={14} /> {eliminando ? "Dando de baja…" : "Dar de baja al paciente"}
         </button>
       )}
+      </div>
     </div>
   );
 }
