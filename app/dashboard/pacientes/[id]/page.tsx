@@ -33,6 +33,7 @@ import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
+import { DictadoDientes } from "@/components/ficha/DictadoDientes";
 import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
 
 function totalPresupuesto(items: { cantidad: number; precio_unitario: number; descuento?: number | null }[]) {
@@ -174,6 +175,7 @@ export default function PacienteDetallePage() {
   const [pagos, setPagos] = useState<Pago[]>([]);
   // Vista nueva (pestañas) o anterior (todo en una sola página); se recuerda por dispositivo.
   const [vistaNueva, setVistaNuevaEstado] = useState(true);
+  const [refrescoOdonto, setRefrescoOdonto] = useState(0);
   const [tab, setTab] = useState<TabFicha>("resumen");
   useEffect(() => {
     try { if (localStorage.getItem("ficha_vista") === "anterior") setVistaNuevaEstado(false); } catch {}
@@ -1048,7 +1050,8 @@ export default function PacienteDetallePage() {
       </div>
 
       <div className={vis("clinico")}>
-      <Odontograma paciente={paciente} />
+      <DictadoDientes pacienteId={paciente.id} alAplicar={() => setRefrescoOdonto((n) => n + 1)} />
+      <Odontograma key={refrescoOdonto} paciente={paciente} />
       </div>
 
       <div className={vis("trat")}>
