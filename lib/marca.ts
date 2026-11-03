@@ -15,6 +15,7 @@ export interface Marca {
   direccion: string;
   horario: string;
   telefono: string | null;
+  googleResenasUrl: string | null;
 }
 
 export const MARCA_DEFAULT: Marca = {
@@ -28,6 +29,7 @@ export const MARCA_DEFAULT: Marca = {
   direccion: CLINICA.direccion,
   horario: CLINICA.horario,
   telefono: null,
+  googleResenasUrl: null,
 };
 
 const limpio = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -38,7 +40,7 @@ export async function obtenerMarca(): Promise<Marca> {
   try {
     const { rows } = await query<Record<string, string | null>>(
       `SELECT clinica_nombre, clinica_lema, logo, color_marca, doctor_nombre,
-              doctor_titulo, cedula, direccion, horario, telefono
+              doctor_titulo, cedula, direccion, horario, telefono, google_resenas_url
        FROM perfil_dentista WHERE id = 1`
     );
     const r = rows[0] ?? {};
@@ -54,6 +56,7 @@ export async function obtenerMarca(): Promise<Marca> {
       direccion: limpio(r.direccion) ?? MARCA_DEFAULT.direccion,
       horario: limpio(r.horario) ?? MARCA_DEFAULT.horario,
       telefono: limpio(r.telefono),
+      googleResenasUrl: limpio(r.google_resenas_url),
     };
   } catch {
     return MARCA_DEFAULT;

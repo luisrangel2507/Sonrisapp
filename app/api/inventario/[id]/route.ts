@@ -4,9 +4,11 @@ import { errorJson } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
-const COLUMNAS = `id, nombre, cantidad::float8 AS cantidad, unidad, cantidad_minima::float8 AS cantidad_minima, notas, actualizado_en`;
+const COLUMNAS = `id, nombre, cantidad::float8 AS cantidad, unidad, cantidad_minima::float8 AS cantidad_minima, notas, proveedor, actualizado_en,
+  (SELECT json_build_object('fecha', m.creado_en, 'cantidad', m.cantidad::float8, 'costo', m.costo::float8, 'proveedor', m.proveedor)
+     FROM inventario_movimientos m WHERE m.inventario_id = inventario.id AND m.tipo = 'compra' ORDER BY m.creado_en DESC LIMIT 1) AS ultima_compra`;
 
-const CAMPOS_EDITABLES = ["nombre", "cantidad", "unidad", "cantidad_minima", "notas"] as const;
+const CAMPOS_EDITABLES = ["nombre", "cantidad", "unidad", "cantidad_minima", "notas", "proveedor"] as const;
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

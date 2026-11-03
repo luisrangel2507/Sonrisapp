@@ -1,5 +1,5 @@
 import { query } from "@/lib/db";
-import { enviarWhatsApp, mensajeResumenHoy, mensajeRecordatorio1h } from "@/lib/whatsapp";
+import { enviarWhatsApp, mensajeConfirmarCita, mensajeResumenHoy, mensajeRecordatorio1h } from "@/lib/whatsapp";
 import { enviarPush } from "@/lib/push";
 
 function formatearHoraMx(fechaHora: string) {
@@ -157,4 +157,65 @@ export async function enviarAvisos2hAntes() {
     );
   }
   return { avisos2h: citas.length };
+}
+
+// Un día antes (entre 10:00 y 20:00 hora de México): pide al paciente que
+// confirme su cita de mañana. El UPDATE ... RETURNING marca y selecciona
+// en un solo paso para que dos disparos simultáneos no manden doble.
+export async function enviarConfirmacionesManana() {
+  const { rows: hora } = await query<{ h: number }>(
+    `SELECT EXTRACT(HOUR FROM now() AT TIME ZONE 'America/Mexico_City')::int AS h`
+  );
+  if (hora[0].h < 10 || hora[0].h >= 20) return { confirmacionesEnviadas: 0 };
+
+  const { rows } = await query<{
+    id: number;
+    paciente_id: number;
+    nombre: string;
+    telefono: string | null;
+    fecha_hora: string;
+    tratamiento: string;
+  }>(
+    `WITH manana AS (
+       SELECT (date_trunc('day', now() AT TIME ZONE 'America/Mexico_City') + interval '1 day') AT TIME ZONE 'America/Mexico_City' AS inicio
+     )
+     UPDATE citas c SET confirmacion_enviada = true
+     FROM pacientes p, manana
+     WHERE p.id = c.paciente_id
+       AND c.estado = 'agendada' AND c.pendiente_aprobacion = false
+       AND c.confirmacion_enviada = false AND c.confirmacion IS NULL
+       AND c.fecha_hora >= manana.inicio AND c.fecha_hora < manana.inicio + interval '1 day'
+     RETURNING c.id, c.paciente_id, p.nombre, p.telefono, c.fecha_hora, c.tratamiento`
+  );
+
+  const porPaciente = new Map<number, typeof rows>();
+  for (const c of rows) porPaciente.set(c.paciente_id, [...(porPaciente.get(c.paciente_id) ?? []), c]);
+
+  let enviados = 0;
+  for (const citas of porPaciente.values()) {
+    const p = citas[0];
+    if (!p.telefono) continue;
+    citas.sort((a, b) => +new Date(a.fecha_hora) - +new Date(b.fecha_hora));
+    const fechaTexto = new Date(p.fecha_hora).toLocaleDateString("es-MX", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: "America/Mexico_City",
+    });
+    try {
+      await enviarWhatsApp(
+        p.telefono,
+        mensajeConfirmarCita(
+          p.nombre,
+          fechaTexto,
+          citas.map((c) => ({ hora: formatearHoraMx(c.fecha_hora), tratamiento: c.tratamiento })),
+          citas.map((c) => c.id)
+        )
+      );
+      enviados++;
+    } catch (err) {
+      console.error("[confirmaciones] no se pudo enviar:", err);
+    }
+  }
+  return { confirmacionesEnviadas: enviados };
 }

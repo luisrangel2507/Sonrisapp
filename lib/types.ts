@@ -98,6 +98,8 @@ export interface PresupuestoItem {
   por_diente?: boolean;
   etapa?: string | null;
   descuento?: number;
+  realizado_en?: string | null;
+  realizado_por_nombre?: string | null;
 }
 
 export interface Presupuesto {
@@ -155,6 +157,7 @@ export interface Cita {
   pagado: number;
   historial_pendiente: boolean;
   pendiente_aprobacion: boolean;
+  confirmacion?: "confirmada" | "reagendar" | null;
 }
 
 export type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
@@ -201,7 +204,20 @@ export interface InventarioItem {
   unidad: string | null;
   cantidad_minima: number | null;
   notas: string | null;
+  proveedor?: string | null;
   actualizado_en: string;
+  ultima_compra?: { fecha: string; cantidad: number; costo: number | null; proveedor: string | null } | null;
+}
+
+export interface MovimientoInventario {
+  id: number;
+  tipo: "compra" | "uso" | "ajuste";
+  cantidad: number;
+  costo: number | null;
+  proveedor: string | null;
+  nota: string | null;
+  creado_por_nombre: string | null;
+  creado_en: string;
 }
 
 export interface HistoriaClinica {

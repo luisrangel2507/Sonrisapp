@@ -816,3 +816,48 @@ ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS doctor_titulo VARCHAR(80);
 ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS cedula VARCHAR(30);
 ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS direccion VARCHAR(200);
 ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS horario VARCHAR(120);
+
+-- Inventario: historial de compras/usos/ajustes de cada insumo.
+CREATE TABLE IF NOT EXISTS inventario_movimientos (
+  id SERIAL PRIMARY KEY,
+  inventario_id INTEGER NOT NULL REFERENCES inventario(id) ON DELETE CASCADE,
+  tipo VARCHAR(20) NOT NULL, -- 'compra' | 'uso' | 'ajuste'
+  cantidad NUMERIC(10,2) NOT NULL,
+  costo NUMERIC(10,2),
+  proveedor VARCHAR(120),
+  nota TEXT,
+  creado_por_nombre VARCHAR(160),
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS inventario_movimientos_item_idx ON inventario_movimientos (inventario_id, creado_en DESC);
+ALTER TABLE inventario ADD COLUMN IF NOT EXISTS proveedor VARCHAR(120);
+
+-- Avisos del sistema que se mandan una vez al día (ej. stock bajo).
+CREATE TABLE IF NOT EXISTS avisos_sistema (
+  clave VARCHAR(60) NOT NULL,
+  fecha DATE NOT NULL,
+  PRIMARY KEY (clave, fecha)
+);
+
+-- Plan de tratamiento por fases: cada concepto se puede marcar como hecho.
+ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS realizado_en TIMESTAMPTZ;
+ALTER TABLE presupuesto_items ADD COLUMN IF NOT EXISTS realizado_por_nombre VARCHAR(160);
+
+-- Encuesta de satisfacción después de la consulta (link público con token).
+CREATE TABLE IF NOT EXISTS encuestas (
+  id SERIAL PRIMARY KEY,
+  token VARCHAR(40) UNIQUE NOT NULL,
+  cita_id INTEGER UNIQUE REFERENCES citas(id) ON DELETE CASCADE,
+  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  calificacion SMALLINT CHECK (calificacion BETWEEN 1 AND 5),
+  comentario TEXT,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+  respondido_en TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS encuestas_respondido_idx ON encuestas (respondido_en DESC);
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS google_resenas_url TEXT;
+
+-- Confirmación de citas por WhatsApp: 'confirmada' | 'reagendar' | NULL.
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion VARCHAR(20);
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion_en TIMESTAMPTZ;
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS confirmacion_enviada BOOLEAN NOT NULL DEFAULT false;

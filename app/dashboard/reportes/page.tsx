@@ -5,6 +5,7 @@ import { Esqueleto } from "@/components/Esqueleto";
 import { FileDown, TrendingUp, Users, XCircle, Wallet } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { formatearDinero } from "@/lib/dinero";
+import { Satisfaccion } from "@/components/Satisfaccion";
 
 interface ReportesData {
   ingresos_por_mes: { mes: string; total: number }[];
@@ -112,6 +113,8 @@ export default function ReportesPage() {
         </a>
       </div>
       <p className="text-[13px] text-[#8a8272]">Últimos 6 meses.</p>
+
+      <Satisfaccion />
 
       {error && (
         <div className="rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">

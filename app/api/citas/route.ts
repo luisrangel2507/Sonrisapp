@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { enviarWhatsApp, mensajePostConsulta } from "@/lib/whatsapp";
 import { errorJson } from "@/lib/api-error";
+import { asegurarEncuesta } from "@/lib/encuesta";
+import { obtenerRpIdYOrigin } from "@/lib/webauthn-origin";
 
 const CITAS_SELECT = `
   SELECT c.id, c.paciente_id, p.nombre AS paciente_nombre, c.tratamiento,
          c.fecha_hora, c.estado, c.monto::float8 AS monto,
          COALESCE(pg.pagado, 0)::float8 AS pagado,
          (hc.confirmado IS FALSE) AS historial_pendiente,
-         c.pendiente_aprobacion
+         c.pendiente_aprobacion, c.confirmacion
   FROM citas c
   JOIN pacientes p ON p.id = c.paciente_id
   LEFT JOIN (
@@ -174,9 +176,16 @@ export async function PATCH(req: NextRequest) {
       );
       const pagado = pagoRows[0]?.pagado ?? 0;
       const saldoPendiente = cita.monto != null ? Math.max(0, cita.monto - pagado) : 0;
+      let urlEncuesta: string | null = null;
+      try {
+        const token = await asegurarEncuesta(cita.id, cita.paciente_id);
+        urlEncuesta = `${obtenerRpIdYOrigin(req).origin}/encuesta/${token}`;
+      } catch (err) {
+        console.error("[citas] no se pudo crear la encuesta:", err);
+      }
       await enviarWhatsApp(
         paciente.telefono,
-        mensajePostConsulta(paciente.nombre, cita.tratamiento, saldoPendiente)
+        mensajePostConsulta(paciente.nombre, cita.tratamiento, saldoPendiente, urlEncuesta)
       );
     }
 

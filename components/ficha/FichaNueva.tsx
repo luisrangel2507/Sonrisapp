@@ -231,6 +231,8 @@ export function CitasPagos({ citas, pagos }: { citas: Cita[]; pagos: Pago[] }) {
             <div className="text-xs text-[#8a8272]">
               {c.tratamiento}
               {c.monto ? ` · ${formatearDinero(c.pagado)} de ${formatearDinero(c.monto)}` : ""}
+              {c.estado === "agendada" && c.confirmacion === "confirmada" && <span className="font-semibold text-[#2f5226]"> · ✅ Confirmó</span>}
+              {c.estado === "agendada" && c.confirmacion === "reagendar" && <span className="font-semibold text-[#7a5410]"> · Pidió reagendar</span>}
             </div>
           </div>
         ))}

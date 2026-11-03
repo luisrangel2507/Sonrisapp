@@ -786,6 +786,20 @@ function CitaTimelineItem({
           </Link>
         )}
 
+        {cita.estado === "agendada" && cita.confirmacion === "confirmada" && (
+          <div className="mt-2.5 rounded-xl bg-[#EEF4EA] px-3 py-2 text-[12px] font-semibold text-[#2f5226]">
+            ✅ Confirmó por WhatsApp
+          </div>
+        )}
+        {cita.estado === "agendada" && cita.confirmacion === "reagendar" && (
+          <Link
+            href={`/dashboard/pacientes/${cita.paciente_id}`}
+            className="mt-2.5 block rounded-xl bg-[#FCF3DC] px-3 py-2 text-[12px] font-semibold text-[#7a5410]"
+          >
+            🗓️ Pidió reagendar por WhatsApp — contáctalo
+          </Link>
+        )}
+
         {cita.pendiente_aprobacion && (
           <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl bg-[#F7ECD9] px-3 py-2 text-[12px] font-semibold text-[#B0834A]">
             🌐 Solicitud en línea sin aprobar

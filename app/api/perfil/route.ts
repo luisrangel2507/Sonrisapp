@@ -14,13 +14,14 @@ const LOGO_MAX_BYTES = 2_000_000;
 const CAMPOS_MARCA: Record<string, number> = {
   clinica_nombre: 80, clinica_lema: 120, color_marca: 9, doctor_nombre: 120,
   doctor_titulo: 80, cedula: 30, direccion: 200, horario: 120,
+  google_resenas_url: 300,
 };
 
 export async function GET() {
   try {
     const { rows } = await query<Record<string, string | null>>(
       `SELECT foto, nombre_bienvenida, telefono, logo, clinica_nombre, clinica_lema, color_marca,
-              doctor_nombre, doctor_titulo, cedula, direccion, horario
+              doctor_nombre, doctor_titulo, cedula, direccion, horario, google_resenas_url
        FROM perfil_dentista WHERE id = 1`
     );
     const marca: Record<string, string | null> = { logo: rows[0]?.logo ?? null };
@@ -83,7 +84,7 @@ export async function PUT(req: NextRequest) {
       if (!Object.prototype.hasOwnProperty.call(body, col)) continue;
       let v = body[col];
       v = typeof v === "string" && v.trim() ? v.trim() : null;
-      if (v !== null && (v.length > max || (col === "color_marca" && !/^#[0-9a-fA-F]{6}$/.test(v)))) {
+      if (v !== null && (v.length > max || (col === "color_marca" && !/^#[0-9a-fA-F]{6}$/.test(v)) || (col === "google_resenas_url" && !/^https:\/\/[^\s"'<>]+$/.test(v)))) {
         return NextResponse.json({ error: `valor inválido en ${col}` }, { status: 400 });
       }
       marcaCampos.push(col);

@@ -37,7 +37,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const ids = presupuestos.map((p) => p.id);
     const { rows: items } = await query<PresupuestoItem & { presupuesto_id: number }>(
       `SELECT id, presupuesto_id, concepto, cantidad::float8 AS cantidad, precio_unitario::float8 AS precio_unitario, por_diente,
-              etapa, descuento::float8 AS descuento
+              etapa, descuento::float8 AS descuento, realizado_en, realizado_por_nombre
        FROM presupuesto_items WHERE presupuesto_id = ANY($1) ORDER BY id`,
       [ids]
     );

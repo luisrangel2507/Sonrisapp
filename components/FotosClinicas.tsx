@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, X, Trash2, ImageIcon } from "lucide-react";
+import { Camera, X, Trash2, ImageIcon, Columns2 } from "lucide-react";
+import { ComparadorFotos } from "@/components/ComparadorFotos";
 
 interface Foto {
   id: number;
@@ -45,6 +46,7 @@ export function FotosClinicas({ pacienteId }: { pacienteId: number }) {
   const [error, setError] = useState("");
   const [abierta, setAbierta] = useState<{ foto: Foto; imagen: string | null } | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [comparando, setComparando] = useState(false);
 
   useEffect(() => {
     fetch(`/api/pacientes/${pacienteId}/fotos`)
@@ -145,6 +147,17 @@ export function FotosClinicas({ pacienteId }: { pacienteId: number }) {
         <Camera size={15} /> {subiendo ? "Subiendo…" : `Tomar o subir foto (${etiqueta(etapa)})`}
       </button>
       {error && <p className="mt-2 text-center text-[12px] text-[#B0503A]">{error}</p>}
+
+      {fotos.length >= 2 && (
+        <button
+          type="button"
+          onClick={() => setComparando(true)}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#7A1E33]"
+        >
+          <Columns2 size={15} /> Comparar antes y después
+        </button>
+      )}
+      {comparando && <ComparadorFotos pacienteId={pacienteId} fotos={fotos} onCerrar={() => setComparando(false)} />}
 
       {fotos.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-2">

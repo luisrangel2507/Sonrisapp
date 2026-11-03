@@ -15,6 +15,7 @@ interface Campos {
   cedula: string;
   direccion: string;
   horario: string;
+  google_resenas_url: string;
   logo: string | null;
 }
 
@@ -55,6 +56,7 @@ export function MarcaClinica() {
           cedula: m?.cedula ?? "",
           direccion: m?.direccion ?? "",
           horario: m?.horario ?? "",
+          google_resenas_url: m?.googleResenasUrl ?? "",
           logo: m?.logo ?? null,
         })
       )
@@ -158,6 +160,19 @@ export function MarcaClinica() {
         <div>
           <label className={label}>Horario</label>
           <input className={campo} value={c.horario} maxLength={120} onChange={(e) => set("horario", e.target.value)} />
+        </div>
+        <div>
+          <label className={label}>Link para reseñas en Google</label>
+          <input
+            className={campo}
+            value={c.google_resenas_url}
+            maxLength={300}
+            placeholder="https://g.page/r/…/review"
+            onChange={(e) => set("google_resenas_url", e.target.value)}
+          />
+          <p className="mt-1 text-[11px] text-[#a49c8a]">
+            Se lo ofrecemos al paciente cuando califica su visita con 4 o 5 estrellas. Lo sacas de tu Perfil de Empresa de Google → &quot;Pedir reseñas&quot;.
+          </p>
         </div>
       </div>
 

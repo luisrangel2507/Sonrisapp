@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Esqueleto } from "@/components/Esqueleto";
-import { Plus, Minus, Pencil, Trash2, AlertTriangle, Search } from "lucide-react";
-import type { InventarioItem } from "@/lib/types";
+import { Plus, Minus, Pencil, Trash2, AlertTriangle, Search, ShoppingCart, History, Share2 } from "lucide-react";
+import type { InventarioItem, MovimientoInventario } from "@/lib/types";
+import { formatearDinero } from "@/lib/dinero";
+
+function sugerido(i: InventarioItem) {
+  const min = i.cantidad_minima ?? 0;
+  return Math.max(1, Math.ceil(min * 2 - i.cantidad));
+}
+const fechaCorta = (f: string) => new Date(f).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
 
 export default function InventarioPage() {
   const [items, setItems] = useState<InventarioItem[] | null>(null);
@@ -26,6 +33,68 @@ export default function InventarioPage() {
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   const [ajustandoId, setAjustandoId] = useState<number | null>(null);
+
+  const [compraId, setCompraId] = useState<number | null>(null);
+  const [compraCantidad, setCompraCantidad] = useState("");
+  const [compraCosto, setCompraCosto] = useState("");
+  const [compraProveedor, setCompraProveedor] = useState("");
+  const [guardandoCompra, setGuardandoCompra] = useState(false);
+  const [historialId, setHistorialId] = useState<number | null>(null);
+  const [movimientos, setMovimientos] = useState<MovimientoInventario[]>([]);
+  const [listaCopiada, setListaCopiada] = useState(false);
+
+  function abrirCompra(item: InventarioItem) {
+    setCompraId(compraId === item.id ? null : item.id);
+    setCompraCantidad(String(sugerido(item)));
+    setCompraCosto("");
+    setCompraProveedor(item.proveedor ?? "");
+  }
+
+  async function registrarCompra(item: InventarioItem) {
+    const cant = Number(compraCantidad);
+    if (!(cant > 0) || guardandoCompra) return;
+    setGuardandoCompra(true);
+    await fetch(`/api/inventario/${item.id}/movimientos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo: "compra", cantidad: cant, costo: compraCosto || null, proveedor: compraProveedor || null }),
+    });
+    setGuardandoCompra(false);
+    setCompraId(null);
+    if (historialId === item.id) await verHistorial(item, true);
+    await cargar();
+  }
+
+  async function verHistorial(item: InventarioItem, forzar = false) {
+    if (historialId === item.id && !forzar) {
+      setHistorialId(null);
+      return;
+    }
+    setHistorialId(item.id);
+    setMovimientos([]);
+    const res = await fetch(`/api/inventario/${item.id}/movimientos`);
+    const data = await res.json().catch(() => ({}));
+    setMovimientos(data.movimientos ?? []);
+  }
+
+  async function compartirLista(lista: InventarioItem[]) {
+    const texto =
+      "Lista de compras del consultorio:\n" +
+      lista.map((i) => `• ${i.nombre}: ${sugerido(i)} ${i.unidad ?? ""}${i.proveedor ? ` (${i.proveedor})` : ""}`.trim()).join("\n");
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: texto });
+        return;
+      }
+    } catch {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(texto);
+      setListaCopiada(true);
+      setTimeout(() => setListaCopiada(false), 2000);
+    } catch {}
+  }
 
   async function cargar() {
     try {
@@ -73,13 +142,13 @@ export default function InventarioPage() {
 
   async function ajustarCantidad(item: InventarioItem, delta: number) {
     if (ajustandoId) return;
-    const nueva = Math.max(0, item.cantidad + delta);
     setAjustandoId(item.id);
-    await fetch(`/api/inventario/${item.id}`, {
-      method: "PATCH",
+    await fetch(`/api/inventario/${item.id}/movimientos`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cantidad: nueva }),
+      body: JSON.stringify(delta < 0 ? { tipo: "uso", cantidad: -delta } : { tipo: "ajuste", cantidad: delta }),
     });
+    if (historialId === item.id) await verHistorial(item, true);
     setAjustandoId(null);
     await cargar();
   }
@@ -205,6 +274,39 @@ export default function InventarioPage() {
         </div>
       )}
 
+      {(() => {
+        const lista = (items ?? []).filter((i) => i.cantidad_minima != null && i.cantidad <= i.cantidad_minima);
+        if (lista.length === 0) return null;
+        return (
+          <div className="rounded-3xl border border-[#EABDB0] bg-[#FBEAE8] p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#8f3b28]">
+                <ShoppingCart size={13} /> Lista de compras · {lista.length}
+              </div>
+              <button
+                onClick={() => compartirLista(lista)}
+                className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-[#8f3b28]"
+              >
+                <Share2 size={12} /> {listaCopiada ? "Copiada ✓" : "Compartir"}
+              </button>
+            </div>
+            <div className="space-y-1">
+              {lista.map((i) => (
+                <div key={i.id} className="flex items-center justify-between gap-2 text-[13px] text-[#8f3b28]">
+                  <span className="min-w-0 truncate">
+                    {i.nombre}
+                    {i.proveedor && <span className="text-[11px] opacity-75"> · {i.proveedor}</span>}
+                  </span>
+                  <span className="shrink-0 font-semibold">
+                    pedir {sugerido(i)} {i.unidad ?? ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {items === null ? (
         <Esqueleto />
       ) : filtrados.length === 0 ? (
@@ -221,6 +323,13 @@ export default function InventarioPage() {
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-[#2b2118]">{item.nombre}</div>
                     {item.notas && <div className="text-xs text-[#a49c8a]">{item.notas}</div>}
+                    {item.ultima_compra && (
+                      <div className="text-[11px] text-[#a49c8a]">
+                        Última compra {fechaCorta(item.ultima_compra.fecha)} · {item.ultima_compra.cantidad} {item.unidad ?? ""}
+                        {item.ultima_compra.costo != null ? ` · ${formatearDinero(item.ultima_compra.costo)}` : ""}
+                        {item.ultima_compra.proveedor ? ` · ${item.ultima_compra.proveedor}` : ""}
+                      </div>
+                    )}
                   </div>
                   {bajoStock && (
                     <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#F7E5E0] px-2.5 py-1 text-[11px] font-semibold text-[#B0503A]">
@@ -253,6 +362,20 @@ export default function InventarioPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => abrirCompra(item)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#EFE9DC] bg-white text-[#3F6B33]"
+                      aria-label="Registrar compra"
+                    >
+                      <ShoppingCart size={13} />
+                    </button>
+                    <button
+                      onClick={() => verHistorial(item)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#EFE9DC] bg-white text-[#2b2118]"
+                      aria-label="Historial"
+                    >
+                      <History size={13} />
+                    </button>
+                    <button
                       onClick={() => (editandoId === item.id ? setEditandoId(null) : abrirEdicion(item))}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-[#EFE9DC] bg-white text-[#2b2118]"
                       aria-label="Editar"
@@ -268,6 +391,55 @@ export default function InventarioPage() {
                     </button>
                   </div>
                 </div>
+
+                {compraId === item.id && (
+                  <div className="mt-3 space-y-2 rounded-2xl border border-[#BFD8B4] bg-[#F3F8F0] p-3">
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-[#3F6B33]">Registrar compra</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="number" min="0" value={compraCantidad} onChange={(e) => setCompraCantidad(e.target.value)}
+                        placeholder={`Cantidad (${item.unidad || "piezas"})`}
+                        className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]" />
+                      <input type="number" min="0" value={compraCosto} onChange={(e) => setCompraCosto(e.target.value)}
+                        placeholder="Costo total $"
+                        className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]" />
+                    </div>
+                    <input value={compraProveedor} onChange={(e) => setCompraProveedor(e.target.value)} placeholder="Proveedor (opcional)"
+                      className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]" />
+                    <div className="flex gap-2">
+                      <button onClick={() => registrarCompra(item)} disabled={!(Number(compraCantidad) > 0) || guardandoCompra}
+                        className="flex-1 rounded-full btn-vino py-2 text-[13px] font-semibold text-white disabled:opacity-50">
+                        {guardandoCompra ? "Guardando…" : "Sumar al inventario"}
+                      </button>
+                      <button onClick={() => setCompraId(null)} className="rounded-full border border-[#EFE9DC] px-4 py-2 text-[13px] font-medium text-[#8a8272]">
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {historialId === item.id && (
+                  <div className="mt-3 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+                    <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#8a8272]">Movimientos</div>
+                    {movimientos.length === 0 ? (
+                      <p className="text-xs text-[#a49c8a]">Sin movimientos registrados.</p>
+                    ) : (
+                      movimientos.map((m) => (
+                        <div key={m.id} className="flex justify-between gap-2 border-t border-[#F1ECE0] py-1.5 text-[12px] first:border-t-0">
+                          <span className="min-w-0 truncate text-[#2b2118]">
+                            {fechaCorta(m.creado_en)} · {m.tipo === "compra" ? "Compra" : m.tipo === "uso" ? "Uso" : "Ajuste"}
+                            {m.proveedor ? ` · ${m.proveedor}` : ""}
+                            {m.creado_por_nombre ? <span className="text-[#a49c8a]"> · {m.creado_por_nombre}</span> : null}
+                          </span>
+                          <span className={`shrink-0 font-semibold ${m.tipo === "uso" ? "text-[#B0503A]" : "text-[#3F6B33]"}`}>
+                            {m.tipo === "uso" ? "−" : "+"}
+                            {Math.abs(m.cantidad)}
+                            {m.costo != null ? ` · ${formatearDinero(m.costo)}` : ""}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
 
                 {editandoId === item.id && (
                   <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">

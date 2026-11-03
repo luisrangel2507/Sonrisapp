@@ -33,6 +33,7 @@ import { fechaSoloDia, hoyISO } from "@/lib/fechas";
 import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
+import { PlanFases } from "@/components/ficha/PlanFases";
 import { DictadoDientes } from "@/components/ficha/DictadoDientes";
 import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
 
@@ -1145,17 +1146,7 @@ export default function PacienteDetallePage() {
 
                 {(p.vigente || anuladosAbiertos.has(p.id)) && (
                   <>
-                <div className="mt-2 space-y-1">
-                  {p.items.map((it) => (
-                    <div key={it.id} className="flex items-center justify-between text-[12px] text-[#8a8272]">
-                      <span className="truncate">
-                        {it.concepto}
-                        {it.cantidad !== 1 && ` ×${it.cantidad}`}
-                      </span>
-                      <span className="shrink-0">{formatearDinero(importeConcepto(it))}</span>
-                    </div>
-                  ))}
-                </div>
+                <PlanFases key={`${p.id}-${p.estado}`} pacienteId={paciente.id} presupuesto={p} />
 
                 {p.dientes.length > 0 && (
                   <div className="mt-2">
