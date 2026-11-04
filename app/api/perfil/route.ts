@@ -79,7 +79,11 @@ export async function PUT(req: NextRequest) {
       }
     }
     const marcaCampos: string[] = [];
-    const marcaValores: (string | null)[] = [];
+    const marcaValores: (string | boolean | null)[] = [];
+    if (typeof body?.pedir_curp === "boolean") {
+      marcaCampos.push("pedir_curp");
+      marcaValores.push(body.pedir_curp);
+    }
     for (const [col, max] of Object.entries(CAMPOS_MARCA)) {
       if (!Object.prototype.hasOwnProperty.call(body, col)) continue;
       let v = body[col];

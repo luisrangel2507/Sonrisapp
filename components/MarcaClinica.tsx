@@ -16,6 +16,7 @@ interface Campos {
   direccion: string;
   horario: string;
   google_resenas_url: string;
+  pedir_curp: boolean;
   logo: string | null;
 }
 
@@ -57,6 +58,7 @@ export function MarcaClinica() {
           direccion: m?.direccion ?? "",
           horario: m?.horario ?? "",
           google_resenas_url: m?.googleResenasUrl ?? "",
+          pedir_curp: m?.pedirCurp === true,
           logo: m?.logo ?? null,
         })
       )
@@ -162,6 +164,20 @@ export function MarcaClinica() {
           <input className={campo} value={c.horario} maxLength={120} onChange={(e) => set("horario", e.target.value)} />
         </div>
         <div>
+          <label className="flex items-start gap-2 pb-3 text-[13px] text-[#2b2118]">
+            <input
+              type="checkbox"
+              checked={c.pedir_curp}
+              onChange={(e) => set("pedir_curp", e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#7A1E33]"
+            />
+            <span>
+              Pedir CURP en la ficha del paciente
+              <span className="block text-[11px] text-[#a49c8a]">
+                Solo si trabajas con aseguradoras o instituciones que la piden. Un consultorio privado no la necesita.
+              </span>
+            </span>
+          </label>
           <label className={label}>Link para reseñas en Google</label>
           <input
             className={campo}

@@ -121,6 +121,13 @@ export default function PacienteDetallePage() {
   const [email, setEmail] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [curp, setCurp] = useState("");
+  const [pedirCurp, setPedirCurp] = useState(false);
+  useEffect(() => {
+    fetch("/api/marca")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => setPedirCurp(m?.pedirCurp === true))
+      .catch(() => {});
+  }, []);
   const [errorDatos, setErrorDatos] = useState("");
   const [confirmaEdicion, setConfirmaEdicion] = useState(false);
   const datosCambiados =
@@ -895,8 +902,9 @@ export default function PacienteDetallePage() {
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
+          {(pedirCurp || !!paciente.curp) && (
           <div>
-            <label className="block text-[11px] font-medium text-[#a49c8a]">CURP (NOM-024)</label>
+            <label className="block text-[11px] font-medium text-[#a49c8a]">CURP (opcional)</label>
             <input
               value={curp}
               maxLength={18}
@@ -908,6 +916,7 @@ export default function PacienteDetallePage() {
               <p className="mt-1 text-[11px] text-[#a49c8a]">Faltan {18 - curp.length} caracteres.</p>
             )}
           </div>
+          )}
         </div>
 
         {errorDatos && <p className="mt-2 text-[12px] text-[#B0503A]">{errorDatos}</p>}

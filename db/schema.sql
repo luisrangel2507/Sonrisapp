@@ -882,3 +882,6 @@ ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS huella VARCHAR(64);
 -- no solo las consultas. detalle nunca guarda datos clínicos, solo qué cambió.
 ALTER TABLE bitacora_accesos ADD COLUMN IF NOT EXISTS accion VARCHAR(10) NOT NULL DEFAULT 'lectura';
 ALTER TABLE bitacora_accesos ADD COLUMN IF NOT EXISTS detalle VARCHAR(200);
+
+-- CURP opcional: solo se muestra si la clínica la pide (Perfil → Identidad).
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS pedir_curp BOOLEAN NOT NULL DEFAULT false;
