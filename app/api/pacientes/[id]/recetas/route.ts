@@ -6,6 +6,8 @@ import { cifrar, descifrar } from "@/lib/crypto";
 import { asegurarHistorialToken } from "@/lib/historial-token";
 import { enviarWhatsApp, mensajeRecetaNueva } from "@/lib/whatsapp";
 import { obtenerRpIdYOrigin } from "@/lib/webauthn-origin";
+import { camposHuellaReceta, huella, verificarHuella } from "@/lib/integridad";
+import { registrarCambio } from "@/lib/bitacora";
 
 const CAMPOS_CIFRABLES = ["diagnostico", "medicamentos", "indicaciones", "peso"] as const;
 
@@ -18,7 +20,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const { rows } = await query(
-      `SELECT id, fecha, diagnostico, medicamentos, indicaciones, peso,
+      `SELECT id, paciente_id, fecha, diagnostico, medicamentos, indicaciones, peso, huella,
               creado_por_nombre, creado_en, vigente, motivo_anulacion, anulado_por_nombre
        FROM recetas
        WHERE paciente_id = $1 ORDER BY creado_en DESC`,
@@ -28,6 +30,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const recetas = rows.map((fila) => {
       const copia = { ...fila };
       for (const campo of CAMPOS_CIFRABLES) copia[campo] = descifrar(copia[campo]);
+      copia.integra = verificarHuella(copia.huella, camposHuellaReceta(copia));
       return copia;
     });
 
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const { rows } = await query(
       `INSERT INTO recetas (paciente_id, diagnostico, medicamentos, indicaciones, peso, creado_por, creado_por_nombre)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, fecha, diagnostico, medicamentos, indicaciones, peso, creado_por_nombre, creado_en, vigente`,
+       RETURNING id, paciente_id, fecha, diagnostico, medicamentos, indicaciones, peso, creado_por_nombre, creado_en, vigente`,
       [
         pacienteId,
         cifrar(diagnostico ?? null),
@@ -71,6 +74,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
     const receta = { ...rows[0] };
     for (const campo of CAMPOS_CIFRABLES) receta[campo] = descifrar(receta[campo]);
+    receta.huella = huella(camposHuellaReceta(receta));
+    receta.integra = true;
+    await query(`UPDATE recetas SET huella = $1 WHERE id = $2`, [receta.huella, receta.id]);
+    await registrarCambio(pacienteId, "receta", identidad.nombre, "Receta creada");
 
     // Aviso por WhatsApp al paciente con el link a su portal, donde ya
     // puede ver la receta — best-effort: si no tiene teléfono o el

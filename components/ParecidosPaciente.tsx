@@ -10,10 +10,11 @@ export interface ParecidoPaciente {
   folio: string | null;
   telefono: string | null;
   activo: boolean;
-  motivo: "mismo_telefono" | "mismo_correo" | "mismo_nombre" | "nombre_parecido" | "misma_fecha";
+  motivo: "misma_curp" | "mismo_telefono" | "mismo_correo" | "mismo_nombre" | "nombre_parecido" | "misma_fecha";
 }
 
 const MOTIVO: Record<ParecidoPaciente["motivo"], string> = {
+  misma_curp: "Misma CURP",
   mismo_telefono: "Mismo teléfono",
   mismo_correo: "Mismo correo",
   mismo_nombre: "Mismo nombre",
@@ -23,12 +24,12 @@ const MOTIVO: Record<ParecidoPaciente["motivo"], string> = {
 
 // Mientras se escribe el nombre o el teléfono, busca si ya hay un paciente
 // igual o parecido (con una pausa para no consultar en cada tecla).
-export function useParecidos(nombre: string, telefono = "", extra: { email?: string; fecha?: string; excluir?: number } = {}) {
-  const { email = "", fecha = "", excluir = 0 } = extra;
+export function useParecidos(nombre: string, telefono = "", extra: { email?: string; fecha?: string; curp?: string; excluir?: number } = {}) {
+  const { email = "", fecha = "", curp = "", excluir = 0 } = extra;
   const [parecidos, setParecidos] = useState<ParecidoPaciente[]>([]);
   useEffect(() => {
     const n = nombre.trim();
-    if (n.length < 3 && telefono.replace(/\D/g, "").length < 10 && !email.includes("@")) {
+    if (n.length < 3 && telefono.replace(/\D/g, "").length < 10 && !email.includes("@") && curp.length < 18) {
       setParecidos([]);
       return;
     }
@@ -36,7 +37,7 @@ export function useParecidos(nombre: string, telefono = "", extra: { email?: str
     const t = setTimeout(() => {
       fetch(
         `/api/pacientes/duplicados?nombre=${encodeURIComponent(n)}&telefono=${encodeURIComponent(telefono)}` +
-          `&email=${encodeURIComponent(email)}&fecha=${encodeURIComponent(fecha)}&excluir=${excluir}`
+          `&email=${encodeURIComponent(email)}&fecha=${encodeURIComponent(fecha)}&curp=${encodeURIComponent(curp)}&excluir=${excluir}`
       )
         .then((r) => (r.ok ? r.json() : { parecidos: [] }))
         .then((d) => vigente && setParecidos(d.parecidos ?? []))
@@ -46,7 +47,7 @@ export function useParecidos(nombre: string, telefono = "", extra: { email?: str
       vigente = false;
       clearTimeout(t);
     };
-  }, [nombre, telefono, email, fecha, excluir]);
+  }, [nombre, telefono, email, fecha, curp, excluir]);
   return parecidos;
 }
 

@@ -85,6 +85,7 @@ export interface RecetaPdfDatos {
   vigente: boolean;
   motivo_anulacion: string | null;
   anulado_por_nombre: string | null;
+  huella?: string | null;
 }
 
 export interface RecetaPdfPaciente {
@@ -143,6 +144,11 @@ export function construirRecetaPdfDocumento(receta: RecetaPdfDatos, paciente: Re
               <Text style={estilos.seccionTitulo}>Indicaciones</Text>
               <Text style={estilos.parrafo}>{receta.indicaciones}</Text>
             </View>
+          )}
+          {receta.huella && (
+            <Text style={{ fontSize: 6, color: "#a49c8a", marginTop: 8 }}>
+              Huella de integridad (SHA-256): {receta.huella.slice(0, 32)}
+            </Text>
           )}
         </View>
       </Page>

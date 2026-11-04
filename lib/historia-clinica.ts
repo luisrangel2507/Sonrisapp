@@ -1,3 +1,4 @@
+import { registrarCambio } from "@/lib/bitacora";
 import { query } from "@/lib/db";
 import {
   HISTORIA_CLINICA_CAMPOS as CAMPOS,
@@ -94,5 +95,6 @@ export async function confirmarHistoriaClinica(pacienteId: number, identidad: { 
      RETURNING ${COLUMNAS}`,
     [pacienteId, identidad.nombre]
   );
+  if (rows[0]) await registrarCambio(pacienteId, "historia_clinica", identidad.nombre, "Historia clínica confirmada");
   return rows[0] ? descifrarFila(rows[0]) : null;
 }

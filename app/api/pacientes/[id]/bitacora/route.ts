@@ -14,8 +14,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     const { rows } = await query(
-      `SELECT id, tipo, usuario_nombre, creado_en FROM bitacora_accesos
-       WHERE paciente_id = $1 ORDER BY creado_en DESC LIMIT 30`,
+      `SELECT id, tipo, usuario_nombre, creado_en, accion, detalle FROM bitacora_accesos
+       WHERE paciente_id = $1 ORDER BY creado_en DESC LIMIT 60`,
       [pacienteId]
     );
 

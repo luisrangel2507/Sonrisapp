@@ -1,3 +1,4 @@
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { limitarPublico } from "@/lib/limite-publico";
 import { query } from "@/lib/db";
@@ -108,9 +109,13 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
       `UPDATE presupuestos
        SET estado = $2, nombre_respuesta = $3, respondido_en = now(), firma_paciente = $4
        WHERE token = $1
-       RETURNING id, titulo, notas, estado, nombre_respuesta, respondido_en, creado_en`,
+       RETURNING id, paciente_id, titulo, notas, estado, nombre_respuesta, respondido_en, creado_en`,
       [params.token, estado, nombre_respuesta.trim(), firmaGuardar]
     );
+    if (rows[0]) {
+      await registrarCambio(rows[0].paciente_id, "presupuesto", null, `Presupuesto ${estado} por el paciente (${nombre_respuesta.trim().slice(0, 60)})`);
+      delete rows[0].paciente_id;
+    }
 
     return NextResponse.json({ presupuesto: rows[0] });
   } catch (err) {

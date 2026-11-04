@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       parecidos: await buscarParecidos(nombre, telefono, {
         email,
+        curp: (req.nextUrl.searchParams.get("curp") ?? "").slice(0, 18),
         fechaNacimiento,
         excluirId: Number.isInteger(excluir) ? excluir : 0,
       }),

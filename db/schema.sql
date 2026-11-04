@@ -871,3 +871,14 @@ ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejos BOOLEAN NOT NULL DEFAU
 ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejo_base INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejo_ts TIMESTAMPTZ NOT NULL DEFAULT now();
 ALTER TABLE pantalla_tv ADD COLUMN IF NOT EXISTS consejo_fijo BOOLEAN NOT NULL DEFAULT false;
+
+-- NOM-024: identificación del paciente con CURP (catálogo fundamental).
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS curp VARCHAR(18);
+-- NOM-024: huella de integridad (SHA-256) de documentos clínicos; si el
+-- contenido se altera fuera del sistema, la huella deja de coincidir.
+ALTER TABLE recetas ADD COLUMN IF NOT EXISTS huella VARCHAR(64);
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS huella VARCHAR(64);
+-- NOM-024: la bitácora registra también los CAMBIOS (qué se hizo y quién),
+-- no solo las consultas. detalle nunca guarda datos clínicos, solo qué cambió.
+ALTER TABLE bitacora_accesos ADD COLUMN IF NOT EXISTS accion VARCHAR(10) NOT NULL DEFAULT 'lectura';
+ALTER TABLE bitacora_accesos ADD COLUMN IF NOT EXISTS detalle VARCHAR(200);

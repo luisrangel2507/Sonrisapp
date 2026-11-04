@@ -1,3 +1,5 @@
+import { identidadDesdeRequest } from "@/lib/auth";
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -30,6 +32,7 @@ export async function DELETE(req: NextRequest, props: Props) {
       `UPDATE paciente_fotos SET vigente = false, motivo_anulacion = $3 WHERE id = $1 AND paciente_id = $2`,
       [Number(params.fotoId), Number(params.id), motivo]
     );
+    await registrarCambio(Number(params.id), "foto", (await identidadDesdeRequest(req)).nombre, `Foto clínica quitada: ${motivo.slice(0, 120)}`);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return errorJson(err);

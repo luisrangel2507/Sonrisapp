@@ -1,3 +1,4 @@
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import type { EstadoDiente } from "@/lib/dental";
@@ -52,6 +53,7 @@ export async function POST(
     );
 
     const entrada = { ...entradaRows[0], nota: descifrar(entradaRows[0].nota) };
+    await registrarCambio(pacienteId, "odontograma", identidad.nombre, `Odontograma: diente ${numeroFdi} · ${String(tipo).slice(0, 80)}`);
 
     return NextResponse.json({ entrada }, { status: 201 });
   } catch (err) {

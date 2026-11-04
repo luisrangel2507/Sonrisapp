@@ -1,5 +1,6 @@
 export interface Paciente {
   id: number;
+  curp?: string | null;
   nombre: string;
   telefono: string | null;
   email: string | null;
@@ -58,6 +59,8 @@ export interface PacienteNota {
 
 export interface Receta {
   id: number;
+  huella?: string | null;
+  integra?: boolean | null;
   fecha: string;
   diagnostico: string | null;
   medicamentos: string;
@@ -74,6 +77,8 @@ export type EstadoConsentimiento = "pendiente" | "firmado";
 
 export interface Consentimiento {
   id: number;
+  huella?: string | null;
+  integra?: boolean | null;
   paciente_id: number;
   titulo: string;
   contenido: string;
@@ -139,9 +144,11 @@ export interface SolicitudPaciente {
 
 export interface AccesoBitacora {
   id: number;
-  tipo: "expediente" | "consentimiento" | "presupuesto" | "portal" | "formulario";
+  tipo: string;
   usuario_nombre: string | null;
   creado_en: string;
+  accion?: "lectura" | "cambio";
+  detalle?: string | null;
 }
 
 export type EstadoCita = "agendada" | "completada" | "cancelada";

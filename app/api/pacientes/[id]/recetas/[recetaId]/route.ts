@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { registrarCambio } from "@/lib/bitacora";
 import { identidadDesdeRequest } from "@/lib/auth";
 
 // "Eliminar" no borra (NOM-024: nada se borra de verdad) — marca la
@@ -34,6 +35,7 @@ export async function DELETE(
        RETURNING id`,
       [motivo, identidad.nombre, recetaId, pacienteId]
     );
+    if (rows.length > 0) await registrarCambio(pacienteId, "receta", identidad.nombre, `Receta anulada: ${String(motivo).slice(0, 120)}`);
     if (rows.length === 0) {
       return NextResponse.json({ error: "receta no encontrada" }, { status: 404 });
     }

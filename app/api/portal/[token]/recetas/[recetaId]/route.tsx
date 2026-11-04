@@ -48,8 +48,9 @@ export async function GET(
       vigente: boolean;
       motivo_anulacion: string | null;
       anulado_por_nombre: string | null;
+      huella: string | null;
     }>(
-      `SELECT id, fecha, diagnostico, medicamentos, indicaciones, peso, vigente, motivo_anulacion, anulado_por_nombre
+      `SELECT id, fecha, diagnostico, medicamentos, indicaciones, peso, huella, vigente, motivo_anulacion, anulado_por_nombre
        FROM recetas WHERE id = $1 AND paciente_id = $2 AND vigente = true`,
       [recetaId, paciente.id]
     );

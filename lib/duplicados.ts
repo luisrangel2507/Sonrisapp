@@ -9,7 +9,7 @@ export interface Parecido {
   folio: string | null;
   telefono: string | null;
   activo: boolean;
-  motivo: "mismo_telefono" | "mismo_correo" | "mismo_nombre" | "nombre_parecido" | "misma_fecha";
+  motivo: "misma_curp" | "mismo_telefono" | "mismo_correo" | "mismo_nombre" | "nombre_parecido" | "misma_fecha";
 }
 
 export function normalizarNombre(txt: string) {
@@ -71,13 +71,14 @@ export function nombreParecido(a: string, b: string) {
 export async function buscarParecidos(
   nombre: string,
   telefono?: string | null,
-  extra: { email?: string | null; fechaNacimiento?: string | null; excluirId?: number } = {}
+  extra: { email?: string | null; fechaNacimiento?: string | null; curp?: string | null; excluirId?: number } = {}
 ): Promise<Parecido[]> {
   const n = normalizarNombre(nombre);
   const t = claveTelefono(telefono);
   const correo = extra.email?.trim().toLowerCase() || null;
   const fecha = extra.fechaNacimiento?.slice(0, 10) || null;
-  if (!n && !t && !correo) return [];
+  const curp = extra.curp?.trim().toUpperCase() || null;
+  if (!n && !t && !correo && !curp) return [];
 
   const { rows } = await query<{
     id: number;
@@ -85,21 +86,23 @@ export async function buscarParecidos(
     folio: string | null;
     telefono: string | null;
     email: string | null;
+    curp: string | null;
     fecha: string | null;
     activo: boolean;
   }>(
-    `SELECT id, nombre, folio, telefono, email, to_char(fecha_nacimiento, 'YYYY-MM-DD') AS fecha,
+    `SELECT id, nombre, folio, telefono, email, curp, to_char(fecha_nacimiento, 'YYYY-MM-DD') AS fecha,
             COALESCE(activo, true) AS activo
      FROM pacientes WHERE id <> $1`,
     [extra.excluirId ?? 0]
   );
 
-  const orden = { mismo_telefono: 0, mismo_correo: 1, mismo_nombre: 2, misma_fecha: 3, nombre_parecido: 4 } as const;
+  const orden = { misma_curp: -1, mismo_telefono: 0, mismo_correo: 1, mismo_nombre: 2, misma_fecha: 3, nombre_parecido: 4 } as const;
   const encontrados: Parecido[] = [];
-  for (const { email, fecha: fechaP, ...p } of rows) {
+  for (const { email, curp: curpP, fecha: fechaP, ...p } of rows) {
     const pn = normalizarNombre(p.nombre);
     let motivo: Parecido["motivo"] | null = null;
-    if (t && claveTelefono(p.telefono) === t) motivo = "mismo_telefono";
+    if (curp && curpP?.toUpperCase() === curp) motivo = "misma_curp";
+    else if (t && claveTelefono(p.telefono) === t) motivo = "mismo_telefono";
     else if (correo && email?.trim().toLowerCase() === correo) motivo = "mismo_correo";
     else if (n && pn === n) motivo = "mismo_nombre";
     else if (n && fecha && fechaP === fecha && palabras(n).some((w) => palabras(pn).includes(w))) motivo = "misma_fecha";

@@ -1,3 +1,4 @@
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { NUMEROS_FDI, type EstadoDiente } from "@/lib/dental";
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       );
     }
     await client.query("COMMIT");
+    await registrarCambio(pacienteId, "odontograma", identidad.nombre, `Odontograma: los 32 dientes · ${String(tipo).slice(0, 80)}`);
 
     return NextResponse.json({ ok: true, aplicados: NUMEROS_FDI.length }, { status: 201 });
   } catch (err) {

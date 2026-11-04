@@ -1,3 +1,5 @@
+import { identidadDesdeRequest } from "@/lib/auth";
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -145,6 +147,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       itemsGuardados.push({ ...itemRows[0], concepto: descifrar(itemRows[0].concepto) ?? itemRows[0].concepto });
     }
 
+    await registrarCambio(pacienteId, "presupuesto", (await identidadDesdeRequest(req)).nombre, `Presupuesto creado: ${String(titulo).slice(0, 100)}`);
     return NextResponse.json({ presupuesto: { ...presupuesto, items: itemsGuardados } }, { status: 201 });
   } catch (err) {
     return errorJson(err);

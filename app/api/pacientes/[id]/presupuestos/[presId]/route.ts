@@ -1,3 +1,4 @@
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -36,6 +37,7 @@ export async function DELETE(
     if (rows.length === 0) {
       return NextResponse.json({ error: "presupuesto no encontrado" }, { status: 404 });
     }
+    await registrarCambio(pacienteId, "presupuesto", identidad.nombre, `Presupuesto anulado: ${String(motivo).slice(0, 120)}`);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

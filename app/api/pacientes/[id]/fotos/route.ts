@@ -1,3 +1,4 @@
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
        RETURNING id, etapa, tomada_en`,
       [pacienteId, etapa, cifrar(nota), cifrar(body.imagen), cifrar(body.miniatura), tomada, identidad.nombre]
     );
+    await registrarCambio(pacienteId, "foto", identidad.nombre, `Foto clínica subida (${etapa})`);
     return NextResponse.json({ foto: { ...rows[0], nota, miniatura: body.miniatura } }, { status: 201 });
   } catch (err) {
     return errorJson(err);

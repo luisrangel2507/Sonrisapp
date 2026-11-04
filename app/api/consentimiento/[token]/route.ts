@@ -1,3 +1,5 @@
+import { camposHuellaConsentimiento, huella } from "@/lib/integridad";
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { limitarPublico } from "@/lib/limite-publico";
 import { query } from "@/lib/db";
@@ -102,12 +104,18 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ token: st
       `UPDATE consentimientos
        SET estado = 'firmado', firma = $2, nombre_firma = $3, firmado_en = now()
        WHERE token = $1
-       RETURNING id, titulo, contenido, estado, firma, nombre_firma, firmado_en`,
+       RETURNING id, paciente_id, titulo, contenido, estado, firma, nombre_firma, firmado_en`,
       [params.token, cifrar(firma), nombre_firma]
     );
 
     const consentimiento = { ...rows[0] };
     for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo]);
+    await query(`UPDATE consentimientos SET huella = $1 WHERE id = $2`, [
+      huella(camposHuellaConsentimiento(consentimiento)),
+      consentimiento.id,
+    ]);
+    await registrarCambio(consentimiento.paciente_id, "consentimiento", null, `Consentimiento firmado por ${String(nombre_firma).slice(0, 80)}`);
+    delete consentimiento.paciente_id;
 
     return NextResponse.json({ consentimiento });
   } catch (err) {

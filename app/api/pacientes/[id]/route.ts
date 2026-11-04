@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { PACIENTE_COLUMNAS } from "@/lib/paciente-columns";
 import { errorJson } from "@/lib/api-error";
+import { registrarCambio } from "@/lib/bitacora";
 import { esFechaFutura } from "@/lib/fechas";
 import { cifrar, descifrar } from "@/lib/crypto";
 import { identidadDesdeRequest } from "@/lib/auth";
@@ -92,7 +93,25 @@ const CAMPOS_EDITABLES = [
   "medicamentos",
   "antecedentes_medicos",
   "antecedentes_medicos_cual",
+  "curp",
 ] as const;
+
+const ETIQUETA_CAMPO: Record<string, string> = {
+  nombre: "nombre",
+  telefono: "teléfono",
+  email: "correo",
+  fecha_nacimiento: "fecha de nacimiento",
+  alergias: "alergias",
+  alergias_cual: "alergias",
+  medicamentos: "medicamentos",
+  antecedentes_medicos: "antecedentes",
+  antecedentes_medicos_cual: "antecedentes",
+  curp: "CURP",
+};
+
+// Formato oficial de la CURP (RENAPO): 4 letras, fecha AAMMDD, sexo H/M/X,
+// entidad (2 letras), 3 consonantes, homoclave y dígito verificador.
+const CURP_RE = /^[A-Z][AEIOUX][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HMX](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d$/;
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -111,6 +130,19 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (body.fecha_nacimiento && esFechaFutura(body.fecha_nacimiento)) {
       return NextResponse.json({ error: "la fecha de nacimiento no puede ser futura" }, { status: 400 });
     }
+    if ("curp" in body) {
+      const c = typeof body.curp === "string" ? body.curp.trim().toUpperCase() : "";
+      if (c && !CURP_RE.test(c)) {
+        return NextResponse.json({ error: "La CURP no tiene un formato válido (18 caracteres)." }, { status: 400 });
+      }
+      body.curp = c || null;
+    }
+
+    // Qué campos cambian de verdad, para la bitácora (sin guardar valores).
+    const { rows: antes } = await query<Record<string, unknown>>(
+      `SELECT ${actualizaciones.join(", ")} FROM pacientes WHERE id = $1`,
+      [id]
+    );
 
     const asignaciones = actualizaciones.map((campo, i) => `${campo} = $${i + 2}`).join(", ");
     const valores = actualizaciones.map((campo) => {
@@ -130,6 +162,28 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     const paciente = { ...rows[0] };
     for (const campo of Array.from(CAMPOS_CIFRABLES)) {
       if (campo in paciente) paciente[campo] = descifrar(paciente[campo]);
+    }
+
+    const previo = antes[0] ?? {};
+    const norm = (v: unknown, campo: string) => {
+      if (v == null || v === "") return null;
+      const t = v instanceof Date ? v.toISOString() : String(v);
+      return campo === "fecha_nacimiento" ? t.slice(0, 10) : t;
+    };
+    const cambiados = [
+      ...new Set(
+        actualizaciones
+          .filter((c) => {
+            const viejo = CAMPOS_CIFRABLES.has(c) ? descifrar(previo[c] as string | null) : previo[c];
+            const nuevo = body[c] ?? null;
+            return norm(viejo, c) !== norm(nuevo, c);
+          })
+          .map((c) => ETIQUETA_CAMPO[c] ?? c)
+      ),
+    ];
+    if (cambiados.length > 0) {
+      const identidad = await identidadDesdeRequest(req);
+      await registrarCambio(id, "datos", identidad.nombre, `Datos editados: ${cambiados.join(", ")}`);
     }
 
     return NextResponse.json({ paciente });

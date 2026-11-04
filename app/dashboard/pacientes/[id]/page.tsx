@@ -34,6 +34,7 @@ import { formatearDinero, importeConcepto } from "@/lib/dinero";
 import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
 import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
+import { CIE10_DENTAL } from "@/lib/cie10-dental";
 import { PlanFases } from "@/components/ficha/PlanFases";
 import { DictadoDientes } from "@/components/ficha/DictadoDientes";
 import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
@@ -119,13 +120,16 @@ export default function PacienteDetallePage() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [curp, setCurp] = useState("");
+  const [errorDatos, setErrorDatos] = useState("");
   const [confirmaEdicion, setConfirmaEdicion] = useState(false);
   const datosCambiados =
     !!paciente &&
     (nombre.trim() !== paciente.nombre.trim() ||
       telefono !== (paciente.telefono ?? "") ||
       email !== (paciente.email ?? "") ||
-      fechaNacimiento !== (paciente.fecha_nacimiento ? paciente.fecha_nacimiento.slice(0, 10) : ""));
+      fechaNacimiento !== (paciente.fecha_nacimiento ? paciente.fecha_nacimiento.slice(0, 10) : "") ||
+      curp !== (paciente.curp ?? ""));
   // Solo se busca con lo que se está cambiando, y excluyendo a este mismo paciente.
   const parecidosEdicion = useParecidos(
     datosCambiados && nombre.trim() !== paciente?.nombre.trim() ? nombre : "",
@@ -133,6 +137,7 @@ export default function PacienteDetallePage() {
     {
       email: datosCambiados && email !== (paciente?.email ?? "") ? email : "",
       fecha: datosCambiados ? fechaNacimiento : "",
+      curp: datosCambiados && curp.length === 18 && curp !== (paciente?.curp ?? "") ? curp : "",
       excluir: pacienteId,
     }
   );
@@ -241,6 +246,7 @@ export default function PacienteDetallePage() {
       setTelefono(p.telefono ?? "");
       setEmail(p.email ?? "");
       setFechaNacimiento(p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "");
+      setCurp(p.curp ?? "");
     }
     setCargando(false);
   }
@@ -288,7 +294,8 @@ export default function PacienteDetallePage() {
     if (bloqueaGuardar) return;
     setGuardando(true);
     setGuardado(false);
-    await fetch(`/api/pacientes/${pacienteId}`, {
+    setErrorDatos("");
+    const res = await fetch(`/api/pacientes/${pacienteId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -296,13 +303,20 @@ export default function PacienteDetallePage() {
         telefono: telefono || null,
         email: email || null,
         fecha_nacimiento: fechaNacimiento || null,
+        curp: curp.trim().toUpperCase() || null,
       }),
     });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setErrorDatos(d.error ?? "No se pudo guardar.");
+      setGuardando(false);
+      return;
+    }
     setGuardando(false);
     setGuardado(true);
     setConfirmaEdicion(false);
     setPaciente((p) =>
-      p ? { ...p, nombre, telefono: telefono || null, email: email || null, fecha_nacimiento: fechaNacimiento || null } : p
+      p ? { ...p, nombre, telefono: telefono || null, email: email || null, fecha_nacimiento: fechaNacimiento || null, curp: curp.trim().toUpperCase() || null } : p
     );
     setTimeout(() => setGuardado(false), 2000);
   }
@@ -820,6 +834,15 @@ export default function PacienteDetallePage() {
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#3F6B33]"><FileDown size={14} /></span> Reporte PDF
           </a>
+          {miRol === "admin" && (
+            <a
+              href={`/api/pacientes/${paciente.id}/exportar`}
+              title="Todo el expediente en formato estructurado (NOM-024)"
+              className="flex items-center gap-2 rounded-2xl border border-[#CBD3DE] bg-[#EEF1F5] px-3 py-2.5 text-left text-[12.5px] font-semibold leading-tight text-[#4A5A70] shadow-sm"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#4A5A70]"><FileDown size={14} /></span> Exportar expediente
+            </a>
+          )}
           <button
             onClick={compartirPortal}
             disabled={enviandoPortal}
@@ -872,8 +895,22 @@ export default function PacienteDetallePage() {
               className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
           </div>
+          <div>
+            <label className="block text-[11px] font-medium text-[#a49c8a]">CURP (NOM-024)</label>
+            <input
+              value={curp}
+              maxLength={18}
+              onChange={(e) => { setCurp(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "")); setConfirmaEdicion(false); }}
+              placeholder="18 caracteres"
+              className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 font-mono text-sm uppercase tracking-wide outline-none focus:border-[#803449]"
+            />
+            {curp.length > 0 && curp.length < 18 && (
+              <p className="mt-1 text-[11px] text-[#a49c8a]">Faltan {18 - curp.length} caracteres.</p>
+            )}
+          </div>
         </div>
 
+        {errorDatos && <p className="mt-2 text-[12px] text-[#B0503A]">{errorDatos}</p>}
         {datosCambiados && parecidosEdicion.length > 0 && (
           <div className="mt-3">
             <ParecidosPaciente
@@ -991,6 +1028,14 @@ export default function PacienteDetallePage() {
                         </>
                       )}
                     </div>
+                    {c.integra === false && (
+                      <span className="text-[11px] font-semibold text-[#B0503A]">⚠ No coincide con su huella</span>
+                    )}
+                    {c.integra === true && (
+                      <span className="text-[11px] text-[#3F6B33]" title={`Huella SHA-256: ${c.huella}`}>
+                        🔒 Íntegro
+                      </span>
+                    )}
                     <a
                       href={`/consentimiento/${c.token}`}
                       target="_blank"
@@ -1664,6 +1709,8 @@ export default function PacienteDetallePage() {
                 </div>
                 <div className="mt-1.5 text-[10px] text-[#a49c8a]">
                   {formatearFecha(r.fecha)} {r.creado_por_nombre && `· ${r.creado_por_nombre}`}
+                  {r.integra === true && <span className="text-[#3F6B33]" title={`Huella SHA-256: ${r.huella}`}> · 🔒 Íntegra</span>}
+                  {r.integra === false && <span className="font-semibold text-[#B0503A]"> · ⚠ El contenido no coincide con su huella</span>}
                   {!r.vigente && r.motivo_anulacion && (
                     <span className="text-[#B0503A]"> · Anulada por {r.anulado_por_nombre}: {r.motivo_anulacion}</span>
                   )}
@@ -1679,9 +1726,15 @@ export default function PacienteDetallePage() {
             <input
               value={diagnosticoReceta}
               onChange={(e) => setDiagnosticoReceta(e.target.value)}
-              placeholder="Diagnóstico (opcional)"
+              list="cie10-dental"
+              placeholder="Diagnóstico — escribe para elegir del catálogo CIE-10 (opcional)"
               className="w-full rounded-xl border border-[#EFE9DC] px-3 py-2 text-sm outline-none focus:border-[#803449]"
             />
+            <datalist id="cie10-dental">
+              {CIE10_DENTAL.map(([c, d]) => (
+                <option key={c} value={`${c} — ${d}`} />
+              ))}
+            </datalist>
             <input
               value={pesoReceta}
               onChange={(e) => setPesoReceta(e.target.value)}
@@ -1790,18 +1843,23 @@ export default function PacienteDetallePage() {
           className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]"
         >
           <span className="flex items-center gap-1.5">
-            <Eye size={13} /> Quién ha consultado este expediente
+            <Eye size={13} /> Bitácora: consultas y cambios
           </span>
           <span>{bitacoraAbierta ? "Ocultar" : "Ver"}</span>
         </button>
         {bitacoraAbierta && (
           <div className="mt-3 space-y-1.5">
             {accesos.length === 0 ? (
-              <p className="text-sm text-[#8a8272]">Sin accesos registrados todavía.</p>
+              <p className="text-sm text-[#8a8272]">Sin registros todavía.</p>
             ) : (
               accesos.map((a) => (
-                <div key={a.id} className="flex items-center justify-between text-[12px] text-[#8a8272]">
-                  <span>{a.usuario_nombre ?? "El paciente (link público)"}</span>
+                <div key={a.id} className="flex items-start justify-between gap-2 text-[12px] text-[#8a8272]">
+                  <span className="min-w-0">
+                    <span className={a.accion === "cambio" ? "font-semibold text-[#2b2118]" : ""}>
+                      {a.accion === "cambio" ? a.detalle : `Consultó (${a.tipo})`}
+                    </span>
+                    <span className="block text-[11px] text-[#a49c8a]">{a.usuario_nombre ?? "El paciente (link público)"}</span>
+                  </span>
                   <span className="text-[#a49c8a]">
                     {new Date(a.creado_en).toLocaleString("es-MX", {
                       day: "numeric",

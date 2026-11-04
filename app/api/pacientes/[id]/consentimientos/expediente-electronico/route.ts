@@ -1,3 +1,5 @@
+import { identidadDesdeRequest } from "@/lib/auth";
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       [pacienteId, titulo, contenido, token]
     );
 
+    await registrarCambio(pacienteId, "consentimiento", (await identidadDesdeRequest(req)).nombre, `Consentimiento creado: ${String(titulo).slice(0, 100)}`);
     return NextResponse.json({ consentimiento: rows[0] }, { status: 201 });
   } catch (err) {
     return errorJson(err);

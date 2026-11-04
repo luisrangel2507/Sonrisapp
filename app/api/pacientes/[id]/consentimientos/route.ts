@@ -1,3 +1,6 @@
+import { camposHuellaConsentimiento, verificarHuella } from "@/lib/integridad";
+import { identidadDesdeRequest } from "@/lib/auth";
+import { registrarCambio } from "@/lib/bitacora";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
@@ -19,7 +22,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const { rows } = await query(
       `SELECT id, paciente_id, titulo, contenido, token, estado, firma, nombre_firma, firmado_en, creado_en,
-              vigente, motivo_anulacion, anulado_por_nombre, anulado_en
+              vigente, motivo_anulacion, anulado_por_nombre, anulado_en, huella
        FROM consentimientos WHERE paciente_id = $1 ORDER BY creado_en DESC`,
       [pacienteId]
     );
@@ -27,6 +30,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const consentimientos = rows.map((fila) => {
       const copia = { ...fila };
       for (const campo of CAMPOS_CIFRABLES) copia[campo] = descifrar(copia[campo]);
+      copia.integra = verificarHuella(copia.huella, camposHuellaConsentimiento(copia));
       return copia;
     });
 
@@ -67,6 +71,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const consentimiento = { ...rows[0] };
     for (const campo of CAMPOS_CIFRABLES) consentimiento[campo] = descifrar(consentimiento[campo]);
 
+    await registrarCambio(pacienteId, "consentimiento", (await identidadDesdeRequest(req)).nombre, `Consentimiento creado: ${String(titulo).slice(0, 100)}`);
     return NextResponse.json({ consentimiento }, { status: 201 });
   } catch (err) {
     return errorJson(err);

@@ -21,3 +21,17 @@ export async function registrarAcceso(pacienteId: number, tipo: TipoAcceso, usua
     console.error("[bitacora] no se pudo registrar acceso:", err);
   }
 }
+
+// Trazabilidad de CAMBIOS (NOM-024): qué se hizo en el expediente y quién.
+// `detalle` describe la acción ("Receta creada", "Datos: teléfono, correo"),
+// nunca el contenido clínico.
+export async function registrarCambio(pacienteId: number, tipo: string, usuarioNombre: string | null, detalle: string) {
+  try {
+    await query(
+      `INSERT INTO bitacora_accesos (paciente_id, tipo, usuario_nombre, accion, detalle) VALUES ($1, $2, $3, 'cambio', $4)`,
+      [pacienteId, tipo.slice(0, 40), usuarioNombre, detalle.slice(0, 200)]
+    );
+  } catch (err) {
+    console.error("[bitacora] no se pudo registrar cambio:", err);
+  }
+}
