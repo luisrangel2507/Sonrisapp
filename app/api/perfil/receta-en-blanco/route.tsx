@@ -12,20 +12,39 @@ export async function GET(req: NextRequest) {
   try {
     const imagen = path.join(process.cwd(), "public", "receta-membrete.jpg");
     const carta = req.nextUrl.searchParams.get("formato") === "carta";
-    const membrete = (top: number) => (
-      <Image src={imagen} style={{ position: "absolute", top, left: 0, width: 612, height: 396 }} />
+    // La imagen del membrete es 3:2. En hoja carta se dejan 18 pt (¼") de
+    // margen para que ninguna impresora recorte la de abajo: cada receta
+    // mide 567×378 pt, centradas, y la línea de corte cae justo a la mitad.
+    const RECETA_ANCHO = 567;
+    const RECETA_ALTO = 378;
+    const MARGEN_SUP = (792 - RECETA_ALTO * 2) / 2;
+    const IZQ = (612 - RECETA_ANCHO) / 2;
+    const membreteCarta = (top: number) => (
+      <Image src={imagen} style={{ position: "absolute", top, left: IZQ, width: RECETA_ANCHO, height: RECETA_ALTO }} />
     );
     const buffer = await renderToBuffer(
       <Document title="Receta en blanco">
         {carta ? (
           <Page size="LETTER">
-            {membrete(0)}
-            {membrete(396)}
-            <View style={{ position: "absolute", top: 396, left: 0, width: 612, borderTopWidth: 0.6, borderTopColor: "#9a8f80", borderStyle: "dashed" }} />
-            <Text style={{ position: "absolute", top: 390, left: 8, fontSize: 7, color: "#9a8f80", backgroundColor: "#ffffff" }}>✂</Text>
+            {membreteCarta(MARGEN_SUP)}
+            {membreteCarta(MARGEN_SUP + RECETA_ALTO)}
+            <View
+              style={{
+                position: "absolute",
+                top: 396,
+                left: 0,
+                width: 612,
+                borderTopWidth: 0.6,
+                borderTopColor: "#9a8f80",
+                borderStyle: "dashed",
+              }}
+            />
+            <Text style={{ position: "absolute", top: 390, left: 4, fontSize: 8, color: "#9a8f80" }}>✂</Text>
           </Page>
         ) : (
-          <Page size={[612, 396]}>{membrete(0)}</Page>
+          <Page size={[612, 396]}>
+            <Image src={imagen} style={{ position: "absolute", top: 0, left: 0, width: 612, height: 396 }} />
+          </Page>
         )}
       </Document>
     );
