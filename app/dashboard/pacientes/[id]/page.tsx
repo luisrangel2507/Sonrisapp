@@ -1781,12 +1781,22 @@ export default function PacienteDetallePage() {
             </div>
           </div>
         ) : (
+          <>
           <button
             onClick={() => setFormRecetaAbierto(true)}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#BFD8B4] bg-[#E8F0E3] py-2.5 text-[13px] font-semibold text-[#3F6B33]"
           >
             <Plus size={14} /> Nueva receta
           </button>
+          <a
+            href="/api/perfil/receta-en-blanco"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2 text-[12px] font-semibold text-[#803449]"
+          >
+            <Printer size={13} /> Receta en blanco (solo membrete)
+          </a>
+          </>
         )}
       </div>
       </div>
