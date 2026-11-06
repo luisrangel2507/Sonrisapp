@@ -1789,12 +1789,12 @@ export default function PacienteDetallePage() {
             <Plus size={14} /> Nueva receta
           </button>
           <a
-            href="/api/perfil/receta-en-blanco"
+            href="/api/perfil/receta-en-blanco?formato=carta"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#EFE9DC] bg-white py-2 text-[12px] font-semibold text-[#803449]"
           >
-            <Printer size={13} /> Receta en blanco (solo membrete)
+            <Printer size={13} /> Recetas en blanco (hoja carta, 2 por hoja)
           </a>
           </>
         )}
