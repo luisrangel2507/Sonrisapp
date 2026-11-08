@@ -6,8 +6,9 @@ import type { PacienteNota } from "@/lib/types";
 import { CIE10_DENTAL } from "@/lib/cie10-dental";
 
 export const TIPO_NOTA_EVOLUCION = "Nota de evolución";
+export const TIPO_NOTA_REFERENCIA = "Nota de referencia";
 
-const VACIA = { ta: "", fc: "", temp: "", evolucion: "", exploracion: "", diagnostico: "", pronostico: "", tratamiento: "", indicaciones: "" };
+const VACIA = { ta: "", fc: "", temp: "", evolucion: "", exploracion: "", diagnostico: "", pronostico: "", tratamiento: "", indicaciones: "", dirigida: "", motivo: "" };
 
 // Nota de evolución con la estructura de la NOM-004 (6.2): signos vitales,
 // evolución y actualización del cuadro clínico, exploración, diagnóstico,
@@ -19,11 +20,12 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
   const [f, setF] = useState(VACIA);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const [modo, setModo] = useState<"evolucion" | "referencia">("evolucion");
 
   async function cargar() {
     const r = await fetch(`/api/pacientes/${pacienteId}/notas`).catch(() => null);
     const d = r?.ok ? await r.json() : { notas: [] };
-    setNotas(((d.notas ?? []) as PacienteNota[]).filter((n) => n.tipo === TIPO_NOTA_EVOLUCION));
+    setNotas(((d.notas ?? []) as PacienteNota[]).filter((n) => n.tipo === TIPO_NOTA_EVOLUCION || n.tipo === TIPO_NOTA_REFERENCIA));
   }
   useEffect(() => {
     cargar();
@@ -33,6 +35,7 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
   const set = (k: keyof typeof VACIA, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   async function guardar() {
+    if (modo === "referencia") return guardarReferencia();
     if (!f.evolucion.trim() || !f.tratamiento.trim()) {
       setError("Escribe al menos la evolución y el tratamiento.");
       return;
@@ -66,6 +69,39 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
     await cargar();
   }
 
+  // NOM-004 (6.3): nota de referencia/traslado o interconsulta — a quién se
+  // envía, motivo, resumen clínico, diagnóstico y tratamiento empleado.
+  async function guardarReferencia() {
+    if (!f.dirigida.trim() || !f.motivo.trim() || !f.evolucion.trim()) {
+      setError("Indica a quién se envía, el motivo y el resumen clínico.");
+      return;
+    }
+    setGuardando(true);
+    setError("");
+    const texto = [
+      `Se envía a: ${f.dirigida.trim()}`,
+      `Motivo de envío: ${f.motivo.trim()}`,
+      `Resumen clínico: ${f.evolucion.trim()}`,
+      f.diagnostico.trim() && `Diagnóstico: ${f.diagnostico.trim()}`,
+      f.tratamiento.trim() && `Tratamiento empleado: ${f.tratamiento.trim()}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const r = await fetch(`/api/pacientes/${pacienteId}/notas`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo: TIPO_NOTA_REFERENCIA, nota: texto, tratamiento: f.tratamiento.trim() || null }),
+    });
+    setGuardando(false);
+    if (!r.ok) {
+      setError("No se pudo guardar la nota.");
+      return;
+    }
+    setF(VACIA);
+    setAbierta(false);
+    await cargar();
+  }
+
   const campo = "w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]";
   const etiqueta = "block text-[11px] font-medium text-[#a49c8a]";
 
@@ -88,7 +124,10 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
               <span>
                 {new Date(n.subido_en).toLocaleString("es-MX", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
-              <span className="text-right">{n.creado_por_nombre}</span>
+              <span className="text-right">
+                {n.tipo === TIPO_NOTA_REFERENCIA && <b className="text-[#7A4D8A]">Referencia · </b>}
+                {n.creado_por_nombre}
+              </span>
             </div>
             <p className={`mt-1 whitespace-pre-line text-[13px] text-[#2b2118] ${n.vigente ? "" : "line-through"}`}>{n.nota}</p>
           </div>
@@ -97,6 +136,30 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
 
       {abierta ? (
         <div className="mt-3 space-y-2 rounded-2xl border border-[#EFE9DC] bg-white p-3">
+          <div className="flex gap-1.5">
+            {(["evolucion", "referencia"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setModo(m)}
+                className={`flex-1 rounded-full py-1.5 text-[12px] font-semibold ${modo === m ? "bg-[#7A1E33] text-white" : "border border-[#EFE9DC] text-[#6f6458]"}`}
+              >
+                {m === "evolucion" ? "Evolución" : "Referencia / interconsulta"}
+              </button>
+            ))}
+          </div>
+          {modo === "referencia" && (
+            <>
+              <div>
+                <label className={etiqueta}>Se envía a *</label>
+                <input value={f.dirigida} onChange={(e) => set("dirigida", e.target.value)} placeholder="Especialista o establecimiento, ej. Endodoncista Dr. …" className={campo} />
+              </div>
+              <div>
+                <label className={etiqueta}>Motivo de envío *</label>
+                <input value={f.motivo} onChange={(e) => set("motivo", e.target.value)} className={campo} />
+              </div>
+            </>
+          )}
+          {modo === "evolucion" && (
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className={etiqueta}>TA</label>
@@ -111,14 +174,17 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
               <input value={f.temp} onChange={(e) => set("temp", e.target.value)} placeholder="36.5" className={campo} />
             </div>
           </div>
+          )}
           <div>
-            <label className={etiqueta}>Evolución y estado actual *</label>
+            <label className={etiqueta}>{modo === "evolucion" ? "Evolución y estado actual *" : "Resumen clínico *"}</label>
             <textarea rows={2} value={f.evolucion} onChange={(e) => set("evolucion", e.target.value)} placeholder="Cómo llega el paciente, molestias, cambios desde la última cita" className={campo} />
           </div>
+          {modo === "evolucion" && (
           <div>
             <label className={etiqueta}>Exploración</label>
             <textarea rows={2} value={f.exploracion} onChange={(e) => set("exploracion", e.target.value)} className={campo} />
           </div>
+          )}
           <div>
             <label className={etiqueta}>Diagnóstico (CIE-10)</label>
             <input list="cie10-evolucion" value={f.diagnostico} onChange={(e) => set("diagnostico", e.target.value)} className={campo} />
@@ -128,6 +194,7 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
               ))}
             </datalist>
           </div>
+          {modo === "evolucion" && (
           <div>
             <label className={etiqueta}>Pronóstico</label>
             <select value={f.pronostico} onChange={(e) => set("pronostico", e.target.value)} className={campo}>
@@ -137,14 +204,17 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
               <option>Malo</option>
             </select>
           </div>
+          )}
           <div>
-            <label className={etiqueta}>Tratamiento realizado *</label>
+            <label className={etiqueta}>{modo === "evolucion" ? "Tratamiento realizado *" : "Tratamiento empleado"}</label>
             <textarea rows={2} value={f.tratamiento} onChange={(e) => set("tratamiento", e.target.value)} className={campo} />
           </div>
+          {modo === "evolucion" && (
           <div>
             <label className={etiqueta}>Indicaciones al paciente</label>
             <textarea rows={2} value={f.indicaciones} onChange={(e) => set("indicaciones", e.target.value)} className={campo} />
           </div>
+          )}
           {error && <p className="text-[12px] text-[#B0503A]">{error}</p>}
           <p className="text-[11px] text-[#a49c8a]">Se firma con tu nombre de usuario y queda con fecha y hora.</p>
           <div className="flex gap-2">
@@ -161,7 +231,7 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
           onClick={() => setAbierta(true)}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449]"
         >
-          <Plus size={14} /> Nueva nota de evolución
+          <Plus size={14} /> Nueva nota (evolución o referencia)
         </button>
       )}
     </div>

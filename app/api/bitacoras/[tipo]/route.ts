@@ -17,6 +17,10 @@ const CONFIG = {
     tabla: "bitacora_rpbi",
     campos: ["fecha", "tipo", "cantidad_kg", "recolector", "manifiesto", "nota"],
   },
+  rayosx: {
+    tabla: "bitacora_rayosx",
+    campos: ["fecha", "paciente", "tipo_estudio", "exposiciones", "proteccion", "embarazo_descartado", "nota"],
+  },
 } as const;
 
 type Tipo = keyof typeof CONFIG;

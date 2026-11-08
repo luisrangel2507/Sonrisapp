@@ -36,6 +36,7 @@ import { NUMEROS_FDI } from "@/lib/dental";
 import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
 import { CIE10_DENTAL } from "@/lib/cie10-dental";
 import { NotasEvolucion } from "@/components/ficha/NotasEvolucion";
+import { IndiceCPOD } from "@/components/ficha/IndiceCPOD";
 import { PlanFases } from "@/components/ficha/PlanFases";
 import { DictadoDientes } from "@/components/ficha/DictadoDientes";
 import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
@@ -238,7 +239,7 @@ export default function PacienteDetallePage() {
     const json = (url: string) => fetch(url).then((r) => r.json()).catch(() => ({}));
     const base = `/api/pacientes/${pacienteId}`;
     void json(`${base}/notas`).then((d) =>
-      setNotas(((d.notas ?? []) as PacienteNota[]).filter((n) => n.tipo !== "Nota de evolución"))
+      setNotas(((d.notas ?? []) as PacienteNota[]).filter((n) => n.tipo !== "Nota de evolución" && n.tipo !== "Nota de referencia"))
     );
     void json(`${base}/consentimientos`).then((d) => setConsentimientos(d.consentimientos ?? []));
     void json(`${base}/presupuestos`).then((d) => setPresupuestos(d.presupuestos ?? []));
@@ -1162,6 +1163,7 @@ export default function PacienteDetallePage() {
       <div className={vis("clinico")}>
       <NotasEvolucion pacienteId={paciente.id} />
       <DictadoDientes pacienteId={paciente.id} alAplicar={() => setRefrescoOdonto((n) => n + 1)} />
+      <IndiceCPOD pacienteId={paciente.id} version={refrescoOdonto} />
       <Odontograma key={refrescoOdonto} paciente={paciente} />
       </div>
 

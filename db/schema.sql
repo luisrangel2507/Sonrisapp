@@ -928,3 +928,25 @@ CREATE TABLE IF NOT EXISTS bitacora_rpbi (
   nota TEXT,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- NOM-229 (rayos X dentales): registro de cada estudio tomado.
+CREATE TABLE IF NOT EXISTS bitacora_rayosx (
+  id SERIAL PRIMARY KEY,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  paciente VARCHAR(160),
+  tipo_estudio VARCHAR(60),
+  exposiciones VARCHAR(10),
+  proteccion VARCHAR(80),
+  embarazo_descartado VARCHAR(10),
+  responsable VARCHAR(160),
+  nota TEXT,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Checklist de requisitos sanitarios del consultorio (NOM-005/013/087/229).
+CREATE TABLE IF NOT EXISTS checklist_sanitario (
+  clave VARCHAR(60) PRIMARY KEY,
+  cumplido BOOLEAN NOT NULL DEFAULT false,
+  nota TEXT,
+  actualizado_por VARCHAR(160),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);

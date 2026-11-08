@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, Plus } from "lucide-react";
 import { Esqueleto } from "@/components/Esqueleto";
 import { hoyISO } from "@/lib/fechas";
+import { ChecklistSanitario } from "@/components/ChecklistSanitario";
 
-type Tipo = "esterilizacion" | "rpbi";
+type Tipo = "esterilizacion" | "rpbi" | "rayosx" | "checklist";
+
+const PESTANAS: [Tipo, string][] = [
+  ["checklist", "Checklist"],
+  ["esterilizacion", "Esterilización"],
+  ["rpbi", "RPBI"],
+  ["rayosx", "Rayos X"],
+];
 type Registro = Record<string, string | number | null> & { id: number; fecha: string };
 
 const RESIDUOS: Record<string, string> = {
@@ -23,7 +31,7 @@ const fechaCorta = (f: string) =>
 // Bitácoras sanitarias: esterilización (NOM-013) y RPBI (NOM-087). Lo que
 // piden en una visita de verificación sanitaria, en un solo lugar.
 export default function BitacorasPage() {
-  const [tipo, setTipo] = useState<Tipo>("esterilizacion");
+  const [tipo, setTipo] = useState<Tipo>("checklist");
   const [registros, setRegistros] = useState<Registro[] | null>(null);
   const [abierto, setAbierto] = useState(false);
   const [f, setF] = useState<Record<string, string>>({});
@@ -37,14 +45,16 @@ export default function BitacorasPage() {
     setRegistros(d.registros ?? []);
   }
   useEffect(() => {
-    cargar(tipo);
+    if (tipo !== "checklist") cargar(tipo);
   }, [tipo]);
 
   function nuevo() {
     setF(
       tipo === "esterilizacion"
         ? { fecha: hoyISO(), testigo_quimico: "paso", testigo_biologico: "no_aplica", temperatura: "134 °C", tiempo_min: "4" }
-        : { fecha: hoyISO(), tipo: "punzocortantes" }
+        : tipo === "rpbi"
+          ? { fecha: hoyISO(), tipo: "punzocortantes" }
+          : { fecha: hoyISO(), tipo_estudio: "Periapical", exposiciones: "1", proteccion: "Mandil y collarín plomados", embarazo_descartado: "si" }
     );
     setError("");
     setAbierto(true);
@@ -75,27 +85,31 @@ export default function BitacorasPage() {
         <ShieldCheck size={22} className="text-[#803449]" /> Bitácoras sanitarias
       </h1>
       <p className="text-[13px] text-[#8a8272]">
-        Registro de esterilización (NOM-013) y de residuos biológico-infecciosos (NOM-087). Es lo que piden en una
-        visita de verificación sanitaria.
+        Checklist del consultorio y registros de esterilización (NOM-013), residuos biológico-infecciosos (NOM-087) y
+        rayos X (NOM-229). Es lo que piden en una visita de verificación sanitaria.
       </p>
 
       <div className="flex gap-1.5">
-        {(["esterilizacion", "rpbi"] as const).map((t) => (
+        {PESTANAS.map(([t, nombre]) => (
           <button
             key={t}
             onClick={() => {
               setTipo(t);
               setAbierto(false);
             }}
-            className={`flex-1 rounded-full px-4 py-2 text-[13px] font-semibold ${
+            className={`flex-1 rounded-full px-2 py-2 text-[12px] font-semibold ${
               tipo === t ? "bg-[#7A1E33] text-white" : "border border-[#EFE9DC] bg-white text-[#6f6458]"
             }`}
           >
-            {t === "esterilizacion" ? "Esterilización" : "Residuos RPBI"}
+            {nombre}
           </button>
         ))}
       </div>
 
+      {tipo === "checklist" ? (
+        <ChecklistSanitario />
+      ) : (
+      <>
       {abierto ? (
         <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
           <div>
@@ -142,6 +156,39 @@ export default function BitacorasPage() {
                 <input value={f.contenido ?? ""} onChange={(e) => set("contenido", e.target.value)} placeholder="Ej. 6 paquetes de instrumental básico, fresas" className={campo} />
               </div>
             </>
+          ) : tipo === "rayosx" ? (
+            <>
+              <div>
+                <label className={etiqueta}>Paciente</label>
+                <input value={f.paciente ?? ""} onChange={(e) => set("paciente", e.target.value)} placeholder="Nombre del paciente" className={campo} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={etiqueta}>Tipo de estudio</label>
+                  <select value={f.tipo_estudio ?? ""} onChange={(e) => set("tipo_estudio", e.target.value)} className={campo}>
+                    {["Periapical", "Aleta de mordida", "Oclusal", "Panorámica", "Lateral de cráneo"].map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={etiqueta}>No. de exposiciones</label>
+                  <input type="number" min="1" value={f.exposiciones ?? ""} onChange={(e) => set("exposiciones", e.target.value)} className={campo} />
+                </div>
+              </div>
+              <div>
+                <label className={etiqueta}>Protección usada</label>
+                <input value={f.proteccion ?? ""} onChange={(e) => set("proteccion", e.target.value)} className={campo} />
+              </div>
+              <div>
+                <label className={etiqueta}>¿Se descartó embarazo?</label>
+                <select value={f.embarazo_descartado ?? ""} onChange={(e) => set("embarazo_descartado", e.target.value)} className={campo}>
+                  <option value="si">Sí</option>
+                  <option value="no_aplica">No aplica</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -186,7 +233,8 @@ export default function BitacorasPage() {
         </div>
       ) : (
         <button onClick={nuevo} className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white">
-          <Plus size={15} /> {tipo === "esterilizacion" ? "Registrar ciclo de esterilización" : "Registrar entrega de RPBI"}
+          <Plus size={15} />{" "}
+          {tipo === "esterilizacion" ? "Registrar ciclo de esterilización" : tipo === "rpbi" ? "Registrar entrega de RPBI" : "Registrar estudio de rayos X"}
         </button>
       )}
 
@@ -210,6 +258,8 @@ export default function BitacorasPage() {
                   >
                     {r.testigo_quimico === "fallo" || r.testigo_biologico === "positivo" ? "Falla — repetir" : "Correcto"}
                   </span>
+                ) : tipo === "rayosx" ? (
+                  <span className="shrink-0 text-[12px] font-semibold text-[#2b2118]">{r.tipo_estudio}</span>
                 ) : (
                   <span className="shrink-0 font-semibold text-[#2b2118]">{r.cantidad_kg != null ? `${r.cantidad_kg} kg` : ""}</span>
                 )}
@@ -219,7 +269,11 @@ export default function BitacorasPage() {
                   ? [r.equipo, r.ciclo && `ciclo ${r.ciclo}`, r.temperatura, r.tiempo_min && `${r.tiempo_min} min`, r.contenido]
                       .filter(Boolean)
                       .join(" · ")
-                  : [RESIDUOS[String(r.tipo)] ?? r.tipo, r.recolector, r.manifiesto && `manifiesto ${r.manifiesto}`].filter(Boolean).join(" · ")}
+                  : tipo === "rayosx"
+                    ? [r.paciente, r.exposiciones && `${r.exposiciones} exposición(es)`, r.proteccion, r.embarazo_descartado === "si" && "embarazo descartado"]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : [RESIDUOS[String(r.tipo)] ?? r.tipo, r.recolector, r.manifiesto && `manifiesto ${r.manifiesto}`].filter(Boolean).join(" · ")}
               </div>
               <div className="mt-0.5 text-[11px] text-[#a49c8a]">
                 {r.responsable}
@@ -228,6 +282,8 @@ export default function BitacorasPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   );

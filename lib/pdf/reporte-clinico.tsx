@@ -4,7 +4,7 @@ import { query } from "@/lib/db";
 import { PaginaPdf, EncabezadoPdf, estilosPdf, PDF_COLOR } from "@/lib/pdf";
 import { MARCA_DEFAULT, type Marca } from "@/lib/marca";
 import { formatearDinero } from "@/lib/dinero";
-import { ARCO_SUPERIOR, ARCO_INFERIOR, ESTADO_DIENTE, POLIGONOS_DIENTE, construirMapaEstados, type EstadoDiente } from "@/lib/dental";
+import { ARCO_SUPERIOR, ARCO_INFERIOR, ESTADO_DIENTE, POLIGONOS_DIENTE, construirMapaEstados, type EstadoDiente, calcularCPOD } from "@/lib/dental";
 import { HISTORIA_CLINICA_COLUMNAS, HISTORIA_CLINICA_CAMPOS_CIFRABLES } from "@/lib/historia-clinica-campos";
 import { descifrar } from "@/lib/crypto";
 import { estadosPersonalizados } from "@/lib/estados-diente";
@@ -311,6 +311,14 @@ export function ReporteClinicoPdf({ datos, marca = MARCA_DEFAULT }: { datos: Dat
 
       <View style={estilosPdf.seccion}>
         <Text style={estilosPdf.seccionTitulo}>Odontograma — dientes con hallazgos</Text>
+        {(() => {
+          const ind = calcularCPOD(Object.fromEntries(dientes.map((d) => [d.numero_fdi, d.estado])));
+          return (
+            <Text style={{ ...estilosPdf.parrafo, marginBottom: 4 }}>
+              Índice CPO-D: {ind.total} ({ind.nivel}) — Cariados {ind.c} · Perdidos {ind.p} · Obturados {ind.o}
+            </Text>
+          );
+        })()}
         {dientes.length === 0 ? (
           <Text style={estilosPdf.vacio}>Sin hallazgos registrados — todos los dientes en estado sano.</Text>
         ) : (

@@ -275,3 +275,27 @@ export const SIGNIFICADO_ABREVIATURA: Record<string, string> = {
 export function significadoAbreviatura(a: string): string | null {
   return SIGNIFICADO_ABREVIATURA[a.toUpperCase()] ?? null;
 }
+
+// Índice CPO-D (NOM-013): dientes permanentes Cariados, Perdidos por
+// caries y Obturados. Se calcula solo con el estado actual de cada
+// diente en el odontograma.
+const CPOD_CARIADO = new Set(["caries", "caries_recurrente", "extraccion_indicada", "sellante_mal", "endodoncia_mal", "corona_mala", "incrustacion_mala", "material_temporal", "para_corona"]);
+const CPOD_PERDIDO = new Set(["extraido", "perdido"]);
+const CPOD_OBTURADO = new Set(["restauracion_buena", "superficie_resina", "superficie_amalgama", "incrustacion_buena", "corona_buena", "endodoncia_buena", "protesis_fija_buena"]);
+
+export function calcularCPOD(estados: Record<number, string>) {
+  let c = 0;
+  let p = 0;
+  let o = 0;
+  for (const n of NUMEROS_FDI) {
+    const e = estados[n];
+    if (!e) continue;
+    if (CPOD_CARIADO.has(e)) c++;
+    else if (CPOD_PERDIDO.has(e)) p++;
+    else if (CPOD_OBTURADO.has(e)) o++;
+  }
+  const total = c + p + o;
+  // Criterio OMS para el CPO-D: muy bajo <1.2, bajo 1.2–2.6, moderado 2.7–4.4, alto 4.5–6.5, muy alto >6.5.
+  const nivel = total < 1.2 ? "Muy bajo" : total <= 2.6 ? "Bajo" : total <= 4.4 ? "Moderado" : total <= 6.5 ? "Alto" : "Muy alto";
+  return { c, p, o, total, nivel };
+}
