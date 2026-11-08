@@ -1,3 +1,4 @@
+import { obtenerFirmaDoctora } from "@/lib/firma-doctora";
 import { NextRequest, NextResponse } from "next/server";
 import { limitarPublico } from "@/lib/limite-publico";
 import { renderToBuffer } from "@react-pdf/renderer";
@@ -67,7 +68,7 @@ export async function GET(
 
     void registrarAcceso(paciente.id, "portal", null);
 
-    const documento = construirRecetaPdfDocumento(receta, paciente);
+    const documento = construirRecetaPdfDocumento(receta, paciente, await obtenerFirmaDoctora());
 
     const buffer = await renderToBuffer(documento);
     return new NextResponse(new Uint8Array(buffer), {

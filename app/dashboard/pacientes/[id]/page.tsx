@@ -35,6 +35,7 @@ import { TRATAMIENTOS } from "@/lib/panel-data";
 import { NUMEROS_FDI } from "@/lib/dental";
 import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
 import { CIE10_DENTAL } from "@/lib/cie10-dental";
+import { NotasEvolucion } from "@/components/ficha/NotasEvolucion";
 import { PlanFases } from "@/components/ficha/PlanFases";
 import { DictadoDientes } from "@/components/ficha/DictadoDientes";
 import { BarraPestanas, CitasPagos, Encabezado, Resumen, type TabFicha } from "@/components/ficha/FichaNueva";
@@ -236,7 +237,9 @@ export default function PacienteDetallePage() {
   async function cargar() {
     const json = (url: string) => fetch(url).then((r) => r.json()).catch(() => ({}));
     const base = `/api/pacientes/${pacienteId}`;
-    void json(`${base}/notas`).then((d) => setNotas(d.notas ?? []));
+    void json(`${base}/notas`).then((d) =>
+      setNotas(((d.notas ?? []) as PacienteNota[]).filter((n) => n.tipo !== "Nota de evolución"))
+    );
     void json(`${base}/consentimientos`).then((d) => setConsentimientos(d.consentimientos ?? []));
     void json(`${base}/presupuestos`).then((d) => setPresupuestos(d.presupuestos ?? []));
     void json(`${base}/recetas`).then((d) => setRecetas(d.recetas ?? []));
@@ -495,7 +498,7 @@ export default function PacienteDetallePage() {
     setConsentimientos(data.consentimientos ?? []);
   }
 
-  async function generarConsentimientoExpediente(tipo: "expediente" | "ortodoncia") {
+  async function generarConsentimientoExpediente(tipo: "expediente" | "ortodoncia" | "tratamiento") {
     if (generandoConsentExpediente) return;
     setGenerandoConsentExpediente(true);
     await fetch(`/api/pacientes/${pacienteId}/consentimientos/expediente-electronico`, {
@@ -1074,13 +1077,20 @@ export default function PacienteDetallePage() {
         {tipoConsentAbierto ? (
           <div className="mt-4 space-y-2 rounded-2xl border border-[#E3C3C9] bg-[#F5E7E9] p-3">
             <p className="text-[12px] font-medium text-[#803449]">¿Qué tipo de consentimiento quieres generar?</p>
+            <button
+              onClick={() => generarConsentimientoExpediente("tratamiento")}
+              disabled={generandoConsentExpediente}
+              className="w-full rounded-full bg-[#803449] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+            >
+              {generandoConsentExpediente ? "Generando…" : "Tratamiento dental (NOM-004)"}
+            </button>
             <div className="flex gap-2">
               <button
                 onClick={() => generarConsentimientoExpediente("expediente")}
                 disabled={generandoConsentExpediente}
                 className="flex-1 rounded-full bg-[#803449] py-2 text-[13px] font-semibold text-white disabled:opacity-50"
               >
-                {generandoConsentExpediente ? "Generando…" : "General (expediente clínico)"}
+                {generandoConsentExpediente ? "Generando…" : "Expediente electrónico"}
               </button>
               <button
                 onClick={() => generarConsentimientoExpediente("ortodoncia")}
@@ -1150,6 +1160,7 @@ export default function PacienteDetallePage() {
       </div>
 
       <div className={vis("clinico")}>
+      <NotasEvolucion pacienteId={paciente.id} />
       <DictadoDientes pacienteId={paciente.id} alAplicar={() => setRefrescoOdonto((n) => n + 1)} />
       <Odontograma key={refrescoOdonto} paciente={paciente} />
       </div>

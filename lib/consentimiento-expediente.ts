@@ -42,6 +42,44 @@ Firmo de conformidad el día de hoy, ${hoy}.`;
   return { titulo, contenido };
 }
 
+// Cláusulas que la NOM-004 (10.1.1) pide en toda carta de consentimiento
+// para un procedimiento: riesgos y beneficios, autorización para atender
+// contingencias y urgencias, y el derecho a revocar.
+const CLAUSULAS_NOM004 = (procedimiento: string) => `Declaro que se me explicó de forma clara y en lenguaje comprensible:
+
+1. Procedimiento: ${procedimiento}, el diagnóstico que lo motiva y en qué consiste.
+
+2. Beneficios esperados: eliminar el dolor o la infección cuando existan, recuperar la función y la estética, y prevenir que el problema avance.
+
+3. Riesgos y molestias posibles: dolor o sensibilidad temporal, inflamación, sangrado leve, reacción a la anestesia local, infección, fractura del diente o de la restauración, necesidad de tratamientos adicionales y, en casos poco frecuentes, lesión de nervios o tejidos vecinos. Se me informó que el resultado depende también de mi salud general, de mi higiene y de que acuda a mis citas.
+
+4. Alternativas: se me explicaron otras opciones de tratamiento, incluida la de no tratarme, y sus consecuencias.
+
+5. Contingencias y urgencias: autorizo a la profesional responsable a atender las contingencias y urgencias que deriven de este procedimiento, aplicando las medidas necesarias para proteger mi salud, aunque no estén previstas en este documento.
+
+6. Tuve oportunidad de hacer preguntas y se me respondieron. Sé que puedo revocar este consentimiento en cualquier momento antes del procedimiento, sin que ello afecte mi atención.
+
+7. Proporcioné información verdadera y completa sobre mi estado de salud, alergias y medicamentos.`;
+
+// Consentimiento general para tratamiento dental (NOM-004 10.1.1).
+export function generarConsentimientoTratamiento(
+  paciente: { nombre: string; folio: string | null; fecha_nacimiento: string | null },
+  procedimiento = "tratamiento odontológico (diagnóstico, limpieza, restauraciones, endodoncia, extracciones u otros procedimientos indicados en mi plan de tratamiento)"
+) {
+  const hoy = formatearFecha(new Date());
+  const titulo = "Carta de consentimiento informado para tratamiento dental";
+  const contenido = `Lugar y fecha: ${CLINICA.direccion}, a ${hoy}.
+
+Establecimiento: ${NOMBRE_CLINICA}, a cargo de ${DOCTORA.nombre} (cédula profesional ${DOCTORA.cedula}).
+
+Yo, ${paciente.nombre}, con folio ${paciente.folio ?? "—"}, autorizo de manera libre e informada la realización de: ${procedimiento}.
+
+${CLAUSULAS_NOM004(procedimiento)}
+
+Firmo de conformidad, junto con quien me informó y dos testigos.`;
+  return { titulo, contenido };
+}
+
 // Consentimiento específico para tratamiento de ortodoncia — el texto
 // definitivo lo da la doctora (riesgos, alcance del tratamiento, plan
 // de pagos, etc.); mientras tanto se autollena con un borrador
@@ -60,13 +98,17 @@ export function generarConsentimientoOrtodoncia(paciente: {
 
   const titulo = "Consentimiento informado para tratamiento de ortodoncia";
 
-  const contenido = `[BORRADOR PENDIENTE DE REVISIÓN — sustituir por el texto definitivo antes de compartir con el paciente]
+  const contenido = `Lugar y fecha: ${CLINICA.direccion}, a ${hoy}.
 
-Yo, ${paciente.nombre}, identificado(a) con folio ${paciente.folio ?? "—"} y fecha de nacimiento ${fechaNacimiento}, otorgo mi consentimiento informado a ${NOMBRE_CLINICA}, a cargo de ${DOCTORA.nombre} (cédula profesional ${DOCTORA.cedula}), ubicada en ${CLINICA.direccion}, para iniciar mi tratamiento de ortodoncia.
+Establecimiento: ${NOMBRE_CLINICA}, a cargo de ${DOCTORA.nombre} (cédula profesional ${DOCTORA.cedula}).
 
-Este documento debe describir, al menos: el diagnóstico y objetivo del tratamiento, la duración estimada, los riesgos y molestias esperables (dolor, ulceraciones, descalcificación, reabsorción radicular, etc.), los cuidados e higiene que debo seguir durante el tratamiento, las consecuencias de no usar los aparatos o no asistir a citas, el costo y plan de pagos, y mi derecho a preguntar y a revocar este consentimiento.
+Yo, ${paciente.nombre}, con folio ${paciente.folio ?? "—"} y fecha de nacimiento ${fechaNacimiento}, autorizo de manera libre e informada el inicio de mi tratamiento de ortodoncia.
 
-Firmo de conformidad el día de hoy, ${hoy}.`;
+${CLAUSULAS_NOM004("tratamiento de ortodoncia (colocación, ajustes y retiro de aparatos fijos o removibles, y uso de retenedores al terminar)")}
+
+8. Específico de ortodoncia: entiendo que la duración es estimada y puede alargarse; que pueden presentarse molestias después de cada ajuste, úlceras por los aparatos, descalcificación o manchas blancas y caries si no mantengo una buena higiene, reabsorción de raíces, inflamación de encías y molestias en la articulación de la mandíbula; que debo evitar alimentos duros o pegajosos, asistir a mis citas de ajuste y usar los retenedores indicados, ya que sin ellos los dientes pueden volver a moverse; y que faltar a citas o no seguir las indicaciones puede afectar el resultado. El costo y el plan de pagos se me entregaron por separado en mi presupuesto.
+
+Firmo de conformidad, junto con quien me informó y dos testigos.`;
 
   return { titulo, contenido };
 }

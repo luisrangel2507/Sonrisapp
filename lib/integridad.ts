@@ -27,11 +27,19 @@ export const camposHuellaReceta = (r: Record<string, unknown>) => ({
   creado_por_nombre: r.creado_por_nombre ?? null,
 });
 
-export const camposHuellaConsentimiento = (c: Record<string, unknown>) => ({
-  id: c.id,
-  titulo: c.titulo ?? null,
-  contenido: c.contenido ?? null,
-  firma: c.firma ?? null,
-  nombre_firma: c.nombre_firma ?? null,
-  firmado_en: c.firmado_en instanceof Date ? c.firmado_en.toISOString() : (c.firmado_en ?? null),
-});
+export const camposHuellaConsentimiento = (c: Record<string, unknown>) => {
+  const base: Record<string, unknown> = {
+    id: c.id,
+    titulo: c.titulo ?? null,
+    contenido: c.contenido ?? null,
+    firma: c.firma ?? null,
+    nombre_firma: c.nombre_firma ?? null,
+    firmado_en: c.firmado_en instanceof Date ? c.firmado_en.toISOString() : (c.firmado_en ?? null),
+  };
+  // Campos agregados después: solo entran si tienen valor, para que las
+  // huellas de consentimientos firmados antes sigan coincidiendo.
+  for (const k of ["informante_nombre", "informante_firma", "testigo1_nombre", "testigo1_firma", "testigo2_nombre", "testigo2_firma"]) {
+    if (c[k]) base[k] = c[k];
+  }
+  return base;
+};

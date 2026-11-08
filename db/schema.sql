@@ -885,3 +885,46 @@ ALTER TABLE bitacora_accesos ADD COLUMN IF NOT EXISTS detalle VARCHAR(200);
 
 -- CURP opcional: solo se muestra si la clínica la pide (Perfil → Identidad).
 ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS pedir_curp BOOLEAN NOT NULL DEFAULT false;
+
+-- NOM-004 6.1: diagnóstico (con CIE-10), pronóstico e indicación terapéutica.
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS diagnostico TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS diagnostico_cie10 TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS pronostico TEXT;
+ALTER TABLE historia_clinica ADD COLUMN IF NOT EXISTS indicacion_terapeutica TEXT;
+
+-- NOM-004 10.1.1: firma de quien informa (la doctora, dibujada una vez en
+-- Perfil) y nombre y firma de dos testigos en el consentimiento.
+ALTER TABLE perfil_dentista ADD COLUMN IF NOT EXISTS firma_doctora TEXT;
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS informante_nombre VARCHAR(160);
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS informante_firma TEXT;
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS testigo1_nombre VARCHAR(160);
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS testigo1_firma TEXT;
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS testigo2_nombre VARCHAR(160);
+ALTER TABLE consentimientos ADD COLUMN IF NOT EXISTS testigo2_firma TEXT;
+
+-- NOM-013 (control de infecciones) y NOM-087 (RPBI): bitácoras sanitarias.
+CREATE TABLE IF NOT EXISTS bitacora_esterilizacion (
+  id SERIAL PRIMARY KEY,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  ciclo VARCHAR(30),
+  equipo VARCHAR(80),
+  temperatura VARCHAR(20),
+  tiempo_min VARCHAR(20),
+  testigo_quimico VARCHAR(10),
+  testigo_biologico VARCHAR(12),
+  contenido TEXT,
+  responsable VARCHAR(160),
+  nota TEXT,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS bitacora_rpbi (
+  id SERIAL PRIMARY KEY,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  tipo VARCHAR(30) NOT NULL,
+  cantidad_kg NUMERIC(8,2),
+  recolector VARCHAR(160),
+  manifiesto VARCHAR(80),
+  responsable VARCHAR(160),
+  nota TEXT,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);

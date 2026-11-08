@@ -22,6 +22,7 @@ export const config = {
     "/api/usuarios/:path*",
     "/api/push/:path*",
     "/api/encuestas/:path*",
+    "/api/bitacoras/:path*",
     "/api/auth/webauthn/registro/:path*",
     "/api/auth/webauthn/passkeys",
     "/api/auth/sesion",

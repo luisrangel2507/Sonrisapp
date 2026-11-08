@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CIE10_DENTAL } from "@/lib/cie10-dental";
 import {
   Activity, Briefcase, Cake, CalendarDays, ChevronDown, CircleDot, ClipboardList, HeartPulse, IdCard, Leaf, MapPin,
   MessageSquare, Phone, Pill, ShieldAlert, Smile, Stethoscope, User, Users, Venus
@@ -76,6 +77,10 @@ export const HISTORIA_CLINICA_VACIA: FormStateHistoriaClinica = {
   paladar_orofaringe_normal: null,
   paladar_orofaringe_hallazgos: null,
   encia_periodonto: null,
+  diagnostico: null,
+  diagnostico_cie10: null,
+  pronostico: null,
+  indicacion_terapeutica: null,
 };
 
 export { PARENTESCOS_FAMILIA, type FamiliarDetalle } from "@/lib/historia-clinica-pasos";
@@ -1001,6 +1006,52 @@ export function CamposExploracionFisica({
               { valor: "movilidad", label: "Movilidad" },
             ]}
             onChange={(v) => set("encia_periodonto", textoDesdeLista(v))}
+          />
+        </Campo>
+      </Seccion>
+
+      <Seccion titulo="Diagnóstico, pronóstico e indicación terapéutica">
+        <Campo label="Diagnóstico (catálogo CIE-10)">
+          <input
+            list="cie10-historia"
+            value={form.diagnostico_cie10 ?? ""}
+            onChange={(e) => set("diagnostico_cie10", e.target.value || null)}
+            placeholder="Escribe para buscar, ej. caries, gingivitis…"
+            className={inputClase}
+          />
+          <datalist id="cie10-historia">
+            {CIE10_DENTAL.map(([c, d]) => (
+              <option key={c} value={`${c} — ${d}`} />
+            ))}
+          </datalist>
+        </Campo>
+        <Campo label="Diagnóstico / problemas clínicos">
+          <textarea
+            rows={2}
+            value={form.diagnostico ?? ""}
+            onChange={(e) => set("diagnostico", e.target.value || null)}
+            className={inputClase}
+          />
+        </Campo>
+        <Campo label="Pronóstico">
+          <select
+            value={["Bueno", "Reservado", "Malo"].includes(form.pronostico ?? "") ? (form.pronostico as string) : form.pronostico ? "otro" : ""}
+            onChange={(e) => set("pronostico", e.target.value === "otro" ? "" : e.target.value || null)}
+            className={inputClase}
+          >
+            <option value="">—</option>
+            <option value="Bueno">Bueno</option>
+            <option value="Reservado">Reservado</option>
+            <option value="Malo">Malo</option>
+          </select>
+        </Campo>
+        <Campo label="Indicación terapéutica (plan de tratamiento)">
+          <textarea
+            rows={3}
+            value={form.indicacion_terapeutica ?? ""}
+            onChange={(e) => set("indicacion_terapeutica", e.target.value || null)}
+            placeholder="Ej. Fase 1: profilaxis y resinas 16, 26. Fase 2: ortodoncia."
+            className={inputClase}
           />
         </Campo>
       </Seccion>

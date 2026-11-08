@@ -10,7 +10,7 @@ import { cifrar, descifrar } from "@/lib/crypto";
 // El texto del consentimiento y la firma (dato biométrico) son
 // información clínica/identificable — se cifran en reposo (NOM-024)
 // igual que la historia clínica y las recetas.
-const CAMPOS_CIFRABLES = ["contenido", "firma"] as const;
+const CAMPOS_CIFRABLES = ["contenido", "firma", "informante_firma", "testigo1_firma", "testigo2_firma"] as const;
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -22,7 +22,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     const { rows } = await query(
       `SELECT id, paciente_id, titulo, contenido, token, estado, firma, nombre_firma, firmado_en, creado_en,
-              vigente, motivo_anulacion, anulado_por_nombre, anulado_en, huella
+              vigente, motivo_anulacion, anulado_por_nombre, anulado_en, huella,
+              informante_nombre, informante_firma, testigo1_nombre, testigo1_firma, testigo2_nombre, testigo2_firma
        FROM consentimientos WHERE paciente_id = $1 ORDER BY creado_en DESC`,
       [pacienteId]
     );

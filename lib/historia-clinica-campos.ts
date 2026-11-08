@@ -76,6 +76,11 @@ export const HISTORIA_CLINICA_CAMPOS = [
   "paladar_orofaringe_normal",
   "paladar_orofaringe_hallazgos",
   "encia_periodonto",
+  // NOM-004 6.1: diagnóstico, pronóstico e indicación terapéutica (los llena la doctora).
+  "diagnostico",
+  "diagnostico_cie10",
+  "pronostico",
+  "indicacion_terapeutica",
 ] as const;
 
 export const HISTORIA_CLINICA_COLUMNAS = `${HISTORIA_CLINICA_CAMPOS.join(
@@ -133,4 +138,8 @@ export const HISTORIA_CLINICA_CAMPOS_CIFRABLES = new Set<string>([
   "lengua_piso_boca_hallazgos",
   "paladar_orofaringe_hallazgos",
   "encia_periodonto",
+  "diagnostico",
+  "diagnostico_cie10",
+  "pronostico",
+  "indicacion_terapeutica",
 ]);

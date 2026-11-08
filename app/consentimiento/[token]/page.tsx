@@ -15,6 +15,35 @@ interface ConsentimientoPublico {
   nombre_firma: string | null;
   firmado_en: string | null;
   paciente_nombre: string;
+  informante_nombre?: string | null;
+  informante_firma?: string | null;
+  testigo1_nombre?: string | null;
+  testigo1_firma?: string | null;
+  testigo2_nombre?: string | null;
+  testigo2_firma?: string | null;
+}
+
+function FirmasExtra({ datos }: { datos: ConsentimientoPublico }) {
+  const lista = [
+    { rol: "Informó", nombre: datos.informante_nombre, firma: datos.informante_firma },
+    { rol: "Testigo", nombre: datos.testigo1_nombre, firma: datos.testigo1_firma },
+    { rol: "Testigo", nombre: datos.testigo2_nombre, firma: datos.testigo2_firma },
+  ].filter((x) => x.nombre);
+  if (lista.length === 0) return null;
+  return (
+    <div className="mt-4 grid grid-cols-1 gap-2 text-left sm:grid-cols-3">
+      {lista.map((x, i) => (
+        <div key={i} className="rounded-xl border border-[#EFE9DC] p-2 text-center">
+          {x.firma && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={x.firma} alt="" className="mx-auto h-12" />
+          )}
+          <div className="text-[11px] font-semibold text-[#2b2118]">{x.nombre}</div>
+          <div className="text-[10px] text-[#a49c8a]">{x.rol}</div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function formatearFechaHora(fecha: string) {
@@ -104,6 +133,11 @@ export default function ConsentimientoPublicoPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [firmadoAhora, setFirmadoAhora] = useState(false);
+  const [testigos, setTestigos] = useState([
+    { nombre: "", firma: null as string | null },
+    { nombre: "", firma: null as string | null },
+  ]);
+  const testigoIncompleto = testigos.some((t) => (t.nombre.trim() ? !t.firma : !!t.firma));
 
   useEffect(() => {
     if (!token) return;
@@ -128,14 +162,18 @@ export default function ConsentimientoPublicoPage() {
   }, [token]);
 
   async function firmar() {
-    if (!firma || !nombreFirma.trim() || enviando) return;
+    if (!firma || !nombreFirma.trim() || enviando || testigoIncompleto) return;
     setEnviando(true);
     setError("");
     try {
       const res = await fetch(`/api/consentimiento/${token}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre_firma: nombreFirma.trim(), firma }),
+        body: JSON.stringify({
+          nombre_firma: nombreFirma.trim(),
+          firma,
+          testigos: testigos.filter((t) => t.nombre.trim() && t.firma).map((t) => ({ nombre: t.nombre.trim(), firma: t.firma })),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -234,6 +272,7 @@ export default function ConsentimientoPublicoPage() {
                 className="mx-auto mt-4 h-24 rounded-xl border border-[#EFE9DC] bg-white p-2"
               />
             )}
+            <FirmasExtra datos={datos} />
             {firmadoAhora && <p className="mt-4 text-sm text-[#8a8272]">Ya puedes cerrar esta ventana.</p>}
           </div>
         ) : (
@@ -253,11 +292,38 @@ export default function ConsentimientoPublicoPage() {
               <FirmaCanvas onCambio={setFirma} />
             </div>
 
+            {datos.informante_nombre && (
+              <div className="rounded-xl bg-[#FBF9F5] p-3 text-[12px] text-[#6f6458]">
+                <span className="font-semibold text-[#2b2118]">Informa y recaba el consentimiento:</span> {datos.informante_nombre}
+                {datos.informante_firma && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={datos.informante_firma} alt="Firma de quien informa" className="mt-1 h-12" />
+                )}
+              </div>
+            )}
+
+            <p className="pt-2 text-[11px] uppercase tracking-wide text-[#a49c8a]">Testigos (2)</p>
+            <p className="-mt-2 text-[11px] text-[#a49c8a]">
+              Pueden ser tu acompañante y alguien del personal. Si no hay testigos presentes, déjalo vacío.
+            </p>
+            {testigos.map((t, i) => (
+              <div key={i} className="space-y-1.5 rounded-xl border border-[#EFE9DC] p-3">
+                <input
+                  value={t.nombre}
+                  onChange={(e) => setTestigos((ts) => ts.map((x, j) => (j === i ? { ...x, nombre: e.target.value } : x)))}
+                  placeholder={`Nombre del testigo ${i + 1}`}
+                  className="w-full rounded-xl border border-[#EFE9DC] bg-white px-3 py-2 text-sm outline-none focus:border-[#803449]"
+                />
+                <FirmaCanvas onCambio={(f) => setTestigos((ts) => ts.map((x, j) => (j === i ? { ...x, firma: f } : x)))} />
+              </div>
+            ))}
+            {testigoIncompleto && <p className="text-center text-[12px] text-[#B0503A]">Cada testigo necesita nombre y firma.</p>}
+
             {error && <p className="text-center text-sm text-[#B0503A]">{error}</p>}
 
             <button
               onClick={firmar}
-              disabled={!firma || !nombreFirma.trim() || enviando}
+              disabled={!firma || !nombreFirma.trim() || enviando || testigoIncompleto}
               className="flex w-full items-center justify-center gap-2 rounded-full btn-vino py-3 text-[14px] font-semibold text-white disabled:opacity-50"
             >
               <PenLine size={15} /> {enviando ? "Guardando…" : "Firmar y aceptar"}

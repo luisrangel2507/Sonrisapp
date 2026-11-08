@@ -297,6 +297,18 @@ export function ReporteClinicoPdf({ datos, marca = MARCA_DEFAULT }: { datos: Dat
         )}
       </View>
 
+      {(historia?.diagnostico_cie10 || historia?.diagnostico || historia?.pronostico || historia?.indicacion_terapeutica) && (
+        <View style={estilosPdf.seccion}>
+          <Text style={estilosPdf.seccionTitulo}>Diagnóstico, pronóstico e indicación terapéutica</Text>
+          {historia?.diagnostico_cie10 && <Text style={estilosPdf.parrafo}>• Diagnóstico (CIE-10): {historia.diagnostico_cie10}</Text>}
+          {historia?.diagnostico && <Text style={estilosPdf.parrafo}>• Problemas clínicos: {historia.diagnostico}</Text>}
+          {historia?.pronostico && <Text style={estilosPdf.parrafo}>• Pronóstico: {historia.pronostico}</Text>}
+          {historia?.indicacion_terapeutica && (
+            <Text style={estilosPdf.parrafo}>• Indicación terapéutica: {historia.indicacion_terapeutica}</Text>
+          )}
+        </View>
+      )}
+
       <View style={estilosPdf.seccion}>
         <Text style={estilosPdf.seccionTitulo}>Odontograma — dientes con hallazgos</Text>
         {dientes.length === 0 ? (

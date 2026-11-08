@@ -299,5 +299,9 @@ export interface HistoriaClinica {
   paladar_orofaringe_normal: boolean | null;
   paladar_orofaringe_hallazgos: string | null;
   encia_periodonto: string | null;
+  diagnostico: string | null;
+  diagnostico_cie10: string | null;
+  pronostico: string | null;
+  indicacion_terapeutica: string | null;
   actualizado_en: string;
 }

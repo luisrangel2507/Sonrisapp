@@ -97,7 +97,7 @@ export interface RecetaPdfPaciente {
 // por la ruta interna del panel (con sesión) como por el link público
 // que la doctora puede compartir por WhatsApp (vía historial_token del
 // paciente), para no duplicar el layout en los dos lados.
-export function construirRecetaPdfDocumento(receta: RecetaPdfDatos, paciente: RecetaPdfPaciente) {
+export function construirRecetaPdfDocumento(receta: RecetaPdfDatos, paciente: RecetaPdfPaciente, firmaDoctora?: string | null) {
   const edad = paciente.fecha_nacimiento
     ? `${calcularEdad(paciente.fecha_nacimiento, fechaSoloDia(receta.fecha))} años`
     : "—";
@@ -117,6 +117,14 @@ export function construirRecetaPdfDocumento(receta: RecetaPdfDatos, paciente: Re
         <Text style={{ ...estilos.campoValor, top: ALTO_PT * 0.355, left: ANCHO_PT * 0.854 }}>
           {formatearFecha(receta.fecha)}
         </Text>
+
+        {firmaDoctora && (
+          <View style={{ position: "absolute", top: ALTO_PT * 0.7, left: ANCHO_PT * 0.74, width: ANCHO_PT * 0.2, alignItems: "center" }}>
+            <Image src={firmaDoctora} style={{ width: ANCHO_PT * 0.18, height: ALTO_PT * 0.1, objectFit: "contain" }} />
+            <View style={{ width: "100%", borderTopWidth: 0.5, borderTopColor: ROSE, marginTop: 1 }} />
+            <Text style={{ fontSize: 6, color: ROSE, marginTop: 1 }}>Firma</Text>
+          </View>
+        )}
 
         <View style={estilos.contenido}>
           {!receta.vigente && (

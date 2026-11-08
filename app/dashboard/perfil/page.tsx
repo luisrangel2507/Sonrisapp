@@ -9,6 +9,7 @@ import type { Usuario, Passkey } from "@/lib/types";
 import { LLAVE_PASSKEY_ID } from "@/lib/webauthn-client";
 import { SeguridadCuenta } from "@/components/SeguridadCuenta";
 import { MarcaClinica } from "@/components/MarcaClinica";
+import { FirmaDoctora } from "@/components/FirmaDoctora";
 import { borrarCache } from "@/lib/cache-cliente";
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -862,6 +863,7 @@ export default function PerfilPage() {
         )}
       </div>
 
+      {miRol === "admin" && <FirmaDoctora />}
       {miRol === "admin" && <MarcaClinica />}
 
       <SeguridadCuenta esAdmin={miRol === "admin"} />

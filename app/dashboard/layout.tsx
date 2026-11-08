@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { leerSesion, guardarSesion, borrarCache } from "@/lib/cache-cliente";
-import { UserCog, Activity, Users, Calendar, Package, BarChart3, Tv, Wallet, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X, Settings, ChevronDown } from "lucide-react";
+import { UserCog, Activity, Users, Calendar, Package, BarChart3, Tv, Wallet, Search, Bell, Home, Plus, MoreHorizontal, UserPlus, X, Settings, ChevronDown, ShieldCheck } from "lucide-react";
 import { DOCTORA } from "@/lib/panel-data";
 
 const NOMBRE_CORTO_DOCTORA = DOCTORA.nombre.split(" ").slice(0, 2).join(" ");
@@ -21,6 +21,7 @@ const TABS = [
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
   { href: "/dashboard/caja", label: "Caja", icon: Wallet },
   { href: "/dashboard/tv", label: "Pantalla TV", icon: Tv },
+  { href: "/dashboard/bitacoras", label: "Bitácoras", icon: ShieldCheck },
 ];
 
 // Barra inferior — solo celular. "Inicio"/"Agenda" van directo; el resto
@@ -38,6 +39,7 @@ const NAV_MAS = [
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
   { href: "/dashboard/caja", label: "Caja", icon: Wallet },
   { href: "/dashboard/tv", label: "Pantalla TV", icon: Tv },
+  { href: "/dashboard/bitacoras", label: "Bitácoras", icon: ShieldCheck },
   { href: "/dashboard/perfil", label: "Perfil", icon: UserCog },
 ];
 
