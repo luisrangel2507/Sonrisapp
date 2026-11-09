@@ -23,7 +23,6 @@ export const config = {
     "/api/push/:path*",
     "/api/encuestas/:path*",
     "/api/bitacoras/:path*",
-    "/api/checklist-sanitario/:path*",
     "/api/auth/webauthn/registro/:path*",
     "/api/auth/webauthn/passkeys",
     "/api/auth/sesion",

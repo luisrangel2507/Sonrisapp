@@ -4,12 +4,10 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, Plus } from "lucide-react";
 import { Esqueleto } from "@/components/Esqueleto";
 import { hoyISO } from "@/lib/fechas";
-import { ChecklistSanitario } from "@/components/ChecklistSanitario";
 
-type Tipo = "esterilizacion" | "rpbi" | "rayosx" | "checklist";
+type Tipo = "esterilizacion" | "rpbi" | "rayosx";
 
 const PESTANAS: [Tipo, string][] = [
-  ["checklist", "Checklist"],
   ["esterilizacion", "Esterilización"],
   ["rpbi", "RPBI"],
   ["rayosx", "Rayos X"],
@@ -31,7 +29,7 @@ const fechaCorta = (f: string) =>
 // Bitácoras sanitarias: esterilización (NOM-013) y RPBI (NOM-087). Lo que
 // piden en una visita de verificación sanitaria, en un solo lugar.
 export default function BitacorasPage() {
-  const [tipo, setTipo] = useState<Tipo>("checklist");
+  const [tipo, setTipo] = useState<Tipo>("esterilizacion");
   const [registros, setRegistros] = useState<Registro[] | null>(null);
   const [abierto, setAbierto] = useState(false);
   const [f, setF] = useState<Record<string, string>>({});
@@ -45,7 +43,7 @@ export default function BitacorasPage() {
     setRegistros(d.registros ?? []);
   }
   useEffect(() => {
-    if (tipo !== "checklist") cargar(tipo);
+    cargar(tipo);
   }, [tipo]);
 
   function nuevo() {
@@ -85,7 +83,7 @@ export default function BitacorasPage() {
         <ShieldCheck size={22} className="text-[#803449]" /> Bitácoras sanitarias
       </h1>
       <p className="text-[13px] text-[#8a8272]">
-        Checklist del consultorio y registros de esterilización (NOM-013), residuos biológico-infecciosos (NOM-087) y
+        Registros de esterilización (NOM-013), residuos biológico-infecciosos (NOM-087) y
         rayos X (NOM-229). Es lo que piden en una visita de verificación sanitaria.
       </p>
 
@@ -106,10 +104,6 @@ export default function BitacorasPage() {
         ))}
       </div>
 
-      {tipo === "checklist" ? (
-        <ChecklistSanitario />
-      ) : (
-      <>
       {abierto ? (
         <div className="space-y-2 rounded-3xl border border-[#EFE9DC] bg-white/70 p-4">
           <div>
@@ -282,8 +276,6 @@ export default function BitacorasPage() {
             </div>
           ))}
         </div>
-      )}
-      </>
       )}
     </div>
   );
