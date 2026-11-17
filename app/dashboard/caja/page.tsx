@@ -90,7 +90,7 @@ export default function CajaPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 md:px-0">
-      <h1 className="flex items-center gap-2 text-xl font-semibold text-[#2b2118]">
+      <h1 className="flex items-center gap-2 text-[22px] font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
         <Wallet size={22} className="text-[#7A1E33]" /> Caja
       </h1>
 
@@ -202,7 +202,7 @@ export default function CajaPage() {
         </div>
         <div className="mt-3 space-y-1.5">
           {(datos?.saldos ?? []).length === 0 ? (
-            <p className="py-3 text-center text-sm text-[#a49c8a]">Nadie debe nada. 🎉</p>
+            <p className="py-3 text-center text-sm text-[#a49c8a]">Sin saldos pendientes.</p>
           ) : (
             datos!.saldos.map((s) => (
               <Link

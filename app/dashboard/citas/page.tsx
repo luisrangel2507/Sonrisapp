@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle as IcoAlerta, FileSignature as IcoFirma, Mail as IcoCorreo, CheckCircle2 as IcoOk, CalendarClock as IcoReagendar, Globe as IcoWeb, ShieldCheck as IcoIntegro } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Esqueleto } from "@/components/Esqueleto";
 import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
@@ -375,7 +376,7 @@ function SelectorSemana({
         </button>
         <button
           onClick={() => onCambiarAncla(inicioDelDia(new Date()))}
-          className="text-[16px] font-bold capitalize text-[#2b2118]"
+          className="text-[16px] font-bold text-[#2b2118] first-letter:uppercase"
           style={{ fontFamily: "Georgia, serif" }}
         >
           {diaSeleccionado.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
@@ -462,7 +463,7 @@ function SelectorMes({
         >
           <ChevronLeft size={16} />
         </button>
-        <div className="text-[16px] font-bold capitalize text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
+        <div className="text-[16px] font-bold text-[#2b2118] first-letter:uppercase" style={{ fontFamily: "Georgia, serif" }}>
           {mesVista.toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
         </div>
         <button
@@ -782,13 +783,13 @@ function CitaTimelineItem({
             href={`/dashboard/pacientes/${cita.paciente_id}/historia-clinica`}
             className="mt-2.5 flex items-center gap-1.5 rounded-xl bg-[#F7E5E0] px-3 py-2 text-[12px] font-semibold text-[#B0503A]"
           >
-            🚨 Historial sin confirmar — tócalo para revisarlo
+            <IcoAlerta size={13} className="mr-1 inline-block align-[-2px]" /> Historial sin confirmar — tócalo para revisarlo
           </Link>
         )}
 
         {cita.estado === "agendada" && cita.confirmacion === "confirmada" && (
           <div className="mt-2.5 rounded-xl bg-[#EEF4EA] px-3 py-2 text-[12px] font-semibold text-[#2f5226]">
-            ✅ Confirmó por WhatsApp
+            <IcoOk size={13} className="mr-1 inline-block align-[-2px]" /> Confirmó por WhatsApp
           </div>
         )}
         {cita.estado === "agendada" && cita.confirmacion === "reagendar" && (
@@ -796,13 +797,13 @@ function CitaTimelineItem({
             href={`/dashboard/pacientes/${cita.paciente_id}`}
             className="mt-2.5 block rounded-xl bg-[#FCF3DC] px-3 py-2 text-[12px] font-semibold text-[#7a5410]"
           >
-            🗓️ Pidió reagendar por WhatsApp — contáctalo
+            <IcoReagendar size={13} className="mr-1 inline-block align-[-2px]" /> Pidió reagendar por WhatsApp — contáctalo
           </Link>
         )}
 
         {cita.pendiente_aprobacion && (
           <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl bg-[#F7ECD9] px-3 py-2 text-[12px] font-semibold text-[#B0834A]">
-            🌐 Solicitud en línea sin aprobar
+            <span><IcoWeb size={13} className="mr-1 inline-block align-[-2px]" /> Solicitud en línea sin aprobar</span>
             <button
               onClick={onAprobar}
               className="shrink-0 rounded-full bg-[#B0834A] px-3 py-1 text-[11px] font-semibold text-white"
@@ -1713,7 +1714,7 @@ export default function CitasPage() {
               <div className="grid grid-cols-[320px_1fr] gap-5">
                 <SelectorMes ancla={diaSeleccionado} citasPorDia={citasPorDia} onSeleccionarDia={seleccionarDia} />
                 <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
-                  <div className="mb-3 text-[13px] font-bold capitalize text-[#2b2118]">
+                  <div className="mb-3 text-[13px] font-bold text-[#2b2118] first-letter:uppercase">
                     {diaSeleccionado.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
                   </div>
                   {citasDelDia.length === 0 ? (

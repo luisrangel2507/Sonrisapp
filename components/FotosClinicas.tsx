@@ -104,7 +104,7 @@ export function FotosClinicas({ pacienteId }: { pacienteId: number }) {
   return (
     <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#803449]">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">
           <ImageIcon size={13} /> Fotos clínicas
         </div>
         <span className="text-[11px] text-[#a49c8a]">{fotos.length} foto{fotos.length === 1 ? "" : "s"}</span>

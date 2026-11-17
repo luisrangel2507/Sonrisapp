@@ -152,9 +152,9 @@ export function Resumen({
   const { citasPendientes } = calcularSaldo(citas.filter((c) => c.estado === "completada"));
   const eventos: Evento[] = [];
   for (const c of citas) if (c.estado === "completada") eventos.push({ fecha: c.fecha_hora, color: "#7A1E33", titulo: "Cita completada", detalle: c.tratamiento });
-  for (const p of pagos) eventos.push({ fecha: p.fecha, color: "#3F6B33", titulo: `Pago de ${formatearDinero(p.monto)}`, detalle: p.metodo });
+  for (const p of pagos) eventos.push({ fecha: p.fecha, color: "#3F6B33", titulo: `Pago de ${formatearDinero(p.monto)}`, detalle: p.metodo.charAt(0).toUpperCase() + p.metodo.slice(1) });
   for (const r of recetas) if (r.vigente) eventos.push({ fecha: r.creado_en, color: "#7A4D8A", titulo: "Receta", detalle: r.medicamentos.split("\n")[0] });
-  for (const pr of presupuestos) eventos.push({ fecha: pr.creado_en, color: "#B08419", titulo: `Presupuesto${pr.estado ? ` · ${pr.estado}` : ""}`, detalle: pr.titulo });
+  for (const pr of presupuestos) eventos.push({ fecha: pr.creado_en, color: "#B08419", titulo: `Presupuesto ${pr.estado ?? ""}`.trim(), detalle: pr.titulo });
   for (const co of consentimientos) if (co.vigente) eventos.push({ fecha: co.firmado_en ?? co.creado_en, color: "#4A5A70", titulo: co.firmado_en ? "Consentimiento firmado" : "Consentimiento enviado", detalle: co.titulo });
   for (const n of notas) eventos.push({ fecha: n.subido_en, color: "#8a8272", titulo: "Nota", detalle: undefined });
   eventos.push({ fecha: paciente.creado_en, color: "#8a8272", titulo: "Alta del paciente" });
@@ -231,7 +231,7 @@ export function CitasPagos({ citas, pagos }: { citas: Cita[]; pagos: Pago[] }) {
             <div className="text-xs text-[#8a8272]">
               {c.tratamiento}
               {c.monto ? ` · ${formatearDinero(c.pagado)} de ${formatearDinero(c.monto)}` : ""}
-              {c.estado === "agendada" && c.confirmacion === "confirmada" && <span className="font-semibold text-[#2f5226]"> · ✅ Confirmó</span>}
+              {c.estado === "agendada" && c.confirmacion === "confirmada" && <span className="font-semibold text-[#2f5226]"> · Confirmó</span>}
               {c.estado === "agendada" && c.confirmacion === "reagendar" && <span className="font-semibold text-[#7a5410]"> · Pidió reagendar</span>}
             </div>
           </div>

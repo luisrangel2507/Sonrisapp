@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle as IcoAlerta, FileSignature as IcoFirma, Mail as IcoCorreo, CheckCircle2 as IcoOk, CalendarClock as IcoReagendar, Globe as IcoWeb, ShieldCheck as IcoIntegro } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -799,7 +800,7 @@ export default function PacienteDetallePage() {
   }
 
   return (
-    <div className="mx-4 mt-2 space-y-4 pb-6">
+    <div className="mx-4 mt-2 space-y-4 pb-6 md:mx-auto md:max-w-4xl">
       <Link href="/dashboard/pacientes" className="inline-flex items-center gap-1 text-sm text-[#8a8272]">
         <ChevronLeft size={15} /> Pacientes
       </Link>
@@ -817,12 +818,7 @@ export default function PacienteDetallePage() {
 
       <div className={vis("datos")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
-        <div>
-          <h2 className="text-lg font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
-            {paciente.nombre}
-          </h2>
-          <div className="text-xs text-[#a49c8a]">{paciente.folio}</div>
-        </div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Accesos rápidos</div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
             href={`/dashboard/pacientes/${paciente.id}/historia-clinica`}
@@ -871,7 +867,8 @@ export default function PacienteDetallePage() {
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-2">
+        <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-[#a49c8a]">Datos del paciente</div>
+        <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
           <div>
             <label className="block text-[11px] font-medium text-[#a49c8a]">Nombre completo</label>
             <input
@@ -943,9 +940,6 @@ export default function PacienteDetallePage() {
       </div>
       </div>
 
-      <div className={vis("clinico")}>
-      <FotosClinicas pacienteId={paciente.id} />
-      </div>
 
       <div className={vis("docs")}>
       <div className="rounded-3xl border border-[#EFE9DC] bg-white/70 p-5">
@@ -960,7 +954,7 @@ export default function PacienteDetallePage() {
 
         {!consentimientos.some((c) => c.vigente && c.estado === "firmado") && (
           <p className="mb-3 rounded-xl border border-[#EAD9B0] bg-[#FCEFD2] px-3 py-2 text-[12px] text-[#8a6d1f]">
-            📝 Este paciente todavía no tiene un consentimiento firmado.
+            <IcoFirma size={13} className="mr-1 inline-block align-[-2px]" /> Este paciente todavía no tiene un consentimiento firmado.
           </p>
         )}
 
@@ -1042,11 +1036,11 @@ export default function PacienteDetallePage() {
                       )}
                     </div>
                     {c.integra === false && (
-                      <span className="text-[11px] font-semibold text-[#B0503A]">⚠ No coincide con su huella</span>
+                      <span className="text-[11px] font-semibold text-[#B0503A]"><IcoAlerta size={13} className="mr-1 inline-block align-[-2px]" /> No coincide con su huella</span>
                     )}
                     {c.integra === true && (
                       <span className="text-[11px] text-[#3F6B33]" title={`Huella SHA-256: ${c.huella}`}>
-                        🔒 Íntegro
+                        <IcoIntegro size={13} className="mr-1 inline-block align-[-2px]" /> Íntegro
                       </span>
                     )}
                     <a
@@ -1165,6 +1159,7 @@ export default function PacienteDetallePage() {
       <DictadoDientes pacienteId={paciente.id} alAplicar={() => setRefrescoOdonto((n) => n + 1)} />
       <IndiceCPOD pacienteId={paciente.id} version={refrescoOdonto} />
       <Odontograma key={refrescoOdonto} paciente={paciente} />
+      <FotosClinicas pacienteId={paciente.id} />
       </div>
 
       <div className={vis("trat")}>
@@ -1260,7 +1255,7 @@ export default function PacienteDetallePage() {
                 <PlanFases key={`${p.id}-${p.estado}`} pacienteId={paciente.id} presupuesto={p} />
 
                 {p.dientes.length > 0 && (
-                  <div className="mt-2">
+                  <div className="mx-auto mt-2 max-w-[260px]">
                     <OdontogramaFoto seleccionados={p.dientes} soloLectura />
                   </div>
                 )}
@@ -1487,7 +1482,7 @@ export default function PacienteDetallePage() {
         ) : (
           <button
             onClick={() => setFormPresupuestoAbierto(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#E8D8A0] bg-[#FCEFD2] py-2.5 text-[13px] font-semibold text-[#B08419]"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449]"
           >
             <Plus size={14} /> Nuevo presupuesto
           </button>
@@ -1731,8 +1726,8 @@ export default function PacienteDetallePage() {
                 </div>
                 <div className="mt-1.5 text-[10px] text-[#a49c8a]">
                   {formatearFecha(r.fecha)} {r.creado_por_nombre && `· ${r.creado_por_nombre}`}
-                  {r.integra === true && <span className="text-[#3F6B33]" title={`Huella SHA-256: ${r.huella}`}> · 🔒 Íntegra</span>}
-                  {r.integra === false && <span className="font-semibold text-[#B0503A]"> · ⚠ El contenido no coincide con su huella</span>}
+                  {r.integra === true && <span className="text-[#3F6B33]" title={`Huella SHA-256: ${r.huella}`}> · <IcoIntegro size={13} className="mr-1 inline-block align-[-2px]" /> Íntegra</span>}
+                  {r.integra === false && <span className="font-semibold text-[#B0503A]"> · <IcoAlerta size={13} className="mr-1 inline-block align-[-2px]" /> El contenido no coincide con su huella</span>}
                   {!r.vigente && r.motivo_anulacion && (
                     <span className="text-[#B0503A]"> · Anulada por {r.anulado_por_nombre}: {r.motivo_anulacion}</span>
                   )}
@@ -1797,7 +1792,7 @@ export default function PacienteDetallePage() {
           <>
           <button
             onClick={() => setFormRecetaAbierto(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#BFD8B4] bg-[#E8F0E3] py-2.5 text-[13px] font-semibold text-[#3F6B33]"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#E3C3C9] bg-[#F5E7E9] py-2.5 text-[13px] font-semibold text-[#803449]"
           >
             <Plus size={14} /> Nueva receta
           </button>

@@ -79,7 +79,7 @@ export default function BitacorasPage() {
 
   return (
     <div className="mx-4 mt-2 space-y-3 pb-6 md:mx-auto md:max-w-2xl">
-      <h1 className="flex items-center gap-2 text-xl font-semibold text-[#2b2118]">
+      <h1 className="flex items-center gap-2 text-[22px] font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
         <ShieldCheck size={22} className="text-[#803449]" /> Bitácoras sanitarias
       </h1>
       <p className="text-[13px] text-[#8a8272]">

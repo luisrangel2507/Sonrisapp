@@ -100,9 +100,9 @@ export default function ReportesPage() {
   return (
     <div className="mx-4 mt-2 space-y-4 pb-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
-          Reportes
-        </h2>
+        <h1 className="flex items-center gap-2 text-[22px] font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
+          <TrendingUp size={22} className="text-[#7A1E33]" /> Reportes
+        </h1>
         <a
           href="/api/reportes/resumen/pdf"
           target="_blank"

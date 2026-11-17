@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle as IcoAlerta, FileSignature as IcoFirma, Mail as IcoCorreo, CheckCircle2 as IcoOk, CalendarClock as IcoReagendar, Globe as IcoWeb, ShieldCheck as IcoIntegro } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -131,7 +132,7 @@ export default function HistoriaClinicaPage() {
       {hayHistoria && !confirmado && (
         <div className="space-y-2.5 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] p-4">
           <p className="text-[13px] text-[#B0503A]">
-            🚨 <strong>Sin confirmar</strong> — esta información la llenó el paciente desde su link. Revísala y, si
+            <IcoAlerta size={13} className="mr-1 inline-block align-[-2px]" /> <strong>Sin confirmar</strong> — esta información la llenó el paciente desde su link. Revísala y, si
             todo está correcto, confírmala. Si algo está mal, corrígelo abajo y guarda — eso también la confirma.
           </p>
           <button

@@ -117,7 +117,7 @@ export default function ControlTv() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 md:px-0">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="flex items-center gap-2 text-xl font-semibold text-[#2b2118]">
+        <h1 className="flex items-center gap-2 text-[22px] font-bold text-[#2b2118]" style={{ fontFamily: "Georgia, serif" }}>
           <Tv size={22} className="text-[#803449]" /> Pantalla de TV
         </h1>
         <Link

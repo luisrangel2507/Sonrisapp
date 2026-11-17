@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle as IcoAlerta, FileSignature as IcoFirma, Mail as IcoCorreo, CheckCircle2 as IcoOk, CalendarClock as IcoReagendar, Globe as IcoWeb, ShieldCheck as IcoIntegro } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Esqueleto } from "@/components/Esqueleto";
 import { ParecidosPaciente, useParecidos } from "@/components/ParecidosPaciente";
@@ -198,7 +199,7 @@ export default function PacientesPage() {
 
       {pendientesDeConfirmar.length > 0 && (
         <div className="mx-4 mt-3 rounded-2xl border border-[#EABDB0] bg-[#F7E5E0] px-4 py-3 text-[13px] text-[#B0503A]">
-          🚨{" "}
+          <IcoAlerta size={13} className="mr-1 inline-block align-[-2px]" />
           <strong>
             {pendientesDeConfirmar.length} paciente{pendientesDeConfirmar.length === 1 ? "" : "s"} con historial
             clínico sin confirmar
@@ -220,23 +221,23 @@ export default function PacientesPage() {
 
       {sinConsentimiento.length > 0 && (
         <div className="mx-4 mt-3 rounded-2xl border border-[#EAD9B0] bg-[#FCEFD2] px-4 py-3 text-[13px] text-[#8a6d1f]">
-          📝{" "}
+          <IcoFirma size={13} className="mr-1 inline-block align-[-2px]" />
           <strong>
             {sinConsentimiento.length} paciente{sinConsentimiento.length === 1 ? "" : "s"} sin consentimiento
             firmado
           </strong>{" "}
-          — desde su ficha puedes generar el link para que lo firme (marcados con 📝 en la lista).
+          — desde su ficha puedes generar el link para que lo firme (marcados con <IcoFirma size={12} className="inline-block align-[-2px]" /> en la lista).
         </div>
       )}
 
       {conSolicitudPendiente.length > 0 && (
         <div className="mx-4 mt-3 rounded-2xl border border-[#C3D6E8] bg-[#E3EEF7] px-4 py-3 text-[13px] text-[#3D6C97]">
-          ✉️{" "}
+          <IcoCorreo size={13} className="mr-1 inline-block align-[-2px]" />
           <strong>
             {conSolicitudPendiente.length} solicitud{conSolicitudPendiente.length === 1 ? "" : "es"} de
             paciente{conSolicitudPendiente.length === 1 ? "" : "s"} sin resolver
           </strong>{" "}
-          — pidieron acceso, corrección o algo sobre su información desde su portal (marcados con ✉️ en la lista).
+          — pidieron acceso, corrección o algo sobre su información desde su portal (marcados con <IcoCorreo size={12} className="inline-block align-[-2px]" /> en la lista).
         </div>
       )}
 
@@ -335,11 +336,14 @@ function TarjetaPaciente({
       </div>
       <div className="min-w-0 flex-1">
         <div className={`truncate text-sm font-semibold ${inactivo ? "text-[#8a8272]" : "text-[#2b2118]"}`}>
-          {p.nombre} {p.historial_pendiente && "🚨"}
-          {!inactivo && p.consentimiento_pendiente && (
-            <span title="Sin consentimiento firmado">📝</span>
+          {p.nombre}{" "}
+          {p.historial_pendiente && (
+            <span title="Historial clínico sin confirmar"><IcoAlerta size={13} className="inline-block align-[-2px] text-[#B0503A]" /></span>
           )}
-          {!inactivo && p.solicitud_pendiente && <span title="Solicitud del paciente sin resolver">✉️</span>}
+          {!inactivo && p.consentimiento_pendiente && (
+            <span title="Sin consentimiento firmado"><IcoFirma size={13} className="ml-1 inline-block align-[-2px] text-[#B08419]" /></span>
+          )}
+          {!inactivo && p.solicitud_pendiente && <span title="Solicitud del paciente sin resolver"><IcoCorreo size={13} className="ml-1 inline-block align-[-2px] text-[#3D6C97]" /></span>}
         </div>
         <div className="truncate text-xs text-[#a49c8a]">
           {p.folio} {p.telefono ? `· ${p.telefono}` : ""}
