@@ -32,6 +32,17 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pacienteId]);
 
+  async function anular(n: PacienteNota) {
+    const motivo = window.prompt("¿Por qué anulas esta nota? Queda registrada como anulada, no se borra.");
+    if (!motivo?.trim()) return;
+    await fetch(`/api/pacientes/${pacienteId}/notas/${n.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo: motivo.trim() }),
+    });
+    await cargar();
+  }
+
   const set = (k: keyof typeof VACIA, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   async function guardar() {
@@ -130,6 +141,15 @@ export function NotasEvolucion({ pacienteId }: { pacienteId: number }) {
               </span>
             </div>
             <p className={`mt-1 whitespace-pre-line text-[13px] text-[#2b2118] ${n.vigente ? "" : "line-through"}`}>{n.nota}</p>
+            {n.vigente ? (
+              <button onClick={() => anular(n)} className="mt-1 text-[11px] font-medium text-[#B0503A] underline underline-offset-2">
+                Anular (si tiene un error)
+              </button>
+            ) : (
+              <p className="mt-1 text-[11px] text-[#B0503A]">
+                Anulada por {n.anulado_por_nombre}: {n.motivo_anulacion}
+              </p>
+            )}
           </div>
         ))}
       </div>

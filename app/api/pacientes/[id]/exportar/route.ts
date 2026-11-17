@@ -57,6 +57,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       ]);
     if (!paciente?.paciente) return NextResponse.json({ error: "paciente no encontrado" }, { status: 404 });
 
+    // Los tokens abren links públicos (portal, firma, aprobación): no deben
+    // viajar en un archivo que se descarga y se comparte.
+    const sinToken = <T extends Record<string, unknown>>(o: T) => {
+      const { token: _t, historial_token: _h, ...resto } = o;
+      void _t;
+      void _h;
+      return resto;
+    };
     const marca = await obtenerMarca();
     const expediente = {
       formato: "sonrisapp-expediente",
@@ -65,12 +73,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       generado_por: identidad.nombre,
       establecimiento: { nombre: marca.clinicaNombre, responsable: marca.doctorNombre, cedula: marca.cedula, direccion: marca.direccion },
       catalogos: { diagnosticos: "CIE-10 (OMS)", dientes: "Notación FDI / ISO 3950", identificacion: "CURP (RENAPO)" },
-      paciente: paciente.paciente,
+      paciente: sinToken(paciente.paciente),
       historia_clinica: historia?.historiaClinica ?? historia?.historia_clinica ?? historia ?? null,
       notas_clinicas: notas?.notas ?? [],
       odontograma: dientes?.historial ?? dientes ?? null,
-      consentimientos: consentimientos?.consentimientos ?? [],
-      presupuestos: presupuestos?.presupuestos ?? [],
+      consentimientos: (consentimientos?.consentimientos ?? []).map(sinToken),
+      presupuestos: (presupuestos?.presupuestos ?? []).map(sinToken),
       recetas: recetas?.recetas ?? [],
       citas: citas?.citas ?? [],
       pagos: pagos?.pagos ?? [],

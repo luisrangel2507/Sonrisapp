@@ -47,8 +47,11 @@ function interpretar(mensaje: Record<string, unknown>): { accion: Accion; ids: n
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .trim();
-  if (/^(1|si|confirmo|confirmado|confirmar|ok|va|ahi estare|alli estare)\b/.test(texto)) return { accion: "confirmada", ids: null };
-  if (/^(2|reagendar|no puedo|cambiar|mover|otra fecha|cancelar)\b/.test(texto)) return { accion: "reagendar", ids: null };
+  // Solo respuestas cortas e inequívocas: "sí, pero necesito cambiar la
+  // hora" NO debe contar como confirmación (lo lee una persona).
+  const limpio = texto.replace(/[.,!¡\s]+$/g, "").replace(/^[¡\s]+/, "");
+  if (/^(1|si|si confirmo|confirmo|confirmado|confirmar|ok|ahi estare|alli estare)$/.test(limpio)) return { accion: "confirmada", ids: null };
+  if (/^(2|reagendar|necesito reagendar|quiero reagendar|no puedo|no puedo ir|no podre ir)$/.test(limpio)) return { accion: "reagendar", ids: null };
   return null;
 }
 

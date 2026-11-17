@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { errorJson } from "@/lib/api-error";
+import { identidadDesdeRequest } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,13 @@ export async function PUT(req: NextRequest) {
       }
       marcaCampos.push(col);
       marcaValores.push(v);
+    }
+
+    // La identidad de la clínica (nombre, logo, color, cédula, link de
+    // reseñas, CURP…) solo la cambia un administrador; el asistente solo
+    // puede tocar foto, nombre de bienvenida y teléfono.
+    if ((marcaCampos.length > 0 || logoProvisto) && (await identidadDesdeRequest(req)).rol !== "admin") {
+      return NextResponse.json({ error: "solo un administrador puede cambiar la identidad de la clínica" }, { status: 403 });
     }
 
     // INSERT/UPDATE base (foto, nombre, teléfono, logo) + cualquier campo de marca.

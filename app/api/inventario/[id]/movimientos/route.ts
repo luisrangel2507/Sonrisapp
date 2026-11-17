@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
   try {
+    if (!Number.isInteger(Number(id))) return NextResponse.json({ error: "id inválido" }, { status: 400 });
     const { rows } = await query(
       `SELECT id, tipo, cantidad::float8 AS cantidad, costo::float8 AS costo, proveedor, nota,
               creado_por_nombre, creado_en
